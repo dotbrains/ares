@@ -14,6 +14,17 @@ small packages:
 
 ## Build and Test
 
+With [Flox](https://flox.dev) installed, the repo provides a complete local
+toolchain for Go, Bun, golangci-lint, GoReleaser, pre-commit, actionlint, git,
+and the Docker CLI:
+
+```sh
+flox activate
+make ci
+```
+
+Without Flox, install the equivalent tools on your host and run:
+
 ```sh
 make build
 make test
@@ -25,6 +36,12 @@ make vet
 `make integration` runs lightweight Ubuntu/Debian container checks by default.
 Use `ARES_FULL_INTEGRATION=1 make integration` to also pull and test heavier
 Rocky/Fedora images.
+
+Install the pre-commit hook after cloning:
+
+```sh
+pre-commit install
+```
 
 ## Local Website
 

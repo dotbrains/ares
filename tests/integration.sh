@@ -28,7 +28,7 @@ esac
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-GOOS=linux GOARCH="$goarch" go build -o "$tmp/ares" .
+CGO_ENABLED=0 GOOS=linux GOARCH="$goarch" go build -o "$tmp/ares" .
 
 images="${ARES_INTEGRATION_IMAGES:-}"
 if [ -z "$images" ]; then

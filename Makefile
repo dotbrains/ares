@@ -2,8 +2,9 @@ BINARY := ares
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 GO_PACKAGES := $(shell go list ./... | grep -v '/website/')
+GO_PACKAGE_DIRS := $(shell go list -f '{{.Dir}}' ./... | grep -v '/website/')
 
-.PHONY: build test smoke integration release-check lint install clean vet markdown website-install website-typecheck website-build website-ci ci
+.PHONY: build test smoke integration release-check lint actionlint install clean vet markdown website-install website-typecheck website-build website-ci ci
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
@@ -35,7 +36,10 @@ vet:
 	go vet $(GO_PACKAGES)
 
 lint:
-	golangci-lint run
+	golangci-lint run $(GO_PACKAGE_DIRS)
+
+actionlint:
+	actionlint
 
 website-install:
 	cd website && bun install --frozen-lockfile
@@ -48,7 +52,7 @@ website-build:
 
 website-ci: website-install website-typecheck website-build
 
-ci: markdown test vet lint build smoke integration release-check website-ci
+ci: markdown test vet lint actionlint build smoke integration release-check website-ci
 
 clean:
 	rm -f $(BINARY) coverage.out

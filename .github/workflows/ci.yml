@@ -133,3 +133,13 @@ jobs:
 
       - name: Check release config
         run: make release-check
+
+  flox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: flox/install-flox-action@v2
+
+      - name: Run local CI in Flox
+        run: flox activate -c "make ci"

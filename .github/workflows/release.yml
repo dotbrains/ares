@@ -83,6 +83,16 @@ jobs:
       - name: Build website
         run: make website-build
 
+  flox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: flox/install-flox-action@v2
+
+      - name: Run local CI in Flox
+        run: flox activate -c "make ci"
+
   build:
     strategy:
       matrix:
@@ -114,7 +124,7 @@ jobs:
         run: make integration
 
   goreleaser:
-    needs: [markdown, test, vet, lint, website, build, integration]
+    needs: [markdown, test, vet, lint, website, flox, build, integration]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

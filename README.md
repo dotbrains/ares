@@ -6,6 +6,7 @@
 [![Platform: Linux VPS](https://img.shields.io/badge/platform-Linux%20VPS-lightgrey.svg)](docs/supported-distros.md)
 [![Go: 1.24+](https://img.shields.io/badge/go-1.24%2B-00ADD8.svg)](go.mod)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](.pre-commit-config.yaml)
+[![Dev env: Flox](https://img.shields.io/badge/dev%20env-flox-7c3aed.svg)](.flox/env/manifest.toml)
 [![Website: Bun](https://img.shields.io/badge/website-bun-f472b6.svg)](website/package.json)
 [![Distros: Ubuntu Debian RHEL Fedora](https://img.shields.io/badge/distros-Ubuntu%20%7C%20Debian%20%7C%20RHEL%20%7C%20Fedora-64748b.svg)](docs/supported-distros.md)
 
@@ -169,9 +170,16 @@ make ci
 ```
 
 `make ci` runs Markdown lint, Go tests, vet, golangci-lint, build, smoke,
-container integration, release config checks, and the Bun-backed website
-typecheck/build. The repository also includes a pre-commit hook that runs the
-same target before commits.
+GitHub Actions lint, container integration, release config checks, and the
+Bun-backed website typecheck/build. The repository also includes a pre-commit
+hook that runs the same target before commits.
+
+With [Flox](https://flox.dev) installed, activate the repo toolchain:
+
+```sh
+flox activate
+make ci
+```
 
 ## Docs
 

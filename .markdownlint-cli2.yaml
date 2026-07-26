@@ -3,6 +3,10 @@ globs:
 ignores:
   - "website/node_modules/**"
   - "website/.next/**"
+  - ".flox/run/**"
+  - ".flox/cache/**"
+  - ".flox/lib/**"
+  - ".flox/log/**"
   - "coverage.out"
 config:
   MD013: false
