@@ -8,12 +8,23 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/dotbrains/ares/internal/plugins"
 )
 
 type RollbackOptions struct {
 	Yes  bool
 	Root string
 	Now  time.Time
+}
+
+type runReport struct {
+	Plugins []struct {
+		ID             string `json:"ID"`
+		Kind           string `json:"Kind"`
+		Rollback       string `json:"Rollback"`
+		TimeoutSeconds int    `json:"TimeoutSeconds"`
+	} `json:"plugins"`
 }
 
 func RollbackLast(opts RollbackOptions) (Result, error) {
@@ -45,11 +56,61 @@ func RollbackLast(opts RollbackOptions) (Result, error) {
 	restoreNewestBackup(&result, opts.Root, "/etc/ssh/sshd_config")
 	restoreNewestBackup(&result, opts.Root, "/etc/nftables.conf")
 	restoreNewestBackup(&result, opts.Root, "/etc/dnf/automatic.conf")
+	rollbackCustomPlugins(&result, opts.Root, base)
 
 	if opts.Root == "" {
 		result.Skipped = append(result.Skipped, "service reloads are not automated during rollback; review SSH and firewall access before reloading services")
 	}
 	return finishRollback(result, nil)
+}
+
+func rollbackCustomPlugins(result *Result, root string, reportDir string) {
+	report, err := readLatestRunReport(filepath.Join(reportDir, "latest.json"))
+	if err != nil {
+		result.Skipped = append(result.Skipped, "custom rollback skipped: "+err.Error())
+		return
+	}
+	for _, plugin := range report.Plugins {
+		if plugin.Kind != "custom" || plugin.Rollback == "" {
+			continue
+		}
+		custom := plugins.Plugin{
+			ID:             plugin.ID,
+			Kind:           plugin.Kind,
+			Rollback:       plugin.Rollback,
+			TimeoutSeconds: plugin.TimeoutSeconds,
+		}
+		if root != "" {
+			result.Applied = append(result.Applied, "would run custom rollback "+plugin.ID+": "+plugin.Rollback)
+			continue
+		}
+		output, err := runCustomCommand(custom, custom.Rollback)
+		appendCustomRollbackOutput(result, custom.ID, output)
+		if err != nil {
+			result.Failed = append(result.Failed, custom.ID+": rollback failed: "+err.Error())
+		}
+	}
+}
+
+func readLatestRunReport(path string) (runReport, error) {
+	var report runReport
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return report, fmt.Errorf("latest report unavailable")
+	}
+	if err := json.Unmarshal(data, &report); err != nil {
+		return report, fmt.Errorf("latest report is invalid")
+	}
+	return report, nil
+}
+
+func appendCustomRollbackOutput(result *Result, pluginID string, output string) {
+	ctx := &Context{}
+	ctx.appendCustomOutput(pluginID, output)
+	result.Applied = append(result.Applied, ctx.Result.Applied...)
+	result.Verified = append(result.Verified, ctx.Result.Verified...)
+	result.Skipped = append(result.Skipped, ctx.Result.Skipped...)
+	result.Failed = append(result.Failed, ctx.Result.Failed...)
 }
 
 func rollbackManagedFile(result *Result, root string, path string) {

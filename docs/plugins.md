@@ -39,8 +39,9 @@ Custom plugins can declare `probe`, `plan`, `apply`, `verify`, and `rollback`
 commands in config. `ares` executes custom `probe`, `apply`, and `verify`
 commands with a timeout. Custom command output can emit structured lines
 prefixed with `applied:`, `verified:`, `skipped:`, or `failed:`; `ares` records
-those lines in the run report. `plan` and `rollback` are preserved as metadata
-for inspection and future richer external orchestration.
+those lines in the run report. `ares rollback last --yes` executes custom
+`rollback` commands recorded in the latest run report. `plan` is preserved as
+metadata for inspection and future richer external orchestration.
 
 ## Built-Ins
 

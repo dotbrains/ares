@@ -1,6 +1,7 @@
 package apply
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -268,6 +269,41 @@ func TestRollbackLastRemovesManagedFilesAndRestoresBackups(t *testing.T) {
 	}
 	if _, err := os.Stat(result.ReportPath); err != nil {
 		t.Fatalf("expected rollback report: %v", err)
+	}
+}
+
+func TestRollbackLastRunsCustomRollbackFromLatestReport(t *testing.T) {
+	root := t.TempDir()
+	reportDir := filepath.Join(root, "var", "log", "ares")
+	if err := os.MkdirAll(reportDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	report := map[string]any{
+		"plugins": []map[string]any{{
+			"ID":             "custom-hardening",
+			"Kind":           "custom",
+			"Rollback":       "ares-plugin-custom rollback",
+			"TimeoutSeconds": 5,
+		}},
+	}
+	data, err := json.Marshal(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(reportDir, "latest.json"), data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := RollbackLast(RollbackOptions{
+		Yes:  true,
+		Root: root,
+		Now:  time.Date(2026, 7, 25, 18, 0, 0, 0, time.UTC),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !contains(result.Applied, "would run custom rollback custom-hardening: ares-plugin-custom rollback") {
+		t.Fatalf("missing custom rollback item: %+v", result)
 	}
 }
 
