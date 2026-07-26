@@ -127,12 +127,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v6
+      - uses: goreleaser/goreleaser-action@v6
         with:
-          go-version-file: go.mod
-
-      - name: Check release config
-        run: make release-check
+          version: v2.16.0
+          args: check
 
   flox:
     runs-on: ubuntu-latest
