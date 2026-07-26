@@ -74,3 +74,16 @@ func TestNormalizeProvider(t *testing.T) {
 		t.Fatalf("normalizeProvider(AWS-Lightsail) = %q", got)
 	}
 }
+
+func TestPackageAndFirewallDefaultsIgnoreHostCommandsInFixtureMode(t *testing.T) {
+	host := Host{OSID: "rocky"}
+	host.PackageManager = packageManager(host, false)
+	host.FirewallBackend = firewallBackend(host, false)
+
+	if host.PackageManager != "dnf" {
+		t.Fatalf("PackageManager = %q, want dnf", host.PackageManager)
+	}
+	if host.FirewallBackend != "firewalld" {
+		t.Fatalf("FirewallBackend = %q, want firewalld", host.FirewallBackend)
+	}
+}

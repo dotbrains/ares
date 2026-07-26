@@ -28,6 +28,7 @@ type Host struct {
 
 func Detect() (Host, error) {
 	root := os.Getenv("ARES_ROOT")
+	osReleaseOverride := os.Getenv("ARES_OS_RELEASE") != ""
 	osReleasePath := os.Getenv("ARES_OS_RELEASE")
 	if osReleasePath == "" {
 		osReleasePath = rootPath(root, "/etc/os-release")
@@ -48,11 +49,41 @@ func Detect() (Host, error) {
 		RunningOverSSH: os.Getenv("SSH_CONNECTION") != "" || os.Getenv("SSH_CLIENT") != "",
 		Architecture:   runtime.GOARCH,
 	}
-	host.PackageManager = packageManager(host)
+	probeHostCommands := root == "" && !osReleaseOverride
+	host.PackageManager = packageManager(host, probeHostCommands)
 	host.SSHService = sshServiceName(host)
-	host.FirewallBackend = firewallBackend(host)
+	host.FirewallBackend = firewallBackend(host, probeHostCommands)
 
 	return host, nil
+}
+
+func readOSRelease(path string) (map[string]string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", path, err)
+	}
+	defer file.Close()
+
+	values := map[string]string{}
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		values[key] = strings.Trim(strings.TrimSpace(value), "\"")
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("parsing %s: %w", path, err)
+	}
+	if values["ID"] == "" {
+		return nil, errors.New("unable to detect distro: /etc/os-release has no ID")
+	}
+	return values, nil
 }
 
 func detectProvider(root string) string {
@@ -107,47 +138,11 @@ func normalizeProvider(value string) string {
 	}
 }
 
-func readOSRelease(path string) (map[string]string, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("reading %s: %w", path, err)
-	}
-	defer file.Close()
-
-	values := map[string]string{}
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
+func packageManager(host Host, probeHostCommands bool) string {
+	if probeHostCommands {
+		if detected := firstCommand("apt-get", "dnf", "yum", "pacman", "zypper", "apk"); detected != "unknown" {
+			return detected
 		}
-		key, value, ok := strings.Cut(line, "=")
-		if !ok {
-			continue
-		}
-		values[key] = strings.Trim(strings.TrimSpace(value), "\"")
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("parsing %s: %w", path, err)
-	}
-	if values["ID"] == "" {
-		return nil, errors.New("unable to detect distro: /etc/os-release has no ID")
-	}
-	return values, nil
-}
-
-func firstCommand(names ...string) string {
-	for _, name := range names {
-		if _, err := exec.LookPath(name); err == nil {
-			return name
-		}
-	}
-	return "unknown"
-}
-
-func packageManager(host Host) string {
-	if detected := firstCommand("apt-get", "dnf", "yum", "pacman", "zypper", "apk"); detected != "unknown" {
-		return detected
 	}
 	switch host.OSID {
 	case "ubuntu", "debian":
@@ -163,6 +158,35 @@ func packageManager(host Host) string {
 	default:
 		return "unknown"
 	}
+}
+
+func firewallBackend(host Host, probeHostCommands bool) string {
+	if probeHostCommands && commandExists("ufw") {
+		return "ufw"
+	}
+	if probeHostCommands && commandExists("firewall-cmd") {
+		return "firewalld"
+	}
+	if probeHostCommands && commandExists("nft") {
+		return "nftables"
+	}
+	switch host.PackageManager {
+	case "apt-get":
+		return "ufw"
+	case "dnf", "yum":
+		return "firewalld"
+	default:
+		return "unknown"
+	}
+}
+
+func firstCommand(names ...string) string {
+	for _, name := range names {
+		if _, err := exec.LookPath(name); err == nil {
+			return name
+		}
+	}
+	return "unknown"
 }
 
 func detectInitSystem(root string) string {
@@ -204,26 +228,6 @@ func sshServiceName(host Host) string {
 		return "ssh"
 	default:
 		return "sshd"
-	}
-}
-
-func firewallBackend(host Host) string {
-	if commandExists("ufw") {
-		return "ufw"
-	}
-	if commandExists("firewall-cmd") {
-		return "firewalld"
-	}
-	if commandExists("nft") {
-		return "nftables"
-	}
-	switch host.PackageManager {
-	case "apt-get":
-		return "ufw"
-	case "dnf", "yum":
-		return "firewalld"
-	default:
-		return "unknown"
 	}
 }
 
