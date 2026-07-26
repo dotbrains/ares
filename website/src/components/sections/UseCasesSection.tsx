@@ -1,24 +1,23 @@
 'use client';
 
-import { Terminal, Settings, Zap } from 'lucide-react';
+import { Cloud, ServerCog, Workflow } from 'lucide-react';
 
 export function UseCasesSection() {
-  // TODO: Replace with your project's use cases.
   const useCases = [
     {
-      icon: <Terminal className="w-6 h-6" />,
-      title: 'Use Case One',
-      description: 'Describe who uses this and what problem it solves for them.',
+      icon: <Cloud className="w-6 h-6" />,
+      title: 'Fresh VPS setup',
+      description: 'Run a repeatable hardening baseline after provisioning a new public Linux server.',
     },
     {
-      icon: <Settings className="w-6 h-6" />,
-      title: 'Use Case Two',
-      description: 'Describe the second use case.',
+      icon: <ServerCog className="w-6 h-6" />,
+      title: 'Web hosts',
+      description: 'Use the web profile to preserve SSH while allowing inbound HTTP and HTTPS.',
     },
     {
-      icon: <Zap className="w-6 h-6" />,
-      title: 'Use Case Three',
-      description: 'Describe the third use case.',
+      icon: <Workflow className="w-6 h-6" />,
+      title: 'Team baselines',
+      description: 'Keep shared defaults in config and add explicit local plugins for site-specific needs.',
     },
   ];
 
@@ -28,7 +27,7 @@ export function UseCasesSection() {
         <div className="text-center mb-10 sm:mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-cream mb-3 sm:mb-4">Use Cases</h2>
           <p className="text-cream/70 text-base sm:text-lg lg:text-xl max-w-3xl mx-auto">
-            ares adapts to how your team works
+            Common workflows for small VPS fleets and one-off servers
           </p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">

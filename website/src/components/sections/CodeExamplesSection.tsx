@@ -4,23 +4,36 @@ import React, { useState } from 'react';
 import { CodeBlock } from '@/components/CodeBlock';
 
 export function CodeExamplesSection() {
-  const [activeTab, setActiveTab] = useState<'basic' | 'config'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'config' | 'plugins'>('basic');
 
-  // TODO: Replace with your project's code examples.
   const examples = {
-    basic: `# Basic usage
-$ ares
-→ output example here
+    basic: `# Inspect first
+$ sudo ares --dry-run
 
-# With options
-$ ares --verbose`,
+# Apply after review
+$ sudo ares --yes
+
+# Use the web profile
+$ sudo ares --profile web --yes`,
     config: `# ~/.config/ares/config.yaml
-# Add your config example here`,
+profile: basic
+plugins:
+  enabled:
+    - ssh-hardening
+    - firewall-auto
+    - fail2ban
+    - security-updates
+    - sysctl-baseline`,
+    plugins: `# Browse built-ins
+$ ares plugins list
+$ ares plugins show ssh-hardening
+$ ares plugins snippet strict-profile`,
   };
 
   const tabs = [
     { key: 'basic' as const, label: 'Basic Usage', language: 'bash' },
     { key: 'config' as const, label: 'Config', language: 'yaml' },
+    { key: 'plugins' as const, label: 'Plugins', language: 'bash' },
   ];
 
   return (

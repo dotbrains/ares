@@ -1,7 +1,8 @@
 # Supported Distros
 
-`ares` should work across common VPS Linux distributions through distro
-adapters.
+`ares` targets common systemd-based Linux VPS images. Host detection reads the
+local OS release data and service state, then selects distro, firewall, update,
+and provider plugins.
 
 ## First-Class Targets
 
@@ -11,8 +12,20 @@ adapters.
 - Rocky Linux 9
 - Fedora Server
 
-Ubuntu and Debian use `apt-get`, `ufw`, and `unattended-upgrades`. AlmaLinux,
-Rocky Linux, and Fedora use `dnf`, `firewalld`, and `dnf-automatic`.
+## Distro Behavior
+
+| Family | Package manager | Firewall default | Security updates | SSH service |
+| --- | --- | --- | --- | --- |
+| Ubuntu | `apt-get` | `ufw` | `unattended-upgrades` | detected service, usually `ssh` |
+| Debian | `apt-get` | `ufw` | `unattended-upgrades` | detected service, usually `ssh` |
+| AlmaLinux/Rocky/RHEL | `dnf` or `yum` | `firewalld` | `dnf-automatic` | detected service, usually `sshd` |
+| Fedora | `dnf` | `firewalld` | `dnf-automatic` | detected service, usually `sshd` |
+
+If the host reports nftables as the active firewall backend, `firewall-auto`
+can resolve to `firewall-nftables`.
+
+Unsupported hosts produce warnings in the plan. They should not receive blind
+SSH or firewall changes without a distro adapter.
 
 ## Later Targets
 
@@ -22,9 +35,6 @@ Rocky Linux, and Fedora use `dnf`, `firewalld`, and `dnf-automatic`.
 - Alpine Linux
 - Oracle Linux
 - Amazon Linux
-
-Unsupported hosts should fail safely or produce a plan with warnings. They
-should not receive blind SSH or firewall changes.
 
 ## Providers
 
@@ -38,3 +48,7 @@ should not receive blind SSH or firewall changes.
 - Linode/Akamai
 - OVH
 - AWS Lightsail
+
+Provider plugins are advisory. They record provider-specific recovery reminders
+for cloud firewalls, snapshots, rescue consoles, and out-of-band access. They do
+not configure provider accounts or call cloud APIs.

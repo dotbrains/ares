@@ -6,31 +6,28 @@ export function StatsSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-8 sm:mb-12">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-cream mb-3 sm:mb-4">
-            {/* TODO: Replace with your tagline */}
-            Built for developers who value their time
+            Harden common VPS images without hand-running a checklist
           </h2>
           <p className="text-cream/70 text-base sm:text-lg lg:text-xl">
-            {/* TODO: Replace with your subtitle */}
-            Local-first, provider-agnostic, and designed for real engineering workflows
+            Local-first, provider-agnostic, and explicit about what changes
           </p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 md:gap-8 text-center">
-          {/* TODO: Replace with your project's stats */}
           <div>
-            <div className="text-2xl sm:text-3xl font-bold text-gradient mb-1 sm:mb-2">Stat 1</div>
-            <div className="text-cream/60 text-sm sm:text-base">Label</div>
+            <div className="text-2xl sm:text-3xl font-bold text-gradient mb-1 sm:mb-2">basic</div>
+            <div className="text-cream/60 text-sm sm:text-base">Default Profile</div>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-bold text-gradient mb-1 sm:mb-2">Stat 2</div>
-            <div className="text-cream/60 text-sm sm:text-base">Label</div>
+            <div className="text-2xl sm:text-3xl font-bold text-gradient mb-1 sm:mb-2">web</div>
+            <div className="text-cream/60 text-sm sm:text-base">HTTP/HTTPS Profile</div>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-bold text-gradient mb-1 sm:mb-2">Stat 3</div>
-            <div className="text-cream/60 text-sm sm:text-base">Label</div>
+            <div className="text-2xl sm:text-3xl font-bold text-gradient mb-1 sm:mb-2">strict</div>
+            <div className="text-cream/60 text-sm sm:text-base">Tighter Fail2ban</div>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-bold text-gradient mb-1 sm:mb-2">Stat 4</div>
-            <div className="text-cream/60 text-sm sm:text-base">Label</div>
+            <div className="text-2xl sm:text-3xl font-bold text-gradient mb-1 sm:mb-2">--yes</div>
+            <div className="text-cream/60 text-sm sm:text-base">Apply Guard</div>
           </div>
         </div>
       </div>

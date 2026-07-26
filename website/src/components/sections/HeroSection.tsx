@@ -22,9 +22,8 @@ export function HeroSection({ onLearnMore }: HeroSectionProps) {
           </div>
 
           <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-cream leading-tight mb-4 sm:mb-6 px-4">
-            {/* TODO: Replace with your headline */}
-            Your Headline,{' '}
-            <span className="text-gradient drop-shadow-md">One Command</span>
+            ares hardens a fresh VPS{' '}
+            <span className="text-gradient drop-shadow-md">from one plan</span>
           </h1>
           <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-cream/70 mb-6 sm:mb-8 leading-relaxed max-w-4xl mx-auto px-4">
             ares hardens fresh Linux VPS instances with a safe, modular plugin-based execution model. It detects the host distro, plans changes, preserves SSH access, and applies provider-agnostic security defaults.
@@ -43,14 +42,13 @@ export function HeroSection({ onLearnMore }: HeroSectionProps) {
 
         {/* Hero Stats */}
         <div className="mt-12 sm:mt-16 md:mt-24 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-5xl mx-auto px-4">
-          {/* TODO: Replace with your project's key stats */}
           <div className="bg-dark-gray/50 backdrop-blur-sm border border-accent-primary/30 rounded-xl p-4 sm:p-6 text-center">
-            <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-gradient mb-2">Stat 1</div>
-            <div className="text-cream/60 text-sm sm:text-base md:text-lg">Description</div>
+            <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-gradient mb-2">3</div>
+            <div className="text-cream/60 text-sm sm:text-base md:text-lg">Profiles</div>
           </div>
           <div className="bg-dark-gray/50 backdrop-blur-sm border border-accent-secondary/30 rounded-xl p-4 sm:p-6 text-center">
-            <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-gradient mb-2">Stat 2</div>
-            <div className="text-cream/60 text-sm sm:text-base md:text-lg">Description</div>
+            <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-gradient mb-2">5</div>
+            <div className="text-cream/60 text-sm sm:text-base md:text-lg">Distro Targets</div>
           </div>
           <div className="bg-dark-gray/50 backdrop-blur-sm border border-accent-tertiary/30 rounded-xl p-4 sm:p-6 text-center">
             <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-gradient mb-2">Go</div>

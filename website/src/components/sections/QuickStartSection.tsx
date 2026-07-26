@@ -4,19 +4,17 @@ import React, { useState } from 'react';
 import { CodeBlock } from '@/components/CodeBlock';
 
 export function QuickStartSection() {
-  const [installMethod, setInstallMethod] = useState<'go' | 'brew' | 'release'>('go');
+  const [installMethod, setInstallMethod] = useState<'bootstrap' | 'go' | 'release'>('bootstrap');
 
+  const bootstrapExample = `curl -fsSL https://raw.githubusercontent.com/dotbrains/ares/main/install.sh | sudo sh`;
   const goExample = `go install github.com/dotbrains/ares@latest`;
 
-  const brewExample = `brew tap dotbrains/tap
-brew install --cask ares`;
-
-  const releaseExample = `# macOS Apple Silicon
+  const releaseExample = `# Linux x86_64
 gh release download --repo dotbrains/ares \\
-  --pattern 'ares_darwin_arm64.tar.gz' --dir /tmp
-tar -xzf /tmp/ares_darwin_arm64.tar.gz -C /usr/local/bin`;
+  --pattern 'ares_linux_amd64.tar.gz' --dir /tmp
+tar -xzf /tmp/ares_linux_amd64.tar.gz -C /usr/local/bin`;
 
-  const installExamples = { go: goExample, brew: brewExample, release: releaseExample };
+  const installExamples = { bootstrap: bootstrapExample, go: goExample, release: releaseExample };
 
   return (
     <section id="quick-start" className="py-12 sm:py-16 lg:py-20 bg-dark-slate overflow-hidden">
@@ -32,8 +30,8 @@ tar -xzf /tmp/ares_darwin_arm64.tar.gz -C /usr/local/bin`;
             <h3 className="text-xl sm:text-2xl font-bold text-cream mb-4 sm:mb-6">1. Install</h3>
             <div className="flex gap-2 sm:gap-3 mb-6">
               {[
+                { key: 'bootstrap' as const, label: 'Bootstrap' },
                 { key: 'go' as const, label: 'Go' },
-                { key: 'brew' as const, label: 'Homebrew' },
                 { key: 'release' as const, label: 'Release' },
               ].map((method) => (
                 <button
@@ -53,21 +51,20 @@ tar -xzf /tmp/ares_darwin_arm64.tar.gz -C /usr/local/bin`;
           </div>
           <div className="bg-dark-gray/50 rounded-xl p-6 sm:p-8 border border-accent-secondary/20 min-w-0">
             <h3 className="text-xl sm:text-2xl font-bold text-cream mb-4 sm:mb-6">2. Use</h3>
-            {/* TODO: Replace with your project's usage examples */}
             <CodeBlock
-              code={`# Run ares
-ares
+              code={`# Inspect the host and plan
+sudo ares --dry-run
 
 # Initialize config
 ares config init
 
-# Show version
-ares --version`}
+# Apply after review
+sudo ares --yes`}
               language="bash"
             />
             <div className="mt-6 bg-accent-primary/10 border border-accent-primary/30 rounded-lg p-4 sm:p-5">
               <p className="text-cream text-sm leading-relaxed">
-                <span className="text-accent-primary font-semibold">Tip:</span> Run <code className="bg-dark-slate/80 px-2 py-1 rounded text-accent-tertiary font-mono text-xs">ares config init</code> to scaffold a config file.
+                <span className="text-accent-primary font-semibold">Tip:</span> Use <code className="bg-dark-slate/80 px-2 py-1 rounded text-accent-tertiary font-mono text-xs">ares plan --profile web</code> before opening HTTP and HTTPS.
               </p>
             </div>
           </div>

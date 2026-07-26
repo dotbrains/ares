@@ -3,25 +3,24 @@
 import { Download, Terminal, FileText } from 'lucide-react';
 
 export function HowItWorksSection() {
-  // TODO: Replace with your project's steps.
   const steps = [
     {
       icon: <Download className="w-8 h-8" />,
       step: '1',
       title: 'Install ares',
-      description: 'Install via go install, Homebrew, or download a prebuilt binary from GitHub Releases. Single binary, zero runtime dependencies.',
+      description: 'Install with the release bootstrap script, go install, or a platform archive from GitHub Releases.',
     },
     {
       icon: <Terminal className="w-8 h-8" />,
       step: '2',
-      title: 'Run a Command',
-      description: 'Describe what happens when the user runs the main command.',
+      title: 'Inspect the plan',
+      description: 'Run ares --dry-run or ares plan to see host detection, selected plugins, risky actions, and warnings.',
     },
     {
       icon: <FileText className="w-8 h-8" />,
       step: '3',
-      title: 'Get Results',
-      description: 'Describe the output or result the user gets.',
+      title: 'Apply deliberately',
+      description: 'Run sudo ares --yes after review. Reports, verification notes, and undo guidance are written under /var/log/ares.',
     },
   ];
 
@@ -31,7 +30,7 @@ export function HowItWorksSection() {
         <div className="text-center mb-10 sm:mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-cream mb-3 sm:mb-4">How It Works</h2>
           <p className="text-cream/70 text-base sm:text-lg lg:text-xl max-w-3xl mx-auto">
-            Three steps from install to your first result
+            Three steps from install to a guarded hardening run
           </p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">

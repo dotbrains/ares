@@ -2,16 +2,50 @@
 
 `ares` hardening must be designed around avoiding lockout.
 
-Before applying SSH or firewall changes, the runner should:
+Before applying SSH or firewall changes, review:
 
-- detect whether it is running over SSH
-- detect the active SSH port
-- keep the active SSH port open in the firewall
-- back up modified files with timestamps
-- validate `sshd` config before reload
-- prefer service reloads over restarts
-- write an undo plan under `/var/log/ares`
+- `ares detect` reports the expected SSH port
+- your provider firewall allows that SSH port
+- you have provider console, rescue mode, snapshot, or another out-of-band path
+- `ares plan` shows only the plugins and profile you expect
 
-Apply mode writes a report and undo plan under `/var/log/ares`. The undo plan is
-manual by design: SSH and firewall recovery steps should be reviewed before
-being run on a remote VPS.
+## Built-In Safety
+
+The first release implements these safety behaviors:
+
+- real apply mode requires root privileges
+- real apply mode requires `--yes`
+- dry runs skip mutation
+- SSH hardening backs up `/etc/ssh/sshd_config`
+- SSH hardening writes a drop-in at `/etc/ssh/sshd_config.d/99-ares.conf`
+- SSH hardening validates `sshd -t` before reloading the detected SSH service
+- firewall plans preserve the detected active SSH port
+- nftables and dnf automatic configs are backed up before replacement when
+  existing files are present
+- run reports are written under `/var/log/ares`
+
+## Reports
+
+Each run prepares:
+
+```text
+/var/log/ares/ares-<timestamp>.log
+/var/log/ares/latest.json
+/var/log/ares/undo-plan.txt
+```
+
+`latest.json` records applied, skipped, verified, probed, and failed steps.
+`undo-plan.txt` is manual by design: SSH and firewall recovery steps should be
+reviewed before being run on a remote VPS.
+
+## Recovery Pattern
+
+If you lose access after applying changes:
+
+1. use the provider console or rescue mode
+2. inspect `/var/log/ares/latest.json`
+3. inspect `/var/log/ares/undo-plan.txt`
+4. restore backed-up files with `.ares.<timestamp>.bak` suffixes where
+   appropriate
+5. validate SSH config with `sshd -t`
+6. reload the SSH service instead of rebooting when possible

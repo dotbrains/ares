@@ -1,6 +1,7 @@
 BINARY := ares
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
+GO_PACKAGES := $(shell go list ./... | grep -v '/website/')
 
 .PHONY: build test smoke integration release-check lint install clean vet
 
@@ -11,7 +12,7 @@ install:
 	go install -ldflags "$(LDFLAGS)" .
 
 test:
-	go test -race -coverprofile=coverage.out ./...
+	go test -race -coverprofile=coverage.out $(GO_PACKAGES)
 	@go tool cover -func=coverage.out | tail -1
 
 smoke: build
@@ -28,7 +29,7 @@ release-check:
 	fi
 
 vet:
-	go vet ./...
+	go vet $(GO_PACKAGES)
 
 lint:
 	golangci-lint run

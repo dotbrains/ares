@@ -1,128 +1,38 @@
 # ares
 
-`ares` is a modular VPS hardening runner for fresh Linux servers.
+[![CI](https://github.com/dotbrains/ares/actions/workflows/ci.yml/badge.svg)](https://github.com/dotbrains/ares/actions/workflows/ci.yml)
+[![Release](https://github.com/dotbrains/ares/actions/workflows/release.yml/badge.svg)](https://github.com/dotbrains/ares/actions/workflows/release.yml)
+[![License: PolyForm Shield 1.0.0](https://img.shields.io/badge/license-PolyForm%20Shield%201.0.0-blue.svg)](LICENSE)
+[![Platform: Linux VPS](https://img.shields.io/badge/platform-Linux%20VPS-lightgrey.svg)](docs/supported-distros.md)
+[![Go: 1.24+](https://img.shields.io/badge/go-1.24%2B-00ADD8.svg)](go.mod)
+[![Website: Bun](https://img.shields.io/badge/website-bun-f472b6.svg)](website/package.json)
+[![Distros: Ubuntu Debian RHEL Fedora](https://img.shields.io/badge/distros-Ubuntu%20%7C%20Debian%20%7C%20RHEL%20%7C%20Fedora-64748b.svg)](docs/supported-distros.md)
 
-It is designed for the first SSH session on a rented VPS from providers such as
-DigitalOcean, Hostinger, Hetzner, Vultr, Linode, OVH, or Lightsail. The core
-runner detects the host, builds a hardening plan, preserves SSH access, and runs
-small plugins for distro, SSH, firewall, updates, fail2ban, and sysctl behavior.
-
-Apply mode is guarded by `--yes` and root privileges. Use `--dry-run` first to
-inspect the exact plan.
-
-## Quick Start
-
-Inspect the hardening plan:
+`ares` is a modular hardening runner for fresh Linux VPS instances. It detects
+the host, builds a reviewable plan, preserves SSH access, and applies a small
+set of provider-agnostic security defaults through built-in or custom plugins.
 
 ```sh
-go install github.com/dotbrains/ares@latest
+curl -fsSL https://raw.githubusercontent.com/dotbrains/ares/main/install.sh | sudo sh
 sudo ares --dry-run
 sudo ares --yes
 ```
 
-Release bootstrap:
+Apply mode is intentionally guarded: it requires root privileges and `--yes`.
+Use `--dry-run` or `ares plan` first to inspect the exact changes.
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/dotbrains/ares/main/install.sh | sudo sh
-sudo ares --dry-run
-```
+## Docs
 
-From source:
-
-```sh
-git clone https://github.com/dotbrains/ares.git
-cd ares
-make build
-sudo ./ares --dry-run
-sudo ./ares --yes
-```
-
-## Commands
-
-| Command | Description |
-| --- | --- |
-| `ares --dry-run` | Detect the host and show the default hardening plan |
-| `ares --yes` | Apply the default hardening plan after review |
-| `ares plan` | Show the hardening plan |
-| `ares detect` | Print detected distro, package manager, SSH, and firewall details |
-| `ares status` | Summarize host support status |
-| `ares plugins list` | List built-in plugins |
-| `ares plugins show <id>` | Show plugin metadata |
-| `ares plugins snippet <id>` | Print a config snippet for a plugin |
-| `ares config init` | Write default config to `~/.config/ares/config.yaml` |
-
-## Profiles
-
-The default profile is `basic`.
-
-- `basic`: SSH hardening, distro-selected firewall, fail2ban, security updates, sysctl baseline
-- `web`: `basic` plus HTTP/HTTPS firewall allowances
-- `strict`: `basic` plus stricter fail2ban defaults and root-lock guidance
-
-## Plugin Model
-
-`ares` follows a plugin model similar to `dotbrains/hab`:
-
-- built-in plugin catalog
-- explicit custom plugin config
-- categories and capabilities
-- probe/plan/apply/rollback lifecycle
-- no automatic remote plugin execution by default
-
-See [docs/plugins.md](docs/plugins.md).
-
-## Supported Distros
-
-First-class targets:
-
-- Ubuntu 22.04 and 24.04
-- Debian 12
-- AlmaLinux 9
-- Rocky Linux 9
-- Fedora Server
-
-See [docs/supported-distros.md](docs/supported-distros.md).
-
-## Safety Rules
-
-Apply mode must:
-
-- detect active SSH sessions
-- preserve the active SSH port
-- back up modified files
-- validate `sshd` config before reload
-- generate logs and undo plans under `/var/log/ares`
-- fail safely on unsupported hosts
-
-See [docs/recovery.md](docs/recovery.md) and [docs/threat-model.md](docs/threat-model.md).
-
-## Development
-
-```sh
-make build
-make test
-make smoke
-make integration
-make vet
-```
-
-`make integration` runs lightweight Ubuntu/Debian container checks by default.
-Use `ARES_FULL_INTEGRATION=1 make integration` to also pull and test the
-heavier Rocky/Fedora images.
-
-## Install
-
-```sh
-go install github.com/dotbrains/ares@latest
-```
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/dotbrains/ares/main/install.sh | sudo sh
-```
-
-Homebrew tap publication is intentionally deferred until after the first GitHub
-release path is proven.
+- [Docs index](docs/README.md)
+- [Getting started](docs/getting-started.md)
+- [Commands](docs/commands.md)
+- [Configuration](docs/configuration.md)
+- [Plugins](docs/plugins.md)
+- [Supported distros](docs/supported-distros.md)
+- [Recovery](docs/recovery.md)
+- [Threat model](docs/threat-model.md)
+- [Development](docs/development.md)
 
 ## License
 
-PolyForm Shield License 1.0.0. See [LICENSE](LICENSE).
+[PolyForm Shield License 1.0.0](LICENSE).
