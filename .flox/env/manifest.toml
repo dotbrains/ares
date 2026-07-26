@@ -2,13 +2,13 @@ schema-version = "1.13.0"
 
 [install]
 actionlint.pkg-path = "actionlint"
-bun.pkg-path = "bun"
 docker-client.pkg-path = "docker-client"
 git.pkg-path = "git"
 go.pkg-path = "go"
 golangci-lint.pkg-path = "golangci-lint"
 goreleaser.pkg-path = "goreleaser"
 pre-commit.pkg-path = "pre-commit"
+markdownlint-cli2.pkg-path = "markdownlint-cli2"
 
 [vars]
 ARES_FLOX = "1"

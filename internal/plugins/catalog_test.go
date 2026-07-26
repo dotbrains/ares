@@ -48,6 +48,48 @@ func TestFind(t *testing.T) {
 	}
 }
 
+func TestDistroAdapterPrefersExactOSIDOverIDLike(t *testing.T) {
+	plugin, ok := DistroAdapter(HostMatcher{
+		OSID:           "ubuntu",
+		IDLike:         []string{"debian"},
+		PackageManager: "apt-get",
+	})
+	if !ok {
+		t.Fatal("expected distro adapter")
+	}
+	if plugin.ID != "distro-ubuntu" {
+		t.Fatalf("plugin ID = %q, want distro-ubuntu", plugin.ID)
+	}
+}
+
+func TestDistroAdapterUsesIDLikeForFamilies(t *testing.T) {
+	plugin, ok := DistroAdapter(HostMatcher{
+		OSID:           "centos",
+		IDLike:         []string{"rhel", "fedora"},
+		PackageManager: "dnf",
+	})
+	if !ok {
+		t.Fatal("expected distro adapter")
+	}
+	if plugin.ID != "distro-rhel" {
+		t.Fatalf("plugin ID = %q, want distro-rhel", plugin.ID)
+	}
+}
+
+func TestFirstByCapabilityMatchesRequirementsAndDistro(t *testing.T) {
+	plugin, ok := FirstByCapability(HostMatcher{
+		OSID:           "rocky",
+		IDLike:         []string{"rhel", "fedora"},
+		PackageManager: "dnf",
+	}, "security-updates")
+	if !ok {
+		t.Fatal("expected security update plugin")
+	}
+	if plugin.ID != "dnf-automatic" {
+		t.Fatalf("plugin ID = %q, want dnf-automatic", plugin.ID)
+	}
+}
+
 func TestMarketplaceFilesMatchPluginIDs(t *testing.T) {
 	embedded, err := CatalogFromMarketplace()
 	if err != nil {

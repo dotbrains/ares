@@ -1,10 +1,10 @@
 BINARY := ares
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
-GO_PACKAGES := $(shell go list ./... | grep -v '/website/')
-GO_PACKAGE_DIRS := $(shell go list -f '{{.Dir}}' ./... | grep -v '/website/')
+GO_PACKAGES := $(shell go list ./...)
+GO_PACKAGE_DIRS := $(shell go list -f '{{.Dir}}' ./...)
 
-.PHONY: build test smoke integration release-check lint actionlint install clean vet markdown website-install website-typecheck website-build website-ci ci
+.PHONY: build test smoke integration release-check lint actionlint install clean vet markdown ci
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
@@ -17,7 +17,7 @@ test:
 	@go tool cover -func=coverage.out | tail -1
 
 markdown:
-	bunx markdownlint-cli2
+	markdownlint-cli2
 
 smoke: build
 	tests/smoke.sh
@@ -41,18 +41,7 @@ lint:
 actionlint:
 	actionlint
 
-website-install:
-	cd website && bun install --frozen-lockfile
-
-website-typecheck:
-	cd website && bunx tsc --noEmit
-
-website-build:
-	cd website && bun run build
-
-website-ci: website-install website-typecheck website-build
-
-ci: markdown test vet lint actionlint build smoke integration release-check website-ci
+ci: markdown test vet lint actionlint build smoke integration release-check
 
 clean:
 	rm -f $(BINARY) coverage.out

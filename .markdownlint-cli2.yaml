@@ -1,8 +1,6 @@
 globs:
   - "**/*.md"
 ignores:
-  - "website/node_modules/**"
-  - "website/.next/**"
   - ".flox/run/**"
   - ".flox/cache/**"
   - ".flox/lib/**"

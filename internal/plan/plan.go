@@ -32,7 +32,7 @@ func Build(host system.Host, cfg *config.Config) Plan {
 		Plugins: selected,
 	}
 
-	if !isSupported(host) {
+	if _, ok := plugins.DistroAdapter(hostMatcher(host)); !ok {
 		result.Warnings = append(result.Warnings, fmt.Sprintf("distro %q is not a first-class target yet", host.OSID))
 	}
 	if !host.RunningOverSSH {
@@ -48,8 +48,8 @@ func Build(host system.Host, cfg *config.Config) Plan {
 
 func selectPlugins(host system.Host, cfg *config.Config) []plugins.Plugin {
 	ids := resolvePluginIDs(host, append([]string{}, cfg.Plugins.Enabled...))
-	if distroPlugin := distroPluginID(host); distroPlugin != "" && !slices.Contains(ids, distroPlugin) {
-		ids = append([]string{distroPlugin}, ids...)
+	if distroPlugin, ok := plugins.DistroAdapter(hostMatcher(host)); ok && !slices.Contains(ids, distroPlugin.ID) {
+		ids = append([]string{distroPlugin.ID}, ids...)
 	}
 	if providerPlugin := providerPluginID(host); providerPlugin != "" {
 		ids = append(ids, providerPlugin)
@@ -108,23 +108,20 @@ func resolvePluginIDs(host system.Host, ids []string) []string {
 }
 
 func firewallPluginID(host system.Host) string {
-	switch host.FirewallBackend {
-	case "firewalld":
-		return "firewall-firewalld"
-	case "nftables":
+	if host.FirewallBackend == "nftables" {
 		return "firewall-nftables"
-	default:
-		return "firewall-ufw"
 	}
+	if plugin, ok := plugins.FirstByCapability(hostMatcher(host), "firewall"); ok {
+		return plugin.ID
+	}
+	return "firewall-ufw"
 }
 
 func updatesPluginID(host system.Host) string {
-	switch host.PackageManager {
-	case "dnf", "yum":
-		return "dnf-automatic"
-	default:
-		return "unattended-upgrades"
+	if plugin, ok := plugins.FirstByCapability(hostMatcher(host), "security-updates"); ok {
+		return plugin.ID
 	}
+	return "unattended-upgrades"
 }
 
 func unique(ids []string) []string {
@@ -140,33 +137,25 @@ func unique(ids []string) []string {
 	return result
 }
 
-func distroPluginID(host system.Host) string {
-	switch host.OSID {
-	case "ubuntu":
-		return "distro-ubuntu"
-	case "debian":
-		return "distro-debian"
-	case "almalinux", "rocky", "rhel":
-		return "distro-rhel"
-	case "fedora":
-		return "distro-fedora"
-	default:
-		return ""
+func hostMatcher(host system.Host) plugins.HostMatcher {
+	return plugins.HostMatcher{
+		OSID:            host.OSID,
+		IDLike:          host.IDLike,
+		PackageManager:  host.PackageManager,
+		FirewallBackend: host.FirewallBackend,
 	}
 }
 
-func isSupported(host system.Host) bool {
-	return distroPluginID(host) != ""
-}
-
 func actionsForPlugin(host system.Host, profile string, plugin plugins.Plugin) []Action {
-	switch plugin.ID {
-	case "distro-ubuntu", "distro-debian", "distro-rhel", "distro-fedora":
+	if slices.Contains(plugin.Categories, "distro") {
 		return []Action{{
 			Plugin: plugin.ID,
 			Title:  "Use distro adapter",
 			Detail: fmt.Sprintf("Use %s, %s, and SSH service %s for host operations", host.PackageManager, host.InitSystem, host.SSHService),
 		}}
+	}
+
+	switch plugin.ID {
 	case "ssh-hardening":
 		return []Action{
 			{

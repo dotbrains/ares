@@ -97,6 +97,46 @@ The filename must match the plugin id. For example,
 `id = "ssh-hardening"`. The Go package in `marketplace/` embeds the directory
 tree and sorts plugin files by path for stable CLI output.
 
+## Distro Plugins
+
+Distro plugins are selected from catalog metadata. The planner does not keep a
+hard-coded list of supported distro IDs. It asks the catalog for a plugin in the
+`distro` category whose `distros` entries match the detected `/etc/os-release`
+`ID` first, then `ID_LIKE`.
+
+Minimal distro adapter:
+
+```toml
+id = "distro-example"
+name = "Example Linux adapter"
+kind = "builtin"
+summary = "Provides package, systemd, SSH, and service defaults for Example Linux"
+categories = ["distro"]
+capabilities = ["package-manager", "service-manager", "ssh-service"]
+distros = ["example", "example-family"]
+probe = "grep -q '^ID=example' /etc/os-release"
+plan = "builtin:distro-example:plan"
+apply = "builtin:distro-example:apply"
+rollback = "builtin:distro-example:rollback"
+config = """
+[plugins]
+enabled = ["distro-example"]
+"""
+```
+
+Related plugins, such as firewalls and security updates, should declare
+compatible `distros`, `requires`, and `capabilities`:
+
+```toml
+categories = ["updates", "hardening"]
+requires = ["dnf"]
+capabilities = ["security-updates"]
+distros = ["example", "example-family"]
+```
+
+This lets `firewall-auto` and `security-updates` resolve through the catalog
+instead of per-distro planner branches.
+
 ## Custom Plugins
 
 Custom plugins are configured explicitly:

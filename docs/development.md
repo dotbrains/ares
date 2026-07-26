@@ -10,13 +10,12 @@ small packages:
 - `internal/plan/` - plugin selection and action planning
 - `internal/apply/` - guarded apply engine, reports, backups, and verifiers
 - `tests/` - smoke and container integration scripts
-- `website/` - Next.js marketing site
 
 ## Build and Test
 
 With [Flox](https://flox.dev) installed, the repo provides a complete local
-toolchain for Go, Bun, golangci-lint, GoReleaser, pre-commit, actionlint, git,
-and the Docker CLI:
+toolchain for Go, markdownlint-cli2, golangci-lint, GoReleaser, pre-commit,
+actionlint, git, and the Docker CLI:
 
 ```sh
 flox activate
@@ -41,14 +40,6 @@ Install the pre-commit hook after cloning:
 
 ```sh
 pre-commit install
-```
-
-## Local Website
-
-```sh
-cd website
-bun install
-bun run build
 ```
 
 ## Release Notes
