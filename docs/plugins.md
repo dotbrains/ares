@@ -29,16 +29,21 @@ Initial built-ins:
 - `distro-rhel`
 - `distro-fedora`
 - `ssh-hardening`
-- `firewall-auto`
-- `intrusion-protection`
-- `security-updates`
+- `firewall-ufw`
+- `firewall-firewalld`
+- `firewall-nftables`
+- `fail2ban`
+- `unattended-upgrades`
+- `dnf-automatic`
 - `sysctl-baseline`
+- `web-profile`
 
 Inspect them with:
 
 ```sh
 ares plugins list
 ares plugins show ssh-hardening
+ares plugins snippet ssh-hardening
 ```
 
 ## Custom Plugins

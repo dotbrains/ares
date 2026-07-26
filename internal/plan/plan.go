@@ -51,12 +51,27 @@ func selectPlugins(host system.Host, cfg *config.Config) []plugins.Plugin {
 	if distroPlugin := distroPluginID(host); distroPlugin != "" && !slices.Contains(ids, distroPlugin) {
 		ids = append([]string{distroPlugin}, ids...)
 	}
+	if cfg.Profile == "web" && !slices.Contains(ids, "web-profile") {
+		ids = append(ids, "web-profile")
+	}
 
 	var selected []plugins.Plugin
 	for _, id := range ids {
 		if plugin, ok := plugins.Find(id); ok {
 			selected = append(selected, plugin)
 		}
+	}
+	for _, custom := range cfg.Plugins.Custom {
+		selected = append(selected, plugins.Plugin{
+			ID:       custom.Name,
+			Name:     custom.Name,
+			Kind:     "custom",
+			Summary:  "Custom local plugin",
+			Probe:    custom.Probe,
+			Plan:     custom.Plan,
+			Apply:    custom.Apply,
+			Rollback: custom.Rollback,
+		})
 	}
 	return selected
 }
@@ -102,20 +117,20 @@ func actionsForPlugin(host system.Host, profile string, plugin plugins.Plugin) [
 				Risky:  true,
 			},
 		}
-	case "firewall-auto":
+	case "firewall-ufw", "firewall-firewalld", "firewall-nftables":
 		return []Action{{
 			Plugin: plugin.ID,
 			Title:  "Configure firewall",
 			Detail: fmt.Sprintf("Use %s, allow SSH port %s, deny other inbound traffic, allow outbound traffic", host.FirewallBackend, host.SSHPort),
 			Risky:  true,
 		}}
-	case "intrusion-protection":
+	case "fail2ban":
 		return []Action{{
 			Plugin: plugin.ID,
 			Title:  "Enable fail2ban",
 			Detail: "Install and enable a conservative SSH jail",
 		}}
-	case "security-updates":
+	case "unattended-upgrades", "dnf-automatic":
 		return []Action{{
 			Plugin: plugin.ID,
 			Title:  "Enable automatic security updates",
@@ -127,7 +142,22 @@ func actionsForPlugin(host system.Host, profile string, plugin plugins.Plugin) [
 			Title:  "Apply sysctl baseline",
 			Detail: "Write conservative network hardening to /etc/sysctl.d/99-ares.conf",
 		}}
+	case "web-profile":
+		return []Action{{
+			Plugin: plugin.ID,
+			Title:  "Allow web traffic",
+			Detail: "Allow inbound 80/tcp and 443/tcp through the selected firewall backend",
+			Risky:  true,
+		}}
 	default:
+		if plugin.Kind == "custom" {
+			return []Action{{
+				Plugin: plugin.ID,
+				Title:  "Run custom plugin",
+				Detail: fmt.Sprintf("Probe with %q, plan with %q, apply with %q", plugin.Probe, plugin.Plan, plugin.Apply),
+				Risky:  true,
+			}}
+		}
 		return []Action{{
 			Plugin: plugin.ID,
 			Title:  "Run plugin",

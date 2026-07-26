@@ -7,8 +7,8 @@ DigitalOcean, Hostinger, Hetzner, Vultr, Linode, OVH, or Lightsail. The core
 runner detects the host, builds a hardening plan, preserves SSH access, and runs
 small plugins for distro, SSH, firewall, updates, fail2ban, and sysctl behavior.
 
-Apply mode is intentionally not enabled yet. The current repo establishes the
-CLI, detection, plugin catalog, config, docs, and dry planning surface.
+Apply mode is guarded by `--yes` and root privileges. Use `--dry-run` first to
+inspect the exact plan.
 
 ## Quick Start
 
@@ -17,6 +17,7 @@ Inspect the hardening plan:
 ```sh
 go install github.com/dotbrains/ares@latest
 sudo ares --dry-run
+sudo ares --yes
 ```
 
 Future release bootstrap:
@@ -33,6 +34,7 @@ git clone https://github.com/dotbrains/ares.git
 cd ares
 make build
 sudo ./ares --dry-run
+sudo ./ares --yes
 ```
 
 ## Commands
@@ -40,22 +42,22 @@ sudo ./ares --dry-run
 | Command | Description |
 | --- | --- |
 | `ares --dry-run` | Detect the host and show the default hardening plan |
+| `ares --yes` | Apply the default hardening plan after review |
 | `ares plan` | Show the hardening plan |
 | `ares detect` | Print detected distro, package manager, SSH, and firewall details |
 | `ares status` | Summarize host support status |
 | `ares plugins list` | List built-in plugins |
 | `ares plugins show <id>` | Show plugin metadata |
+| `ares plugins snippet <id>` | Print a config snippet for a plugin |
 | `ares config init` | Write default config to `~/.config/ares/config.yaml` |
 
 ## Profiles
 
 The default profile is `basic`.
 
-Planned profiles:
-
 - `basic`: SSH hardening, firewall, fail2ban, security updates, sysctl baseline
 - `web`: `basic` plus HTTP/HTTPS firewall allowances
-- `strict`: stronger SSH/fail2ban/sysctl defaults with more confirmations
+- `strict`: reserved for stronger SSH/fail2ban/sysctl defaults
 
 ## Plugin Model
 
@@ -83,7 +85,7 @@ See [docs/supported-distros.md](docs/supported-distros.md).
 
 ## Safety Rules
 
-Before apply mode ships, `ares` must:
+Apply mode must:
 
 - detect active SSH sessions
 - preserve the active SSH port

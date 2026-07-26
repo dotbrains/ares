@@ -1,6 +1,11 @@
 package plugins
 
-import "testing"
+import (
+	"os"
+	"testing"
+
+	"github.com/BurntSushi/toml"
+)
 
 func TestBuiltinsHaveRequiredMetadata(t *testing.T) {
 	seen := map[string]bool{}
@@ -41,5 +46,29 @@ func TestFind(t *testing.T) {
 
 	if _, ok := Find("missing"); ok {
 		t.Fatal("unexpected missing plugin")
+	}
+}
+
+func TestPublicMarketplaceMatchesEmbeddedCatalog(t *testing.T) {
+	data, err := os.ReadFile("../../marketplace/plugins.toml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var public Catalog
+	if _, err := toml.Decode(string(data), &public); err != nil {
+		t.Fatal(err)
+	}
+
+	embedded, err := CatalogFromMarketplace()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(public.Plugins) != len(embedded.Plugins) {
+		t.Fatalf("public plugins = %d, embedded plugins = %d", len(public.Plugins), len(embedded.Plugins))
+	}
+	for i := range public.Plugins {
+		if public.Plugins[i].ID != embedded.Plugins[i].ID {
+			t.Fatalf("plugin %d public ID = %q, embedded ID = %q", i, public.Plugins[i].ID, embedded.Plugins[i].ID)
+		}
 	}
 }

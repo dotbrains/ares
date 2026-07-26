@@ -13,8 +13,8 @@ The runner lifecycle is:
 detect -> probe -> plan -> confirm -> backup -> apply -> verify -> report
 ```
 
-The current implementation supports detection and planning. Mutating apply mode
-must remain disabled until backup, verification, and undo-plan behavior exists.
+The implementation supports detection, planning, guarded apply mode, backups,
+report output, and undo-plan generation for the Ubuntu/Debian MVP plugins.
 
 ## Configuration
 
@@ -31,9 +31,9 @@ profile: basic
 plugins:
   enabled:
     - ssh-hardening
-    - firewall-auto
-    - intrusion-protection
-    - security-updates
+    - firewall-ufw
+    - fail2ban
+    - unattended-upgrades
     - sysctl-baseline
 ```
 
@@ -56,10 +56,14 @@ plugins:
 - `distro-rhel`
 - `distro-fedora`
 - `ssh-hardening`
-- `firewall-auto`
-- `intrusion-protection`
-- `security-updates`
+- `firewall-ufw`
+- `firewall-firewalld`
+- `firewall-nftables`
+- `fail2ban`
+- `unattended-upgrades`
+- `dnf-automatic`
 - `sysctl-baseline`
+- `web-profile`
 
 ## Default Plan
 
@@ -76,7 +80,10 @@ The default `basic` plan should:
 
 ## Apply-Mode Requirements
 
-Apply mode cannot ship until these are implemented and tested:
+Apply mode is restricted to root execution unless `ARES_ROOT` is set for tests.
+It requires `--yes` and should be reviewed through `--dry-run` first.
+
+Implemented:
 
 - timestamped backups
 - `/var/log/ares` report output
@@ -85,6 +92,9 @@ Apply mode cannot ship until these are implemented and tested:
 - firewall SSH-port preservation
 - distro-specific package/service execution
 - dry-run proving no mutation
+
+Still required before a public production release:
+
 - integration tests on supported distros
 
 ## Architecture
@@ -95,6 +105,7 @@ internal/config/      YAML config defaults and persistence
 internal/system/      host detection
 internal/plugins/     built-in plugin catalog
 internal/plan/        plan generation
+internal/apply/       guarded apply engine, reports, undo plans
 docs/                 architecture, recovery, distro, threat-model docs
 examples/             sample config
 ```

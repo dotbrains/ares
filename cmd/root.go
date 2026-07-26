@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/dotbrains/ares/internal/apply"
 	"github.com/dotbrains/ares/internal/config"
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/plugins"
@@ -34,15 +35,13 @@ func newRootCmd(version string) *cobra.Command {
 			}
 			hardeningPlan := plan.Build(host, cfg)
 			printPlan(cmd, hardeningPlan)
-			if dryRun {
-				cmd.Println()
-				cmd.Println("dry-run: no changes applied")
-				return nil
-			}
-			if !yes {
-				return fmt.Errorf("apply mode is not implemented yet; rerun with --dry-run to inspect the current plan")
-			}
-			return fmt.Errorf("apply mode is not implemented yet")
+			result, err := apply.Run(hardeningPlan, apply.Options{
+				DryRun: dryRun,
+				Yes:    yes,
+				Root:   os.Getenv("ARES_ROOT"),
+			})
+			printApplyResult(cmd, result)
+			return err
 		},
 		CompletionOptions: cobra.CompletionOptions{
 			HiddenDefaultCmd: true,
@@ -150,6 +149,35 @@ func newPluginsCmd() *cobra.Command {
 			if len(plugin.Distros) > 0 {
 				cmd.Printf("distros: %s\n", strings.Join(plugin.Distros, ", "))
 			}
+			if plugin.Probe != "" {
+				cmd.Printf("probe: %s\n", plugin.Probe)
+			}
+			if plugin.Plan != "" {
+				cmd.Printf("plan: %s\n", plugin.Plan)
+			}
+			if plugin.Apply != "" {
+				cmd.Printf("apply: %s\n", plugin.Apply)
+			}
+			if plugin.Rollback != "" {
+				cmd.Printf("rollback: %s\n", plugin.Rollback)
+			}
+			return nil
+		},
+	})
+
+	cmd.AddCommand(&cobra.Command{
+		Use:   "snippet <id>",
+		Short: "Print a config snippet for a built-in plugin",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			plugin, ok := plugins.Find(args[0])
+			if !ok {
+				return fmt.Errorf("plugin %q not found", args[0])
+			}
+			if plugin.Config == "" {
+				return fmt.Errorf("plugin %q has no config snippet", args[0])
+			}
+			cmd.Print(plugin.Config)
 			return nil
 		},
 	})
@@ -265,6 +293,37 @@ func printPlan(cmd *cobra.Command, hardeningPlan plan.Plan) {
 		}
 		cmd.Printf("  - %s:%s %s\n", action.Plugin, risk, action.Title)
 		cmd.Printf("    %s\n", action.Detail)
+	}
+}
+
+func printApplyResult(cmd *cobra.Command, result apply.Result) {
+	cmd.Println()
+	if result.LogPath != "" {
+		cmd.Printf("log: %s\n", result.LogPath)
+	}
+	if result.ReportPath != "" {
+		cmd.Printf("report: %s\n", result.ReportPath)
+	}
+	if result.UndoPlanPath != "" {
+		cmd.Printf("undo plan: %s\n", result.UndoPlanPath)
+	}
+	if len(result.Applied) > 0 {
+		cmd.Println("applied:")
+		for _, item := range result.Applied {
+			cmd.Printf("  - %s\n", item)
+		}
+	}
+	if len(result.Skipped) > 0 {
+		cmd.Println("skipped:")
+		for _, item := range result.Skipped {
+			cmd.Printf("  - %s\n", item)
+		}
+	}
+	if len(result.Failed) > 0 {
+		cmd.Println("failed:")
+		for _, item := range result.Failed {
+			cmd.Printf("  - %s\n", item)
+		}
 	}
 }
 
