@@ -47,13 +47,17 @@ func Build(host system.Host, cfg *config.Config) Plan {
 }
 
 func selectPlugins(host system.Host, cfg *config.Config) []plugins.Plugin {
-	ids := append([]string{}, cfg.Plugins.Enabled...)
+	ids := resolvePluginIDs(host, append([]string{}, cfg.Plugins.Enabled...))
 	if distroPlugin := distroPluginID(host); distroPlugin != "" && !slices.Contains(ids, distroPlugin) {
 		ids = append([]string{distroPlugin}, ids...)
 	}
-	if cfg.Profile == "web" && !slices.Contains(ids, "web-profile") {
+	switch cfg.Profile {
+	case "web":
 		ids = append(ids, "web-profile")
+	case "strict":
+		ids = append(ids, "strict-profile")
 	}
+	ids = unique(ids)
 
 	var selected []plugins.Plugin
 	for _, id := range ids {
@@ -74,6 +78,54 @@ func selectPlugins(host system.Host, cfg *config.Config) []plugins.Plugin {
 		})
 	}
 	return selected
+}
+
+func resolvePluginIDs(host system.Host, ids []string) []string {
+	resolved := make([]string, 0, len(ids))
+	for _, id := range ids {
+		switch id {
+		case "firewall-auto":
+			resolved = append(resolved, firewallPluginID(host))
+		case "security-updates":
+			resolved = append(resolved, updatesPluginID(host))
+		default:
+			resolved = append(resolved, id)
+		}
+	}
+	return resolved
+}
+
+func firewallPluginID(host system.Host) string {
+	switch host.FirewallBackend {
+	case "firewalld":
+		return "firewall-firewalld"
+	case "nftables":
+		return "firewall-nftables"
+	default:
+		return "firewall-ufw"
+	}
+}
+
+func updatesPluginID(host system.Host) string {
+	switch host.PackageManager {
+	case "dnf", "yum":
+		return "dnf-automatic"
+	default:
+		return "unattended-upgrades"
+	}
+}
+
+func unique(ids []string) []string {
+	seen := map[string]bool{}
+	var result []string
+	for _, id := range ids {
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		result = append(result, id)
+	}
+	return result
 }
 
 func distroPluginID(host system.Host) string {
@@ -147,6 +199,13 @@ func actionsForPlugin(host system.Host, profile string, plugin plugins.Plugin) [
 			Plugin: plugin.ID,
 			Title:  "Allow web traffic",
 			Detail: "Allow inbound 80/tcp and 443/tcp through the selected firewall backend",
+			Risky:  true,
+		}}
+	case "strict-profile":
+		return []Action{{
+			Plugin: plugin.ID,
+			Title:  "Apply strict profile",
+			Detail: "Use stricter fail2ban defaults and document optional root account lockout steps",
 			Risky:  true,
 		}}
 	default:

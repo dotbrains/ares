@@ -26,6 +26,8 @@ func (ctx *Context) writeReport() error {
 		"host":     ctx.Plan.Host,
 		"plugins":  ctx.Plan.Plugins,
 		"warnings": ctx.Plan.Warnings,
+		"probed":   ctx.Result.Probed,
+		"verified": ctx.Result.Verified,
 		"applied":  ctx.Result.Applied,
 		"skipped":  ctx.Result.Skipped,
 		"failed":   ctx.Result.Failed,
@@ -42,8 +44,12 @@ func (ctx *Context) writeLog() error {
 	lines = append(lines, "profile: "+ctx.Plan.Profile)
 	lines = append(lines, "os: "+ctx.Plan.Host.OSID+" "+ctx.Plan.Host.OSVersion)
 	lines = append(lines, "")
+	lines = append(lines, "probed:")
+	lines = appendList(lines, ctx.Result.Probed)
 	lines = append(lines, "applied:")
 	lines = appendList(lines, ctx.Result.Applied)
+	lines = append(lines, "verified:")
+	lines = appendList(lines, ctx.Result.Verified)
 	lines = append(lines, "skipped:")
 	lines = appendList(lines, ctx.Result.Skipped)
 	lines = append(lines, "failed:")
@@ -65,12 +71,15 @@ func (ctx *Context) writeUndoPlan() error {
 		"Firewall:",
 		fmt.Sprintf("- Ensure SSH port %s/tcp remains allowed before changing firewall rules.", ctx.Plan.Host.SSHPort),
 		"- Disable UFW with: ufw disable",
+		"- For firewalld, remove ares-added ports/services with firewall-cmd before reload.",
+		"- For nftables, restore the previous /etc/nftables.conf backup if one exists.",
 		"",
 		"fail2ban:",
 		"- Remove /etc/fail2ban/jail.d/ares-sshd.conf and restart fail2ban.",
 		"",
 		"Security updates:",
 		"- Review /etc/apt/apt.conf.d/20auto-upgrades.",
+		"- Review /etc/dnf/automatic.conf and disable dnf-automatic.timer if needed.",
 		"",
 		"sysctl:",
 		"- Remove /etc/sysctl.d/99-ares.conf and run sysctl --system.",

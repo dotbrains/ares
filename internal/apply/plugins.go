@@ -31,6 +31,45 @@ APT::Periodic::Unattended-Upgrade "1";
 APT::Periodic::AutocleanInterval "7";
 `
 
+const dnfAutomaticConf = `[commands]
+upgrade_type = security
+apply_updates = yes
+
+[emitters]
+emit_via = stdio
+`
+
+const nftablesRules = `#!/usr/sbin/nft -f
+# Managed by ares.
+flush ruleset
+
+table inet ares {
+  chain input {
+    type filter hook input priority 0; policy drop;
+    ct state established,related accept
+    iif lo accept
+    tcp dport %s accept
+    ip protocol icmp accept
+    ip6 nexthdr icmpv6 accept
+  }
+
+  chain forward {
+    type filter hook forward priority 0; policy drop;
+  }
+
+  chain output {
+    type filter hook output priority 0; policy accept;
+  }
+}
+`
+
+const strictFail2banJail = `[sshd]
+enabled = true
+bantime = 4h
+findtime = 10m
+maxretry = 3
+`
+
 const sysctlBaseline = `# Managed by ares.
 net.ipv4.conf.all.rp_filter=1
 net.ipv4.conf.default.rp_filter=1
@@ -92,12 +131,61 @@ func (ctx *Context) applyUFW() error {
 }
 
 func (ctx *Context) applyWebProfile() error {
+	if ctx.Plan.Host.FirewallBackend == "firewalld" {
+		for _, service := range []string{"http", "https"} {
+			if err := ctx.run("firewall-cmd", "--permanent", "--add-service="+service); err != nil {
+				return err
+			}
+		}
+		if err := ctx.run("firewall-cmd", "--reload"); err != nil {
+			return err
+		}
+		ctx.Result.Applied = append(ctx.Result.Applied, "allowed HTTP and HTTPS")
+		return nil
+	}
 	for _, port := range []string{"80/tcp", "443/tcp"} {
 		if err := ctx.run("ufw", "allow", port); err != nil {
 			return err
 		}
 	}
 	ctx.Result.Applied = append(ctx.Result.Applied, "allowed HTTP and HTTPS")
+	return nil
+}
+
+func (ctx *Context) applyFirewalld() error {
+	if err := ctx.run(ctx.Plan.Host.PackageManager, "install", "-y", "firewalld"); err != nil {
+		return err
+	}
+	if err := ctx.run("systemctl", "enable", "--now", "firewalld"); err != nil {
+		return err
+	}
+	if err := ctx.run("firewall-cmd", "--permanent", "--add-port="+ctx.Plan.Host.SSHPort+"/tcp"); err != nil {
+		return err
+	}
+	if err := ctx.run("firewall-cmd", "--set-default-zone=public"); err != nil {
+		return err
+	}
+	if err := ctx.run("firewall-cmd", "--reload"); err != nil {
+		return err
+	}
+	ctx.Result.Applied = append(ctx.Result.Applied, "enabled firewalld with SSH port "+ctx.Plan.Host.SSHPort+" allowed")
+	return nil
+}
+
+func (ctx *Context) applyNftables() error {
+	if err := ctx.run(ctx.Plan.Host.PackageManager, "install", "-y", "nftables"); err != nil {
+		return err
+	}
+	if err := ctx.backup("/etc/nftables.conf"); err != nil {
+		return fmt.Errorf("backup nftables.conf: %w", err)
+	}
+	if err := os.WriteFile(ctx.path("/etc/nftables.conf"), []byte(fmt.Sprintf(nftablesRules, ctx.Plan.Host.SSHPort)), 0o644); err != nil {
+		return err
+	}
+	if err := ctx.run("systemctl", "enable", "--now", "nftables"); err != nil {
+		return err
+	}
+	ctx.Result.Applied = append(ctx.Result.Applied, "enabled nftables with SSH port "+ctx.Plan.Host.SSHPort+" allowed")
 	return nil
 }
 
@@ -136,6 +224,27 @@ func (ctx *Context) applyUnattendedUpgrades() error {
 	return nil
 }
 
+func (ctx *Context) applyDNFAutomatic() error {
+	if err := ctx.run(ctx.Plan.Host.PackageManager, "install", "-y", "dnf-automatic"); err != nil {
+		return err
+	}
+	dir := ctx.path("/etc/dnf")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	if err := ctx.backup("/etc/dnf/automatic.conf"); err != nil {
+		return fmt.Errorf("backup dnf automatic.conf: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "automatic.conf"), []byte(dnfAutomaticConf), 0o644); err != nil {
+		return err
+	}
+	if err := ctx.run("systemctl", "enable", "--now", "dnf-automatic.timer"); err != nil {
+		return err
+	}
+	ctx.Result.Applied = append(ctx.Result.Applied, "enabled dnf-automatic security updates")
+	return nil
+}
+
 func (ctx *Context) applySysctlBaseline() error {
 	dir := ctx.path("/etc/sysctl.d")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -148,5 +257,18 @@ func (ctx *Context) applySysctlBaseline() error {
 	if ctx.Options.Root == "" {
 		return ctx.run("sysctl", "--system")
 	}
+	return nil
+}
+
+func (ctx *Context) applyStrictProfile() error {
+	dir := ctx.path("/etc/fail2ban/jail.d")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(dir, "ares-sshd.conf"), []byte(strictFail2banJail), 0o644); err != nil {
+		return err
+	}
+	ctx.Result.Applied = append(ctx.Result.Applied, "applied strict fail2ban SSH jail defaults")
+	ctx.Result.Skipped = append(ctx.Result.Skipped, "strict root account lock is advisory; review provider console access before locking root")
 	return nil
 }

@@ -34,9 +34,9 @@ func DefaultConfig() *Config {
 		Plugins: PluginsConfig{
 			Enabled: []string{
 				"ssh-hardening",
-				"firewall-ufw",
+				"firewall-auto",
 				"fail2ban",
-				"unattended-upgrades",
+				"security-updates",
 				"sysctl-baseline",
 			},
 		},

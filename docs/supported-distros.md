@@ -11,6 +11,9 @@ adapters.
 - Rocky Linux 9
 - Fedora Server
 
+Ubuntu and Debian use `apt-get`, `ufw`, and `unattended-upgrades`. AlmaLinux,
+Rocky Linux, and Fedora use `dnf`, `firewalld`, and `dnf-automatic`.
+
 ## Later Targets
 
 - Debian 11

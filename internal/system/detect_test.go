@@ -41,3 +41,11 @@ func TestDetectSSHPortDefault(t *testing.T) {
 		t.Fatalf("detectSSHPort() = %q, want 22", got)
 	}
 }
+
+func TestRootPath(t *testing.T) {
+	got := rootPath("/tmp/ares-root", "/etc/ssh/sshd_config")
+	want := filepath.Join("/tmp/ares-root", "etc", "ssh", "sshd_config")
+	if got != want {
+		t.Fatalf("rootPath() = %q, want %q", got, want)
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 )
@@ -25,9 +26,10 @@ type Host struct {
 }
 
 func Detect() (Host, error) {
+	root := os.Getenv("ARES_ROOT")
 	osReleasePath := os.Getenv("ARES_OS_RELEASE")
 	if osReleasePath == "" {
-		osReleasePath = "/etc/os-release"
+		osReleasePath = rootPath(root, "/etc/os-release")
 	}
 	osRelease, err := readOSRelease(osReleasePath)
 	if err != nil {
@@ -39,8 +41,8 @@ func Detect() (Host, error) {
 		OSName:         osRelease["PRETTY_NAME"],
 		OSVersion:      osRelease["VERSION_ID"],
 		IDLike:         strings.Fields(osRelease["ID_LIKE"]),
-		InitSystem:     detectInitSystem(),
-		SSHPort:        detectSSHPort("/etc/ssh/sshd_config"),
+		InitSystem:     detectInitSystem(root),
+		SSHPort:        detectSSHPort(rootPath(root, "/etc/ssh/sshd_config")),
 		RunningOverSSH: os.Getenv("SSH_CONNECTION") != "" || os.Getenv("SSH_CLIENT") != "",
 		Architecture:   runtime.GOARCH,
 	}
@@ -109,11 +111,18 @@ func packageManager(host Host) string {
 	}
 }
 
-func detectInitSystem() string {
-	if _, err := os.Stat("/run/systemd/system"); err == nil {
+func detectInitSystem(root string) string {
+	if _, err := os.Stat(rootPath(root, "/run/systemd/system")); err == nil {
 		return "systemd"
 	}
 	return "unknown"
+}
+
+func rootPath(root string, path string) string {
+	if root == "" {
+		return path
+	}
+	return filepath.Join(root, strings.TrimPrefix(path, "/"))
 }
 
 func detectSSHPort(path string) string {

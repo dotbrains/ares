@@ -55,9 +55,9 @@ sudo ./ares --yes
 
 The default profile is `basic`.
 
-- `basic`: SSH hardening, firewall, fail2ban, security updates, sysctl baseline
+- `basic`: SSH hardening, distro-selected firewall, fail2ban, security updates, sysctl baseline
 - `web`: `basic` plus HTTP/HTTPS firewall allowances
-- `strict`: reserved for stronger SSH/fail2ban/sysctl defaults
+- `strict`: `basic` plus stricter fail2ban defaults and root-lock guidance
 
 ## Plugin Model
 

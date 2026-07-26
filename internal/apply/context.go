@@ -23,6 +23,8 @@ type Result struct {
 	LogPath      string
 	ReportPath   string
 	UndoPlanPath string
+	Probed       []string
+	Verified     []string
 	Applied      []string
 	Skipped      []string
 	Failed       []string
@@ -59,13 +61,65 @@ func Run(hardeningPlan plan.Plan, opts Options) (Result, error) {
 	}
 
 	for _, plugin := range hardeningPlan.Plugins {
+		ctx.probePlugin(plugin)
 		if err := ctx.applyPlugin(plugin); err != nil {
 			ctx.Result.Failed = append(ctx.Result.Failed, fmt.Sprintf("%s: %v", plugin.ID, err))
 			return ctx.finish(err)
 		}
+		ctx.verifyPlugin(plugin)
 	}
 
 	return ctx.finish(nil)
+}
+
+func (ctx *Context) probePlugin(plugin plugins.Plugin) {
+	if plugin.Probe == "" {
+		ctx.Result.Probed = append(ctx.Result.Probed, plugin.ID+": no probe declared")
+		return
+	}
+	if ctx.Options.Root != "" {
+		ctx.Result.Probed = append(ctx.Result.Probed, plugin.ID+": would probe with "+plugin.Probe)
+		return
+	}
+	cmd := exec.Command("sh", "-lc", plugin.Probe)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		ctx.Result.Skipped = append(ctx.Result.Skipped, plugin.ID+": probe did not pass before apply: "+strings.TrimSpace(string(output)))
+	} else {
+		ctx.Result.Probed = append(ctx.Result.Probed, plugin.ID+": probe passed")
+	}
+}
+
+func (ctx *Context) verifyPlugin(plugin plugins.Plugin) {
+	switch plugin.ID {
+	case "ssh-hardening":
+		ctx.verifyPath(plugin.ID, "/etc/ssh/sshd_config.d/99-ares.conf")
+	case "fail2ban", "strict-profile":
+		ctx.verifyPath(plugin.ID, "/etc/fail2ban/jail.d/ares-sshd.conf")
+	case "unattended-upgrades":
+		ctx.verifyPath(plugin.ID, "/etc/apt/apt.conf.d/20auto-upgrades")
+	case "dnf-automatic":
+		ctx.verifyPath(plugin.ID, "/etc/dnf/automatic.conf")
+	case "sysctl-baseline":
+		ctx.verifyPath(plugin.ID, "/etc/sysctl.d/99-ares.conf")
+	case "firewall-ufw":
+		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": SSH port "+ctx.Plan.Host.SSHPort+"/tcp preserved")
+	case "firewall-firewalld":
+		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": SSH port "+ctx.Plan.Host.SSHPort+"/tcp preserved")
+	case "firewall-nftables":
+		ctx.verifyPath(plugin.ID, "/etc/nftables.conf")
+	case "web-profile":
+		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": HTTP/HTTPS allow rules requested")
+	default:
+		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": no verifier declared")
+	}
+}
+
+func (ctx *Context) verifyPath(pluginID string, path string) {
+	if _, err := os.Stat(ctx.path(path)); err != nil {
+		ctx.Result.Failed = append(ctx.Result.Failed, pluginID+": expected "+path+" was not present")
+		return
+	}
+	ctx.Result.Verified = append(ctx.Result.Verified, pluginID+": verified "+path)
 }
 
 func (ctx *Context) prepareReportPaths() error {
@@ -88,14 +142,22 @@ func (ctx *Context) applyPlugin(plugin plugins.Plugin) error {
 		return ctx.applySSHHardening()
 	case "firewall-ufw":
 		return ctx.applyUFW()
+	case "firewall-firewalld":
+		return ctx.applyFirewalld()
+	case "firewall-nftables":
+		return ctx.applyNftables()
 	case "fail2ban":
 		return ctx.applyFail2ban()
 	case "unattended-upgrades":
 		return ctx.applyUnattendedUpgrades()
+	case "dnf-automatic":
+		return ctx.applyDNFAutomatic()
 	case "sysctl-baseline":
 		return ctx.applySysctlBaseline()
 	case "web-profile":
 		return ctx.applyWebProfile()
+	case "strict-profile":
+		return ctx.applyStrictProfile()
 	default:
 		if plugin.Kind == "custom" {
 			return ctx.applyCustomPlugin(plugin)

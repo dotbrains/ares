@@ -31,9 +31,9 @@ profile: basic
 plugins:
   enabled:
     - ssh-hardening
-    - firewall-ufw
+    - firewall-auto
     - fail2ban
-    - unattended-upgrades
+    - security-updates
     - sysctl-baseline
 ```
 
@@ -73,7 +73,7 @@ The default `basic` plan should:
 2. Back up SSH configuration.
 3. Preserve the active SSH port.
 4. Plan SSH hardening through a managed drop-in.
-5. Select a firewall backend and keep SSH reachable.
+5. Select a distro-appropriate firewall backend and keep SSH reachable.
 6. Plan fail2ban installation.
 7. Plan automatic security updates.
 8. Plan conservative sysctl hardening.
@@ -91,11 +91,12 @@ Implemented:
 - SSH config validation
 - firewall SSH-port preservation
 - distro-specific package/service execution
+- probe and verify lifecycle result reporting
 - dry-run proving no mutation
 
 Still required before a public production release:
 
-- integration tests on supported distros
+- live integration tests on supported VPS distros
 
 ## Architecture
 

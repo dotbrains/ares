@@ -8,19 +8,7 @@ import (
 )
 
 func TestBuildAddsDistroPlugin(t *testing.T) {
-	host := system.Host{
-		OSID:            "ubuntu",
-		OSName:          "Ubuntu 24.04 LTS",
-		OSVersion:       "24.04",
-		PackageManager:  "apt-get",
-		InitSystem:      "systemd",
-		FirewallBackend: "ufw",
-		SSHService:      "ssh",
-		SSHPort:         "22",
-		RunningOverSSH:  true,
-	}
-
-	result := Build(host, config.DefaultConfig())
+	result := Build(ubuntuHost(), config.DefaultConfig())
 	if len(result.Plugins) == 0 {
 		t.Fatal("expected selected plugins")
 	}
@@ -32,6 +20,29 @@ func TestBuildAddsDistroPlugin(t *testing.T) {
 	}
 	if len(result.Warnings) != 0 {
 		t.Fatalf("unexpected warnings: %v", result.Warnings)
+	}
+}
+
+func TestBuildResolvesRHELDefaults(t *testing.T) {
+	result := Build(system.Host{
+		OSID:            "rocky",
+		OSName:          "Rocky Linux 9.4",
+		OSVersion:       "9.4",
+		PackageManager:  "dnf",
+		InitSystem:      "systemd",
+		FirewallBackend: "firewalld",
+		SSHService:      "sshd",
+		SSHPort:         "22",
+		RunningOverSSH:  true,
+	}, config.DefaultConfig())
+
+	for _, id := range []string{"distro-rhel", "firewall-firewalld", "dnf-automatic"} {
+		if !hasPlugin(result, id) {
+			t.Fatalf("expected %s in %+v", id, result.Plugins)
+		}
+	}
+	if hasPlugin(result, "firewall-ufw") || hasPlugin(result, "unattended-upgrades") {
+		t.Fatalf("unexpected Debian defaults in %+v", result.Plugins)
 	}
 }
 
@@ -74,6 +85,16 @@ func TestBuildAddsCustomPlugins(t *testing.T) {
 	result := Build(ubuntuHost(), cfg)
 	if !hasPlugin(result, "tailscale-ssh") {
 		t.Fatalf("expected custom plugin in %+v", result.Plugins)
+	}
+}
+
+func TestBuildAddsStrictProfile(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Profile = "strict"
+
+	result := Build(ubuntuHost(), cfg)
+	if !hasPlugin(result, "strict-profile") {
+		t.Fatalf("expected strict-profile in %+v", result.Plugins)
 	}
 }
 

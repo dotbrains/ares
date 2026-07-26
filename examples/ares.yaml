@@ -2,9 +2,9 @@ profile: basic
 plugins:
   enabled:
     - ssh-hardening
-    - firewall-ufw
+    - firewall-auto
     - fail2ban
-    - unattended-upgrades
+    - security-updates
     - sysctl-baseline
   custom:
     - name: tailscale-ssh
