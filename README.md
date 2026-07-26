@@ -20,7 +20,7 @@ sudo ares --dry-run
 sudo ares --yes
 ```
 
-Future release bootstrap:
+Release bootstrap:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/dotbrains/ares/main/install.sh | sudo sh
@@ -109,6 +109,19 @@ make vet
 `make integration` runs lightweight Ubuntu/Debian container checks by default.
 Use `ARES_FULL_INTEGRATION=1 make integration` to also pull and test the
 heavier Rocky/Fedora images.
+
+## Install
+
+```sh
+go install github.com/dotbrains/ares@latest
+```
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/dotbrains/ares/main/install.sh | sudo sh
+```
+
+Homebrew tap publication is intentionally deferred until after the first GitHub
+release path is proven.
 
 ## License
 

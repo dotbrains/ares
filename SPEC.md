@@ -100,6 +100,7 @@ Implemented:
 Still required before a public production release:
 
 - live integration tests on supported VPS distros
+- Homebrew tap publication, if wanted, after the GitHub release path is proven
 
 ## Architecture
 

@@ -7,23 +7,6 @@ builds:
     ldflags:
       - -s -w -X main.version={{.Version}}
 
-homebrew_casks:
-  - repository:
-      owner: dotbrains
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    name: ares
-    homepage: https://github.com/dotbrains/ares
-    description: "Modular VPS hardening runner"
-    license: "PolyForm Shield 1.0.0"
-    binaries: [ares]
-    hooks:
-      post:
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/ares"]
-          end
-
 archives:
   - formats: [tar.gz]
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
