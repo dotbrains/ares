@@ -1,0 +1,4 @@
+ID=ubuntu
+PRETTY_NAME="Ubuntu 24.04 LTS"
+VERSION_ID="24.04"
+ID_LIKE=debian

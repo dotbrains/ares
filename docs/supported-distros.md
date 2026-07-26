@@ -1,0 +1,24 @@
+# Supported Distros
+
+`ares` should work across common VPS Linux distributions through distro
+adapters.
+
+## First-Class Targets
+
+- Ubuntu 22.04 and 24.04
+- Debian 12
+- AlmaLinux 9
+- Rocky Linux 9
+- Fedora Server
+
+## Later Targets
+
+- Debian 11
+- Arch Linux
+- openSUSE Leap
+- Alpine Linux
+- Oracle Linux
+- Amazon Linux
+
+Unsupported hosts should fail safely or produce a plan with warnings. They
+should not receive blind SSH or firewall changes.
