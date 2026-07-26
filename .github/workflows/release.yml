@@ -4,19 +4,30 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to build, for example v0.1.0
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
   cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
 
 jobs:
   markdown:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - uses: flox/install-flox-action@v2
 
@@ -30,6 +41,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - uses: actions/setup-go@v6
         with:
@@ -42,6 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - uses: actions/setup-go@v6
         with:
@@ -54,6 +69,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - uses: actions/setup-go@v6
         with:
@@ -67,6 +84,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - uses: flox/install-flox-action@v2
 
@@ -80,6 +99,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - uses: actions/setup-go@v6
         with:
@@ -95,6 +116,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - uses: actions/setup-go@v6
         with:
@@ -109,6 +132,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
 
       - uses: actions/setup-go@v6

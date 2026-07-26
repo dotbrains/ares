@@ -44,8 +44,26 @@ pre-commit install
 
 ## Release Notes
 
-Releases are cut from Git tags. The release workflow runs CI, builds release
-artifacts, and publishes platform archives plus `checksums.txt`.
+Releases are cut from Git tags. After CI succeeds on `main`, the auto-release
+workflow creates the next patch tag if the current commit is not already tagged,
+then dispatches the release workflow for that tag. The release workflow can also
+be run manually with a `vMAJOR.MINOR.PATCH` tag input.
+
+The release workflow builds release artifacts and publishes platform archives
+plus `checksums.txt`.
+
+```mermaid
+flowchart TD
+  push[Push to main] --> ci[CI workflow]
+  ci --> result{CI passed?}
+  result -- no --> stop[No release tag]
+  result -- yes --> auto[Auto Release workflow]
+  auto --> tagged{HEAD already tagged?}
+  tagged -- yes --> stop
+  tagged -- no --> tag[Create next patch tag]
+  tag --> dispatch[Dispatch Release workflow]
+  dispatch --> goreleaser[GoReleaser publishes assets]
+```
 
 Current release assets:
 

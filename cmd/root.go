@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	cryptorand "crypto/rand"
 	"fmt"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
 
+	figure "github.com/common-nighthawk/go-figure"
 	"github.com/dotbrains/ares/internal/apply"
 	"github.com/dotbrains/ares/internal/config"
 	"github.com/dotbrains/ares/internal/plan"
@@ -13,6 +16,17 @@ import (
 	"github.com/dotbrains/ares/internal/system"
 	"github.com/spf13/cobra"
 )
+
+var bannerFonts = []string{
+	"slant",
+	"small",
+	"shadow",
+	"doom",
+	"standard",
+	"straight",
+	"digital",
+	"mini",
+}
 
 func newRootCmd(version string) *cobra.Command {
 	var profile string
@@ -34,6 +48,7 @@ func newRootCmd(version string) *cobra.Command {
 				return err
 			}
 			hardeningPlan := plan.Build(host, cfg)
+			printBanner(cmd)
 			printPlan(cmd, hardeningPlan)
 			result, err := apply.Run(hardeningPlan, apply.Options{
 				DryRun: dryRun,
@@ -252,6 +267,19 @@ func newConfigCmd() *cobra.Command {
 
 	cmd.AddCommand(initCmd)
 	return cmd
+}
+
+func printBanner(cmd *cobra.Command) {
+	banner := figure.NewFigure("ares", randomBannerFont(), true)
+	cmd.Println(banner.String())
+}
+
+func randomBannerFont() string {
+	index, err := cryptorand.Int(cryptorand.Reader, big.NewInt(int64(len(bannerFonts))))
+	if err != nil {
+		return bannerFonts[0]
+	}
+	return bannerFonts[index.Int64()]
 }
 
 func printHost(cmd *cobra.Command, host system.Host) {

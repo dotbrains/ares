@@ -10,6 +10,17 @@ The default workflow is:
 2. inspect the hardening plan
 3. apply the plan after confirming SSH access and provider recovery options
 
+```mermaid
+flowchart TD
+  install[Install ares] --> detect[Detect host]
+  detect --> plan[Review dry-run plan]
+  plan --> recovery{Console or rescue path ready?}
+  recovery -- no --> prepare[Confirm provider access and firewall rules]
+  prepare --> recovery
+  recovery -- yes --> apply[Run sudo ares --yes]
+  apply --> report[Read /var/log/ares/latest.json and undo-plan.txt]
+```
+
 ## Install
 
 Bootstrap from the latest GitHub release:

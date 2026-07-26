@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	github.com/BurntSushi/toml v1.5.0
+	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
 	github.com/spf13/cobra v1.10.2
 	gopkg.in/yaml.v3 v3.0.1
 )

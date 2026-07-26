@@ -19,6 +19,18 @@ Every plugin is expected to fit this lifecycle:
 detect -> probe -> plan -> confirm -> backup -> apply -> verify -> report
 ```
 
+```mermaid
+flowchart LR
+  detect[Detect host] --> probe[Probe plugin]
+  probe --> plan[Build plan]
+  plan --> confirm{Apply mode?}
+  confirm -- dry-run --> report[Report skipped changes]
+  confirm -- yes + root --> backup[Back up managed files]
+  backup --> apply[Apply plugin]
+  apply --> verify[Verify result]
+  verify --> report[Write report and undo plan]
+```
+
 The implementation currently enforces the host-level `confirm` guard for real
 apply mode: root privileges and `--yes` are required. Built-in actions are
 planned before mutation, and SSH/firewall actions are marked risky in the plan.
@@ -144,6 +156,20 @@ distros = ["example", "example-family"]
 
 This lets `firewall-auto` and `security-updates` resolve through the catalog
 instead of per-distro planner branches.
+
+```mermaid
+flowchart TD
+  host[/Host facts/] --> catalog[Embedded plugin catalog]
+  catalog --> exact{Exact ID match?}
+  exact -- yes --> distro[Distro adapter]
+  exact -- no --> like{ID_LIKE match?}
+  like -- yes --> distro
+  like -- no --> warning[Unsupported distro warning]
+  distro --> firewall[Resolve firewall capability]
+  distro --> updates[Resolve security-updates capability]
+  firewall --> plan[Selected plan]
+  updates --> plan
+```
 
 ## Custom Plugins
 

@@ -38,6 +38,19 @@ new distro plugin TOML file under `marketplace/plugins/builtin/`, declare the
 matching distro IDs, and add tests/fixtures that prove the adapter, firewall,
 and update plugins resolve correctly.
 
+```mermaid
+flowchart TD
+  osrelease[/etc/os-release/] --> id[ID]
+  osrelease --> idlike[ID_LIKE]
+  id --> exact[Exact distro plugin match]
+  idlike --> family[Family plugin match]
+  exact --> adapter[Selected distro adapter]
+  family --> adapter
+  adapter --> pm[Package manager default]
+  adapter --> fw[Firewall default]
+  adapter --> updates[Update plugin]
+```
+
 ## Distro Behavior
 
 | Family | Package manager | Firewall default | Security updates | SSH service |
