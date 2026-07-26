@@ -2,7 +2,7 @@ BINARY := ares
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: build test lint install clean vet
+.PHONY: build test smoke lint install clean vet
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
@@ -13,6 +13,9 @@ install:
 test:
 	go test -race -coverprofile=coverage.out ./...
 	@go tool cover -func=coverage.out | tail -1
+
+smoke: build
+	tests/smoke.sh
 
 vet:
 	go vet ./...

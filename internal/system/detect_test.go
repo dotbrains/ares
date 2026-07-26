@@ -49,3 +49,28 @@ func TestRootPath(t *testing.T) {
 		t.Fatalf("rootPath() = %q, want %q", got, want)
 	}
 }
+
+func TestProviderFromText(t *testing.T) {
+	cases := map[string]string{
+		"DigitalOcean Droplet": "digitalocean",
+		"Hetzner":              "hetzner",
+		"Vultr":                "vultr",
+		"Akamai Linode":        "linode",
+		"Amazon Lightsail":     "lightsail",
+		"unknown board":        "unknown",
+	}
+	for input, want := range cases {
+		if got := providerFromText(input); got != want {
+			t.Fatalf("providerFromText(%q) = %q, want %q", input, got, want)
+		}
+	}
+}
+
+func TestNormalizeProvider(t *testing.T) {
+	if got := normalizeProvider("do"); got != "digitalocean" {
+		t.Fatalf("normalizeProvider(do) = %q", got)
+	}
+	if got := normalizeProvider("AWS-Lightsail"); got != "lightsail" {
+		t.Fatalf("normalizeProvider(AWS-Lightsail) = %q", got)
+	}
+}

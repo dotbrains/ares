@@ -51,6 +51,9 @@ func selectPlugins(host system.Host, cfg *config.Config) []plugins.Plugin {
 	if distroPlugin := distroPluginID(host); distroPlugin != "" && !slices.Contains(ids, distroPlugin) {
 		ids = append([]string{distroPlugin}, ids...)
 	}
+	if providerPlugin := providerPluginID(host); providerPlugin != "" {
+		ids = append(ids, providerPlugin)
+	}
 	switch cfg.Profile {
 	case "web":
 		ids = append(ids, "web-profile")
@@ -78,6 +81,15 @@ func selectPlugins(host system.Host, cfg *config.Config) []plugins.Plugin {
 		})
 	}
 	return selected
+}
+
+func providerPluginID(host system.Host) string {
+	switch host.Provider {
+	case "digitalocean", "hostinger", "hetzner", "vultr", "linode", "ovh", "lightsail":
+		return "provider-" + host.Provider
+	default:
+		return ""
+	}
 }
 
 func resolvePluginIDs(host system.Host, ids []string) []string {
@@ -207,6 +219,12 @@ func actionsForPlugin(host system.Host, profile string, plugin plugins.Plugin) [
 			Title:  "Apply strict profile",
 			Detail: "Use stricter fail2ban defaults and document optional root account lockout steps",
 			Risky:  true,
+		}}
+	case "provider-digitalocean", "provider-hostinger", "provider-hetzner", "provider-vultr", "provider-linode", "provider-ovh", "provider-lightsail":
+		return []Action{{
+			Plugin: plugin.ID,
+			Title:  "Record provider advisory",
+			Detail: "Add provider-specific recovery and firewall-console reminders to the run report without mutating provider settings",
 		}}
 	default:
 		if plugin.Kind == "custom" {

@@ -16,6 +16,7 @@ type Host struct {
 	OSName          string
 	OSVersion       string
 	IDLike          []string
+	Provider        string
 	PackageManager  string
 	InitSystem      string
 	FirewallBackend string
@@ -41,6 +42,7 @@ func Detect() (Host, error) {
 		OSName:         osRelease["PRETTY_NAME"],
 		OSVersion:      osRelease["VERSION_ID"],
 		IDLike:         strings.Fields(osRelease["ID_LIKE"]),
+		Provider:       detectProvider(root),
 		InitSystem:     detectInitSystem(root),
 		SSHPort:        detectSSHPort(rootPath(root, "/etc/ssh/sshd_config")),
 		RunningOverSSH: os.Getenv("SSH_CONNECTION") != "" || os.Getenv("SSH_CLIENT") != "",
@@ -51,6 +53,58 @@ func Detect() (Host, error) {
 	host.FirewallBackend = firewallBackend(host)
 
 	return host, nil
+}
+
+func detectProvider(root string) string {
+	if provider := strings.TrimSpace(os.Getenv("ARES_PROVIDER")); provider != "" {
+		return normalizeProvider(provider)
+	}
+	probeFiles := []string{
+		"/sys/class/dmi/id/sys_vendor",
+		"/sys/class/dmi/id/product_name",
+		"/sys/class/dmi/id/board_vendor",
+	}
+	var values []string
+	for _, path := range probeFiles {
+		data, err := os.ReadFile(rootPath(root, path))
+		if err == nil {
+			values = append(values, string(data))
+		}
+	}
+	return providerFromText(strings.Join(values, "\n"))
+}
+
+func providerFromText(value string) string {
+	normalized := strings.ToLower(value)
+	switch {
+	case strings.Contains(normalized, "digitalocean"):
+		return "digitalocean"
+	case strings.Contains(normalized, "hostinger"):
+		return "hostinger"
+	case strings.Contains(normalized, "hetzner"):
+		return "hetzner"
+	case strings.Contains(normalized, "vultr"):
+		return "vultr"
+	case strings.Contains(normalized, "linode") || strings.Contains(normalized, "akamai"):
+		return "linode"
+	case strings.Contains(normalized, "ovh"):
+		return "ovh"
+	case strings.Contains(normalized, "amazon") || strings.Contains(normalized, "lightsail"):
+		return "lightsail"
+	default:
+		return "unknown"
+	}
+}
+
+func normalizeProvider(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "do", "digital-ocean", "digitalocean":
+		return "digitalocean"
+	case "aws-lightsail", "amazon-lightsail", "lightsail":
+		return "lightsail"
+	default:
+		return strings.ToLower(strings.TrimSpace(value))
+	}
 }
 
 func readOSRelease(path string) (map[string]string, error) {

@@ -237,3 +237,115 @@ rollback = "builtin:strict-profile:rollback"
 config = """
 profile = "strict"
 """
+
+[[plugins]]
+id = "provider-digitalocean"
+name = "DigitalOcean advisory"
+kind = "builtin"
+summary = "Records DigitalOcean VPS recovery and cloud firewall reminders"
+categories = ["provider", "advisory"]
+capabilities = ["provider-advisory"]
+probe = "true"
+plan = "builtin:provider-digitalocean:plan"
+apply = "builtin:provider-digitalocean:apply"
+rollback = "builtin:provider-digitalocean:rollback"
+config = """
+[plugins]
+enabled = ["provider-digitalocean"]
+"""
+
+[[plugins]]
+id = "provider-hostinger"
+name = "Hostinger advisory"
+kind = "builtin"
+summary = "Records Hostinger VPS recovery and cloud firewall reminders"
+categories = ["provider", "advisory"]
+capabilities = ["provider-advisory"]
+probe = "true"
+plan = "builtin:provider-hostinger:plan"
+apply = "builtin:provider-hostinger:apply"
+rollback = "builtin:provider-hostinger:rollback"
+config = """
+[plugins]
+enabled = ["provider-hostinger"]
+"""
+
+[[plugins]]
+id = "provider-hetzner"
+name = "Hetzner advisory"
+kind = "builtin"
+summary = "Records Hetzner VPS recovery and cloud firewall reminders"
+categories = ["provider", "advisory"]
+capabilities = ["provider-advisory"]
+probe = "true"
+plan = "builtin:provider-hetzner:plan"
+apply = "builtin:provider-hetzner:apply"
+rollback = "builtin:provider-hetzner:rollback"
+config = """
+[plugins]
+enabled = ["provider-hetzner"]
+"""
+
+[[plugins]]
+id = "provider-vultr"
+name = "Vultr advisory"
+kind = "builtin"
+summary = "Records Vultr VPS recovery and cloud firewall reminders"
+categories = ["provider", "advisory"]
+capabilities = ["provider-advisory"]
+probe = "true"
+plan = "builtin:provider-vultr:plan"
+apply = "builtin:provider-vultr:apply"
+rollback = "builtin:provider-vultr:rollback"
+config = """
+[plugins]
+enabled = ["provider-vultr"]
+"""
+
+[[plugins]]
+id = "provider-linode"
+name = "Linode advisory"
+kind = "builtin"
+summary = "Records Linode/Akamai VPS recovery and cloud firewall reminders"
+categories = ["provider", "advisory"]
+capabilities = ["provider-advisory"]
+probe = "true"
+plan = "builtin:provider-linode:plan"
+apply = "builtin:provider-linode:apply"
+rollback = "builtin:provider-linode:rollback"
+config = """
+[plugins]
+enabled = ["provider-linode"]
+"""
+
+[[plugins]]
+id = "provider-ovh"
+name = "OVH advisory"
+kind = "builtin"
+summary = "Records OVH VPS recovery and cloud firewall reminders"
+categories = ["provider", "advisory"]
+capabilities = ["provider-advisory"]
+probe = "true"
+plan = "builtin:provider-ovh:plan"
+apply = "builtin:provider-ovh:apply"
+rollback = "builtin:provider-ovh:rollback"
+config = """
+[plugins]
+enabled = ["provider-ovh"]
+"""
+
+[[plugins]]
+id = "provider-lightsail"
+name = "Lightsail advisory"
+kind = "builtin"
+summary = "Records AWS Lightsail recovery and cloud firewall reminders"
+categories = ["provider", "advisory"]
+capabilities = ["provider-advisory"]
+probe = "true"
+plan = "builtin:provider-lightsail:plan"
+apply = "builtin:provider-lightsail:apply"
+rollback = "builtin:provider-lightsail:rollback"
+config = """
+[plugins]
+enabled = ["provider-lightsail"]
+"""

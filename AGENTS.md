@@ -17,6 +17,7 @@ Before handing off changes, run:
 ```sh
 make build
 make test
+make smoke
 ```
 
 For local apply smoke tests, use `ARES_ROOT` so no host files are modified:

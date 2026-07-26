@@ -25,3 +25,16 @@ Rocky Linux, and Fedora use `dnf`, `firewalld`, and `dnf-automatic`.
 
 Unsupported hosts should fail safely or produce a plan with warnings. They
 should not receive blind SSH or firewall changes.
+
+## Providers
+
+`ares` detects common VPS providers from DMI metadata when available, or from
+`ARES_PROVIDER` during tests. Provider plugins are advisory only:
+
+- DigitalOcean
+- Hostinger
+- Hetzner
+- Vultr
+- Linode/Akamai
+- OVH
+- AWS Lightsail

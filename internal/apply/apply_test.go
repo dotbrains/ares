@@ -148,6 +148,33 @@ func TestRunApplyStrictProfileOverwritesFail2banDefaults(t *testing.T) {
 	}
 }
 
+func TestRunApplyProviderAdvisoryIsReported(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "etc", "ssh"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "etc", "ssh", "sshd_config"), []byte("Port 22\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	host := testHost()
+	host.Provider = "digitalocean"
+	result, err := Run(plan.Build(host, config.DefaultConfig()), Options{
+		Yes:  true,
+		Root: root,
+		Now:  time.Date(2026, 7, 25, 17, 0, 0, 0, time.UTC),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !contains(result.Applied, "provider-digitalocean: recorded provider advisory") {
+		t.Fatalf("missing provider applied item: %+v", result)
+	}
+	if !contains(result.Verified, "provider-digitalocean: advisory recorded") {
+		t.Fatalf("missing provider verification: %+v", result)
+	}
+}
+
 func testPlan() plan.Plan {
 	return plan.Build(testHost(), config.DefaultConfig())
 }
@@ -179,4 +206,13 @@ func rhelPlan() plan.Plan {
 		RunningOverSSH:  true,
 	}
 	return plan.Build(host, config.DefaultConfig())
+}
+
+func contains(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }

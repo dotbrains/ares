@@ -101,6 +101,7 @@ See [docs/recovery.md](docs/recovery.md) and [docs/threat-model.md](docs/threat-
 ```sh
 make build
 make test
+make smoke
 make vet
 ```
 

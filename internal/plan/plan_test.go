@@ -98,6 +98,16 @@ func TestBuildAddsStrictProfile(t *testing.T) {
 	}
 }
 
+func TestBuildAddsProviderPlugin(t *testing.T) {
+	host := ubuntuHost()
+	host.Provider = "digitalocean"
+
+	result := Build(host, config.DefaultConfig())
+	if !hasPlugin(result, "provider-digitalocean") {
+		t.Fatalf("expected provider plugin in %+v", result.Plugins)
+	}
+}
+
 func ubuntuHost() system.Host {
 	return system.Host{
 		OSID:            "ubuntu",

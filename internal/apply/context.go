@@ -110,6 +110,10 @@ func (ctx *Context) verifyPlugin(plugin plugins.Plugin) {
 	case "web-profile":
 		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": HTTP/HTTPS allow rules requested")
 	default:
+		if strings.HasPrefix(plugin.ID, "provider-") {
+			ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": advisory recorded")
+			return
+		}
 		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": no verifier declared")
 	}
 }
@@ -159,6 +163,9 @@ func (ctx *Context) applyPlugin(plugin plugins.Plugin) error {
 	case "strict-profile":
 		return ctx.applyStrictProfile()
 	default:
+		if strings.HasPrefix(plugin.ID, "provider-") {
+			return ctx.applyProviderAdvisory(plugin)
+		}
 		if plugin.Kind == "custom" {
 			return ctx.applyCustomPlugin(plugin)
 		}
@@ -177,6 +184,13 @@ func (ctx *Context) applyCustomPlugin(plugin plugins.Plugin) error {
 		return nil
 	}
 	return ctx.run("sh", "-lc", plugin.Apply)
+}
+
+func (ctx *Context) applyProviderAdvisory(plugin plugins.Plugin) error {
+	provider := strings.TrimPrefix(plugin.ID, "provider-")
+	ctx.Result.Applied = append(ctx.Result.Applied, plugin.ID+": recorded provider advisory")
+	ctx.Result.Skipped = append(ctx.Result.Skipped, provider+": verify provider-level firewalls, rescue console access, snapshots, and out-of-band recovery before relying on host-only hardening")
+	return nil
 }
 
 func (ctx *Context) path(path string) string {

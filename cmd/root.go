@@ -256,6 +256,7 @@ func newConfigCmd() *cobra.Command {
 
 func printHost(cmd *cobra.Command, host system.Host) {
 	cmd.Printf("os: %s (%s %s)\n", host.OSName, host.OSID, host.OSVersion)
+	cmd.Printf("provider: %s\n", host.Provider)
 	cmd.Printf("arch: %s\n", host.Architecture)
 	cmd.Printf("package manager: %s\n", host.PackageManager)
 	cmd.Printf("init system: %s\n", host.InitSystem)

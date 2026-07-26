@@ -37,6 +37,14 @@ Initial built-ins:
 - `dnf-automatic`
 - `sysctl-baseline`
 - `web-profile`
+- `strict-profile`
+- `provider-digitalocean`
+- `provider-hostinger`
+- `provider-hetzner`
+- `provider-vultr`
+- `provider-linode`
+- `provider-ovh`
+- `provider-lightsail`
 
 Inspect them with:
 
@@ -63,3 +71,9 @@ plugins:
 Remote plugin execution should not be automatic. Future remote marketplace
 support must require explicit confirmation plus pinning, checksums, or
 signatures.
+
+## Provider Plugins
+
+Provider plugins are advisory. They record provider-specific recovery reminders
+for cloud firewalls, snapshots, rescue consoles, and out-of-band access. They do
+not mutate provider APIs or assume cloud credentials are available on the VPS.

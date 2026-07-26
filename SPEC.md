@@ -93,6 +93,7 @@ Implemented:
 - distro-specific package/service execution
 - probe and verify lifecycle result reporting
 - dry-run proving no mutation
+- fixture-backed smoke tests for supported distro planning/apply paths
 
 Still required before a public production release:
 
