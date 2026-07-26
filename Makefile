@@ -2,7 +2,7 @@ BINARY := ares
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: build test smoke lint install clean vet
+.PHONY: build test smoke release-check lint install clean vet
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
@@ -16,6 +16,13 @@ test:
 
 smoke: build
 	tests/smoke.sh
+
+release-check:
+	@if git remote get-url origin >/dev/null 2>&1; then \
+		goreleaser check; \
+	else \
+		echo "skipping goreleaser check: git remote 'origin' is not configured"; \
+	fi
 
 vet:
 	go vet ./...

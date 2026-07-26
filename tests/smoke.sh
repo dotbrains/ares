@@ -44,3 +44,12 @@ ARES_ROOT="$provider_root" ARES_PROVIDER=digitalocean ARES_OS_RELEASE=tests/fixt
 grep -q 'provider-digitalocean' "$provider_root/output.txt"
 grep -q 'recorded provider advisory' "$provider_root/output.txt"
 printf 'ok provider-digitalocean\n'
+
+install_root="$(mktemp -d)"
+archive_root="$(mktemp -d)"
+tar -czf "$archive_root/ares_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/').tar.gz" -C "$(dirname "$bin")" "$(basename "$bin")"
+ARES_INSTALL_DIR="$install_root/bin" ARES_ARCHIVE="$(find "$archive_root" -name '*.tar.gz' -print | head -n 1)" sh ./install.sh >"$install_root/install.txt" 2>&1
+test -x "$install_root/bin/ares"
+"$install_root/bin/ares" --version >/dev/null
+grep -q 'ares installed' "$install_root/install.txt"
+printf 'ok install\n'
