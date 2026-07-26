@@ -5,6 +5,10 @@ summary = "Provides apk, OpenRC, SSH, and service defaults for Alpine Linux VPS 
 categories = ["distro"]
 capabilities = ["package-manager", "service-manager", "ssh-service"]
 distros = ["alpine"]
+package_manager = "apk"
+init_system = "openrc"
+firewall_backend = "nftables"
+ssh_service = "sshd"
 probe = "grep -q '^ID=alpine' /etc/os-release"
 plan = "builtin:distro-alpine:plan"
 apply = "builtin:distro-alpine:apply"

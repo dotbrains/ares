@@ -25,6 +25,8 @@ plugin with:
 - `categories = ["distro"]`
 - one or more `distros = [...]` entries matching `/etc/os-release` `ID` or
   `ID_LIKE`
+- package, init system, firewall backend, and SSH service defaults declared as
+  plugin metadata
 - package, service, and SSH capabilities declared in `capabilities`
 - lifecycle handlers declared through `probe`, `plan`, `apply`, and `rollback`
 
@@ -35,8 +37,8 @@ RHEL-like systems by listing the family ID in `distros`.
 
 Adding a new first-class distro should not require editing the planner. Add a
 new distro plugin TOML file under `marketplace/plugins/builtin/`, declare the
-matching distro IDs, and add tests/fixtures that prove the adapter, firewall,
-and update plugins resolve correctly.
+matching distro IDs and host defaults, and add tests/fixtures that prove the
+adapter, firewall, and update plugins resolve correctly.
 
 ```mermaid
 flowchart TD

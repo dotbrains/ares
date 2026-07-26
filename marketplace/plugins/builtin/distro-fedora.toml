@@ -5,6 +5,10 @@ summary = "Provides dnf, systemd, SSH, and service defaults for Fedora Server"
 categories = ["distro"]
 capabilities = ["package-manager", "service-manager", "ssh-service"]
 distros = ["fedora"]
+package_manager = "dnf"
+init_system = "systemd"
+firewall_backend = "firewalld"
+ssh_service = "sshd"
 probe = "grep -q '^ID=fedora' /etc/os-release"
 plan = "builtin:distro-fedora:plan"
 apply = "builtin:distro-fedora:apply"

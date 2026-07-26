@@ -5,6 +5,10 @@ summary = "Provides dnf, systemd, SSH, and service defaults for Oracle Linux VPS
 categories = ["distro"]
 capabilities = ["package-manager", "service-manager", "ssh-service"]
 distros = ["ol", "oracle"]
+package_manager = "dnf"
+init_system = "systemd"
+firewall_backend = "firewalld"
+ssh_service = "sshd"
 probe = "grep -Eq '^ID=(ol|oracle)' /etc/os-release"
 plan = "builtin:distro-oracle:plan"
 apply = "builtin:distro-oracle:apply"

@@ -5,6 +5,10 @@ summary = "Provides zypper, systemd, SSH, and service defaults for openSUSE Leap
 categories = ["distro"]
 capabilities = ["package-manager", "service-manager", "ssh-service"]
 distros = ["opensuse-leap"]
+package_manager = "zypper"
+init_system = "systemd"
+firewall_backend = "firewalld"
+ssh_service = "sshd"
 probe = "grep -q '^ID=opensuse-leap' /etc/os-release"
 plan = "builtin:distro-opensuse:plan"
 apply = "builtin:distro-opensuse:apply"

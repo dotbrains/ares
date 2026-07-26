@@ -15,7 +15,7 @@ func TestDetectSnapshot(t *testing.T) {
 provider: unknown
 arch: <arch>
 package manager: apt-get
-init system: unknown
+init system: systemd
 firewall backend: ufw
 ssh service: ssh
 ssh port: 2222
@@ -33,7 +33,7 @@ func TestStatusSnapshot(t *testing.T) {
 provider: unknown
 arch: <arch>
 package manager: apt-get
-init system: unknown
+init system: systemd
 firewall backend: ufw
 ssh service: ssh
 ssh port: 2222

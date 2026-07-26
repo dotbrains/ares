@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/dotbrains/ares/internal/plugins"
 )
 
 type Host struct {
@@ -44,13 +46,13 @@ func Detect() (Host, error) {
 		OSVersion:      osRelease["VERSION_ID"],
 		IDLike:         strings.Fields(osRelease["ID_LIKE"]),
 		Provider:       detectProvider(root),
-		InitSystem:     detectInitSystem(root),
 		SSHPort:        detectSSHPort(rootPath(root, "/etc/ssh/sshd_config")),
 		RunningOverSSH: os.Getenv("SSH_CONNECTION") != "" || os.Getenv("SSH_CLIENT") != "",
 		Architecture:   runtime.GOARCH,
 	}
 	probeHostCommands := root == "" && !osReleaseOverride
 	host.PackageManager = packageManager(host, probeHostCommands)
+	host.InitSystem = initSystem(host, root)
 	host.SSHService = sshServiceName(host)
 	host.FirewallBackend = firewallBackend(host, probeHostCommands)
 
@@ -144,20 +146,10 @@ func packageManager(host Host, probeHostCommands bool) string {
 			return detected
 		}
 	}
-	switch host.OSID {
-	case "ubuntu", "debian":
-		return "apt-get"
-	case "fedora", "almalinux", "rocky", "rhel", "ol", "oracle", "amzn", "amazon":
-		return "dnf"
-	case "arch":
-		return "pacman"
-	case "opensuse-leap", "opensuse-tumbleweed":
-		return "zypper"
-	case "alpine":
-		return "apk"
-	default:
-		return "unknown"
+	if plugin, ok := distroPlugin(host); ok && plugin.PackageManager != "" {
+		return plugin.PackageManager
 	}
+	return "unknown"
 }
 
 func firewallBackend(host Host, probeHostCommands bool) string {
@@ -170,16 +162,10 @@ func firewallBackend(host Host, probeHostCommands bool) string {
 	if probeHostCommands && commandExists("nft") {
 		return "nftables"
 	}
-	switch host.PackageManager {
-	case "apt-get":
-		return "ufw"
-	case "dnf", "yum", "zypper":
-		return "firewalld"
-	case "pacman", "apk":
-		return "nftables"
-	default:
-		return "unknown"
+	if plugin, ok := distroPlugin(host); ok && plugin.FirewallBackend != "" {
+		return plugin.FirewallBackend
 	}
+	return "unknown"
 }
 
 func firstCommand(names ...string) string {
@@ -197,6 +183,16 @@ func detectInitSystem(root string) string {
 	}
 	if _, err := os.Stat(rootPath(root, "/run/openrc")); err == nil {
 		return "openrc"
+	}
+	return "unknown"
+}
+
+func initSystem(host Host, root string) string {
+	if detected := detectInitSystem(root); detected != "unknown" {
+		return detected
+	}
+	if plugin, ok := distroPlugin(host); ok && plugin.InitSystem != "" {
+		return plugin.InitSystem
 	}
 	return "unknown"
 }
@@ -228,17 +224,23 @@ func detectSSHPort(path string) string {
 }
 
 func sshServiceName(host Host) string {
-	switch host.OSID {
-	case "ubuntu", "debian":
-		return "ssh"
-	case "alpine":
-		return "sshd"
-	default:
-		return "sshd"
+	if plugin, ok := distroPlugin(host); ok && plugin.SSHService != "" {
+		return plugin.SSHService
 	}
+	return "sshd"
 }
 
 func commandExists(name string) bool {
 	_, err := exec.LookPath(name)
 	return err == nil
+}
+
+func distroPlugin(host Host) (plugins.Plugin, bool) {
+	return plugins.DistroAdapter(plugins.HostMatcher{
+		OSID:            host.OSID,
+		IDLike:          host.IDLike,
+		Provider:        host.Provider,
+		PackageManager:  host.PackageManager,
+		FirewallBackend: host.FirewallBackend,
+	})
 }

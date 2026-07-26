@@ -15,23 +15,27 @@ import (
 var pluginFiles embed.FS
 
 type Plugin struct {
-	ID             string
-	Aliases        []string
-	Name           string
-	Kind           string
-	Summary        string
-	Categories     []string
-	Requires       []string
-	Capabilities   []string
-	Distros        []string
-	Providers      []string
-	Probe          string
-	Plan           string
-	Apply          string
-	Verify         string
-	Rollback       string
-	Config         string
-	TimeoutSeconds int
+	ID              string
+	Aliases         []string
+	Name            string
+	Kind            string
+	Summary         string
+	Categories      []string
+	Requires        []string
+	Capabilities    []string
+	Distros         []string
+	Providers       []string
+	PackageManager  string `toml:"package_manager"`
+	InitSystem      string `toml:"init_system"`
+	FirewallBackend string `toml:"firewall_backend"`
+	SSHService      string `toml:"ssh_service"`
+	Probe           string
+	Plan            string
+	Apply           string
+	Verify          string
+	Rollback        string
+	Config          string
+	TimeoutSeconds  int
 }
 
 type Catalog struct {

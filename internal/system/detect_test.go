@@ -92,26 +92,36 @@ func TestPackageAndFirewallDefaultsForNewDistros(t *testing.T) {
 	cases := []struct {
 		osID            string
 		packageManager  string
+		initSystem      string
 		firewallBackend string
+		sshService      string
 	}{
-		{osID: "arch", packageManager: "pacman", firewallBackend: "nftables"},
-		{osID: "opensuse-leap", packageManager: "zypper", firewallBackend: "firewalld"},
-		{osID: "alpine", packageManager: "apk", firewallBackend: "nftables"},
-		{osID: "ol", packageManager: "dnf", firewallBackend: "firewalld"},
-		{osID: "amzn", packageManager: "dnf", firewallBackend: "firewalld"},
+		{osID: "arch", packageManager: "pacman", initSystem: "systemd", firewallBackend: "nftables", sshService: "sshd"},
+		{osID: "opensuse-leap", packageManager: "zypper", initSystem: "systemd", firewallBackend: "firewalld", sshService: "sshd"},
+		{osID: "alpine", packageManager: "apk", initSystem: "openrc", firewallBackend: "nftables", sshService: "sshd"},
+		{osID: "ol", packageManager: "dnf", initSystem: "systemd", firewallBackend: "firewalld", sshService: "sshd"},
+		{osID: "amzn", packageManager: "dnf", initSystem: "systemd", firewallBackend: "firewalld", sshService: "sshd"},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.osID, func(t *testing.T) {
 			host := Host{OSID: tc.osID}
 			host.PackageManager = packageManager(host, false)
+			host.InitSystem = initSystem(host, t.TempDir())
 			host.FirewallBackend = firewallBackend(host, false)
+			host.SSHService = sshServiceName(host)
 
 			if host.PackageManager != tc.packageManager {
 				t.Fatalf("PackageManager = %q, want %q", host.PackageManager, tc.packageManager)
 			}
+			if host.InitSystem != tc.initSystem {
+				t.Fatalf("InitSystem = %q, want %q", host.InitSystem, tc.initSystem)
+			}
 			if host.FirewallBackend != tc.firewallBackend {
 				t.Fatalf("FirewallBackend = %q, want %q", host.FirewallBackend, tc.firewallBackend)
+			}
+			if host.SSHService != tc.sshService {
+				t.Fatalf("SSHService = %q, want %q", host.SSHService, tc.sshService)
 			}
 		})
 	}

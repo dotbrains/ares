@@ -5,6 +5,10 @@ summary = "Provides pacman, systemd, SSH, and service defaults for Arch Linux VP
 categories = ["distro"]
 capabilities = ["package-manager", "service-manager", "ssh-service"]
 distros = ["arch"]
+package_manager = "pacman"
+init_system = "systemd"
+firewall_backend = "nftables"
+ssh_service = "sshd"
 probe = "grep -q '^ID=arch' /etc/os-release"
 plan = "builtin:distro-arch:plan"
 apply = "builtin:distro-arch:apply"

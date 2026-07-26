@@ -5,6 +5,10 @@ summary = "Provides dnf, systemd, SSH, and service defaults for Amazon Linux VPS
 categories = ["distro"]
 capabilities = ["package-manager", "service-manager", "ssh-service"]
 distros = ["amzn", "amazon"]
+package_manager = "dnf"
+init_system = "systemd"
+firewall_backend = "firewalld"
+ssh_service = "sshd"
 probe = "grep -Eq '^ID=(amzn|amazon)' /etc/os-release"
 plan = "builtin:distro-amazon:plan"
 apply = "builtin:distro-amazon:apply"

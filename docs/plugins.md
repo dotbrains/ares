@@ -139,6 +139,10 @@ summary = "Provides package, systemd, SSH, and service defaults for Example Linu
 categories = ["distro"]
 capabilities = ["package-manager", "service-manager", "ssh-service"]
 distros = ["example", "example-family"]
+package_manager = "example-pkg"
+init_system = "systemd"
+firewall_backend = "nftables"
+ssh_service = "sshd"
 probe = "grep -q '^ID=example' /etc/os-release"
 plan = "builtin:distro-example:plan"
 apply = "builtin:distro-example:apply"

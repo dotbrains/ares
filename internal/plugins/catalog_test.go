@@ -35,6 +35,20 @@ func TestBuiltinsHaveRequiredMetadata(t *testing.T) {
 		if len(plugin.Capabilities) == 0 {
 			t.Fatalf("%s missing capabilities", plugin.ID)
 		}
+		if contains(plugin.Categories, "distro") {
+			if plugin.PackageManager == "" {
+				t.Fatalf("%s missing package manager default", plugin.ID)
+			}
+			if plugin.InitSystem == "" {
+				t.Fatalf("%s missing init system default", plugin.ID)
+			}
+			if plugin.FirewallBackend == "" {
+				t.Fatalf("%s missing firewall backend default", plugin.ID)
+			}
+			if plugin.SSHService == "" {
+				t.Fatalf("%s missing SSH service default", plugin.ID)
+			}
+		}
 	}
 }
 
