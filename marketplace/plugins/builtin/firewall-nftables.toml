@@ -1,0 +1,14 @@
+id = "firewall-nftables"
+name = "nftables firewall"
+kind = "builtin"
+summary = "Configures nftables with safe VPS defaults"
+categories = ["firewall", "network"]
+capabilities = ["firewall"]
+probe = "command -v nft"
+plan = "builtin:firewall-nftables:plan"
+apply = "builtin:firewall-nftables:apply"
+rollback = "builtin:firewall-nftables:rollback"
+config = """
+[plugins]
+enabled = ["firewall-nftables"]
+"""

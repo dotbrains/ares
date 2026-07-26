@@ -1,0 +1,14 @@
+id = "sysctl-baseline"
+name = "Kernel network baseline"
+kind = "builtin"
+summary = "Applies conservative VPS-safe network sysctl hardening"
+categories = ["kernel", "network", "hardening"]
+capabilities = ["sysctl"]
+probe = "command -v sysctl"
+plan = "builtin:sysctl-baseline:plan"
+apply = "builtin:sysctl-baseline:apply"
+rollback = "builtin:sysctl-baseline:rollback"
+config = """
+[plugins]
+enabled = ["sysctl-baseline"]
+"""

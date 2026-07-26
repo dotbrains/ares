@@ -1,0 +1,14 @@
+id = "provider-hetzner"
+name = "Hetzner advisory"
+kind = "builtin"
+summary = "Records Hetzner VPS recovery and cloud firewall reminders"
+categories = ["provider", "advisory"]
+capabilities = ["provider-advisory"]
+probe = "true"
+plan = "builtin:provider-hetzner:plan"
+apply = "builtin:provider-hetzner:apply"
+rollback = "builtin:provider-hetzner:rollback"
+config = """
+[plugins]
+enabled = ["provider-hetzner"]
+"""

@@ -1,0 +1,15 @@
+id = "distro-ubuntu"
+name = "Ubuntu adapter"
+kind = "builtin"
+summary = "Provides apt, systemd, SSH, and service defaults for Ubuntu VPS hosts"
+categories = ["distro"]
+capabilities = ["package-manager", "service-manager", "ssh-service"]
+distros = ["ubuntu"]
+probe = "grep -q '^ID=ubuntu' /etc/os-release"
+plan = "builtin:distro-ubuntu:plan"
+apply = "builtin:distro-ubuntu:apply"
+rollback = "builtin:distro-ubuntu:rollback"
+config = """
+[plugins]
+enabled = ["distro-ubuntu"]
+"""

@@ -1,0 +1,15 @@
+id = "web-profile"
+name = "Web profile"
+kind = "builtin"
+summary = "Allows HTTP and HTTPS inbound traffic for web VPS workloads"
+categories = ["profile", "firewall", "network"]
+requires = ["firewall"]
+capabilities = ["profile-web"]
+probe = "true"
+plan = "builtin:web-profile:plan"
+apply = "builtin:web-profile:apply"
+rollback = "builtin:web-profile:rollback"
+config = """
+[plugins]
+enabled = ["web-profile"]
+"""

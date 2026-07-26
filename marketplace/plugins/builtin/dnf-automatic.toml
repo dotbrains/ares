@@ -1,0 +1,16 @@
+id = "dnf-automatic"
+name = "dnf-automatic"
+kind = "builtin"
+summary = "Enables dnf automatic security updates without automatic reboots"
+categories = ["updates", "hardening"]
+requires = ["dnf"]
+capabilities = ["security-updates"]
+distros = ["almalinux", "rocky", "rhel", "fedora"]
+probe = "rpm -q dnf-automatic"
+plan = "builtin:dnf-automatic:plan"
+apply = "builtin:dnf-automatic:apply"
+rollback = "builtin:dnf-automatic:rollback"
+config = """
+[plugins]
+enabled = ["dnf-automatic"]
+"""

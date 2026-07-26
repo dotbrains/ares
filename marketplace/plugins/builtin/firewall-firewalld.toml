@@ -1,0 +1,16 @@
+id = "firewall-firewalld"
+name = "firewalld firewall"
+kind = "builtin"
+summary = "Configures firewalld with safe VPS defaults"
+categories = ["firewall", "network"]
+requires = ["dnf"]
+capabilities = ["firewall"]
+distros = ["almalinux", "rocky", "rhel", "fedora"]
+probe = "command -v firewall-cmd"
+plan = "builtin:firewall-firewalld:plan"
+apply = "builtin:firewall-firewalld:apply"
+rollback = "builtin:firewall-firewalld:rollback"
+config = """
+[plugins]
+enabled = ["firewall-firewalld"]
+"""

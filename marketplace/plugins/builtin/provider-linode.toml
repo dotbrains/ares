@@ -1,0 +1,14 @@
+id = "provider-linode"
+name = "Linode advisory"
+kind = "builtin"
+summary = "Records Linode/Akamai VPS recovery and cloud firewall reminders"
+categories = ["provider", "advisory"]
+capabilities = ["provider-advisory"]
+probe = "true"
+plan = "builtin:provider-linode:plan"
+apply = "builtin:provider-linode:apply"
+rollback = "builtin:provider-linode:rollback"
+config = """
+[plugins]
+enabled = ["provider-linode"]
+"""

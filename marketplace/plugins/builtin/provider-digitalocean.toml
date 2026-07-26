@@ -1,0 +1,14 @@
+id = "provider-digitalocean"
+name = "DigitalOcean advisory"
+kind = "builtin"
+summary = "Records DigitalOcean VPS recovery and cloud firewall reminders"
+categories = ["provider", "advisory"]
+capabilities = ["provider-advisory"]
+probe = "true"
+plan = "builtin:provider-digitalocean:plan"
+apply = "builtin:provider-digitalocean:apply"
+rollback = "builtin:provider-digitalocean:rollback"
+config = """
+[plugins]
+enabled = ["provider-digitalocean"]
+"""

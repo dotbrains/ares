@@ -1,0 +1,14 @@
+id = "provider-lightsail"
+name = "Lightsail advisory"
+kind = "builtin"
+summary = "Records AWS Lightsail recovery and cloud firewall reminders"
+categories = ["provider", "advisory"]
+capabilities = ["provider-advisory"]
+probe = "true"
+plan = "builtin:provider-lightsail:plan"
+apply = "builtin:provider-lightsail:apply"
+rollback = "builtin:provider-lightsail:rollback"
+config = """
+[plugins]
+enabled = ["provider-lightsail"]
+"""

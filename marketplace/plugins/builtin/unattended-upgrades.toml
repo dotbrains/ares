@@ -1,0 +1,17 @@
+id = "unattended-upgrades"
+aliases = ["security-updates"]
+name = "unattended-upgrades"
+kind = "builtin"
+summary = "Enables apt automatic security updates without automatic reboots"
+categories = ["updates", "hardening"]
+requires = ["apt-get"]
+capabilities = ["security-updates"]
+distros = ["ubuntu", "debian"]
+probe = "dpkg -s unattended-upgrades"
+plan = "builtin:unattended-upgrades:plan"
+apply = "builtin:unattended-upgrades:apply"
+rollback = "builtin:unattended-upgrades:rollback"
+config = """
+[plugins]
+enabled = ["unattended-upgrades"]
+"""

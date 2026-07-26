@@ -1,0 +1,14 @@
+id = "provider-hostinger"
+name = "Hostinger advisory"
+kind = "builtin"
+summary = "Records Hostinger VPS recovery and cloud firewall reminders"
+categories = ["provider", "advisory"]
+capabilities = ["provider-advisory"]
+probe = "true"
+plan = "builtin:provider-hostinger:plan"
+apply = "builtin:provider-hostinger:apply"
+rollback = "builtin:provider-hostinger:rollback"
+config = """
+[plugins]
+enabled = ["provider-hostinger"]
+"""

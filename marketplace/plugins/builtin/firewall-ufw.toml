@@ -1,0 +1,16 @@
+id = "firewall-ufw"
+name = "UFW firewall"
+kind = "builtin"
+summary = "Configures UFW with safe VPS defaults"
+categories = ["firewall", "network"]
+requires = ["apt-get"]
+capabilities = ["firewall"]
+distros = ["ubuntu", "debian"]
+probe = "command -v ufw"
+plan = "builtin:firewall-ufw:plan"
+apply = "builtin:firewall-ufw:apply"
+rollback = "builtin:firewall-ufw:rollback"
+config = """
+[plugins]
+enabled = ["firewall-ufw"]
+"""

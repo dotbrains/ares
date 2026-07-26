@@ -1,0 +1,15 @@
+id = "distro-debian"
+name = "Debian adapter"
+kind = "builtin"
+summary = "Provides apt, systemd, SSH, and service defaults for Debian VPS hosts"
+categories = ["distro"]
+capabilities = ["package-manager", "service-manager", "ssh-service"]
+distros = ["debian"]
+probe = "test -f /etc/debian_version"
+plan = "builtin:distro-debian:plan"
+apply = "builtin:distro-debian:apply"
+rollback = "builtin:distro-debian:rollback"
+config = """
+[plugins]
+enabled = ["distro-debian"]
+"""

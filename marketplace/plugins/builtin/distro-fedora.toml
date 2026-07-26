@@ -1,0 +1,15 @@
+id = "distro-fedora"
+name = "Fedora adapter"
+kind = "builtin"
+summary = "Provides dnf, systemd, SSH, and service defaults for Fedora Server"
+categories = ["distro"]
+capabilities = ["package-manager", "service-manager", "ssh-service"]
+distros = ["fedora"]
+probe = "grep -q '^ID=fedora' /etc/os-release"
+plan = "builtin:distro-fedora:plan"
+apply = "builtin:distro-fedora:apply"
+rollback = "builtin:distro-fedora:rollback"
+config = """
+[plugins]
+enabled = ["distro-fedora"]
+"""

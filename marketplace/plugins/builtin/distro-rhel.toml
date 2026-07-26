@@ -1,0 +1,15 @@
+id = "distro-rhel"
+name = "RHEL-family adapter"
+kind = "builtin"
+summary = "Provides dnf, systemd, SSH, and service defaults for AlmaLinux and Rocky Linux"
+categories = ["distro"]
+capabilities = ["package-manager", "service-manager", "ssh-service"]
+distros = ["almalinux", "rocky", "rhel"]
+probe = "test -f /etc/redhat-release"
+plan = "builtin:distro-rhel:plan"
+apply = "builtin:distro-rhel:apply"
+rollback = "builtin:distro-rhel:rollback"
+config = """
+[plugins]
+enabled = ["distro-rhel"]
+"""

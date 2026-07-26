@@ -1,0 +1,14 @@
+id = "strict-profile"
+name = "Strict profile"
+kind = "builtin"
+summary = "Applies stricter fail2ban defaults and optional root lockout guidance"
+categories = ["profile", "hardening"]
+requires = ["fail2ban", "ssh-hardening"]
+capabilities = ["profile-strict"]
+probe = "true"
+plan = "builtin:strict-profile:plan"
+apply = "builtin:strict-profile:apply"
+rollback = "builtin:strict-profile:rollback"
+config = """
+profile = "strict"
+"""

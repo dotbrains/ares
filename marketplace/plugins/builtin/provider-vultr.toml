@@ -1,0 +1,14 @@
+id = "provider-vultr"
+name = "Vultr advisory"
+kind = "builtin"
+summary = "Records Vultr VPS recovery and cloud firewall reminders"
+categories = ["provider", "advisory"]
+capabilities = ["provider-advisory"]
+probe = "true"
+plan = "builtin:provider-vultr:plan"
+apply = "builtin:provider-vultr:apply"
+rollback = "builtin:provider-vultr:rollback"
+config = """
+[plugins]
+enabled = ["provider-vultr"]
+"""

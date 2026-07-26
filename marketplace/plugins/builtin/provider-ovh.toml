@@ -1,0 +1,14 @@
+id = "provider-ovh"
+name = "OVH advisory"
+kind = "builtin"
+summary = "Records OVH VPS recovery and cloud firewall reminders"
+categories = ["provider", "advisory"]
+capabilities = ["provider-advisory"]
+probe = "true"
+plan = "builtin:provider-ovh:plan"
+apply = "builtin:provider-ovh:apply"
+rollback = "builtin:provider-ovh:rollback"
+config = """
+[plugins]
+enabled = ["provider-ovh"]
+"""

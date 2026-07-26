@@ -1,0 +1,15 @@
+id = "fail2ban"
+aliases = ["intrusion-protection"]
+name = "fail2ban"
+kind = "builtin"
+summary = "Installs and enables fail2ban with conservative SSH jail defaults"
+categories = ["ssh", "hardening"]
+capabilities = ["fail2ban"]
+probe = "command -v fail2ban-client"
+plan = "builtin:fail2ban:plan"
+apply = "builtin:fail2ban:apply"
+rollback = "builtin:fail2ban:rollback"
+config = """
+[plugins]
+enabled = ["fail2ban"]
+"""
