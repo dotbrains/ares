@@ -175,7 +175,6 @@ same target before commits.
 
 ## Docs
 
-- [Docs index](docs/README.md)
 - [Getting started](docs/getting-started.md)
 - [Commands](docs/commands.md)
 - [Configuration](docs/configuration.md)
