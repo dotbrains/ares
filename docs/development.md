@@ -32,6 +32,10 @@ make integration
 make vet
 ```
 
+`make ci` also enforces source-size budgets. Source files are capped at 500
+lines by default, generated lockfiles and fixtures are excluded, and flat source
+directories are capped at 30 direct files by default.
+
 `make integration` runs lightweight Ubuntu/Debian container checks by default.
 Use `ARES_FULL_INTEGRATION=1 make integration` to also pull and test heavier
 Rocky/Fedora images.

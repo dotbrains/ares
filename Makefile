@@ -4,7 +4,7 @@ LDFLAGS := -s -w -X main.version=$(VERSION)
 GO_PACKAGES := $(shell go list ./...)
 GO_PACKAGE_DIRS := $(shell go list -f '{{.Dir}}' ./...)
 
-.PHONY: build test smoke integration release-check lint actionlint install clean vet markdown ci
+.PHONY: build test smoke integration release-check lint actionlint budgets install clean vet markdown ci
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
@@ -41,7 +41,11 @@ lint:
 actionlint:
 	actionlint
 
-ci: markdown test vet lint actionlint build smoke integration release-check
+budgets:
+	scripts/check-file-sizes.sh
+	scripts/check-flat-directories.sh
+
+ci: markdown budgets test vet lint actionlint build smoke integration release-check
 
 clean:
 	rm -f $(BINARY) coverage.out
