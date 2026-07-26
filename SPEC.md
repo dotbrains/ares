@@ -94,6 +94,8 @@ Implemented:
 - probe and verify lifecycle result reporting
 - dry-run proving no mutation
 - fixture-backed smoke tests for supported distro planning/apply paths
+- container-backed integration tests for Ubuntu/Debian detection/apply paths
+- opt-in full container integration for Rocky/Fedora images
 
 Still required before a public production release:
 

@@ -102,8 +102,13 @@ See [docs/recovery.md](docs/recovery.md) and [docs/threat-model.md](docs/threat-
 make build
 make test
 make smoke
+make integration
 make vet
 ```
+
+`make integration` runs lightweight Ubuntu/Debian container checks by default.
+Use `ARES_FULL_INTEGRATION=1 make integration` to also pull and test the
+heavier Rocky/Fedora images.
 
 ## License
 

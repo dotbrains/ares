@@ -2,7 +2,7 @@ BINARY := ares
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: build test smoke release-check lint install clean vet
+.PHONY: build test smoke integration release-check lint install clean vet
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
@@ -16,6 +16,9 @@ test:
 
 smoke: build
 	tests/smoke.sh
+
+integration:
+	tests/integration.sh
 
 release-check:
 	@if git remote get-url origin >/dev/null 2>&1; then \

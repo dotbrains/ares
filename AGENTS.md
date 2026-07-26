@@ -18,6 +18,7 @@ Before handing off changes, run:
 make build
 make test
 make smoke
+make integration
 ```
 
 For local apply smoke tests, use `ARES_ROOT` so no host files are modified:
@@ -27,4 +28,10 @@ tmp="$(mktemp -d)"
 mkdir -p "$tmp/etc/ssh"
 printf 'Port 22\n' > "$tmp/etc/ssh/sshd_config"
 ARES_ROOT="$tmp" ARES_OS_RELEASE=tests/fixtures/os-release/ubuntu-24.04 ./ares --yes
+```
+
+For heavier container coverage, opt in explicitly:
+
+```sh
+ARES_FULL_INTEGRATION=1 make integration
 ```

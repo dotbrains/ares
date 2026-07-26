@@ -55,8 +55,20 @@ jobs:
       - name: Smoke
         run: make smoke
 
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Container integration
+        run: make integration
+
   goreleaser:
-    needs: [test, lint, build]
+    needs: [test, lint, build, integration]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
