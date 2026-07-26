@@ -2,7 +2,9 @@ package plugins
 
 import (
 	"fmt"
+	"slices"
 	"strings"
+	"sync"
 
 	"github.com/dotbrains/ares/marketplace"
 )
@@ -18,12 +20,43 @@ type HostMatcher struct {
 	FirewallBackend string
 }
 
+var catalogCache = struct {
+	once    sync.Once
+	catalog Catalog
+	err     error
+}{}
+
 func CatalogFromMarketplace() (Catalog, error) {
-	catalog, err := marketplace.CatalogFromFiles()
-	if err != nil {
-		return Catalog{}, fmt.Errorf("loading embedded plugin marketplace: %w", err)
+	catalogCache.once.Do(func() {
+		catalog, err := marketplace.CatalogFromFiles()
+		if err != nil {
+			catalogCache.err = fmt.Errorf("loading embedded plugin marketplace: %w", err)
+			return
+		}
+		catalogCache.catalog = Catalog(catalog)
+	})
+	if catalogCache.err != nil {
+		return Catalog{}, catalogCache.err
 	}
-	return Catalog(catalog), nil
+	return cloneCatalog(catalogCache.catalog), nil
+}
+
+func cloneCatalog(catalog Catalog) Catalog {
+	plugins := make([]Plugin, len(catalog.Plugins))
+	for i, plugin := range catalog.Plugins {
+		plugins[i] = clonePlugin(plugin)
+	}
+	return Catalog{Plugins: plugins}
+}
+
+func clonePlugin(plugin Plugin) Plugin {
+	plugin.Aliases = slices.Clone(plugin.Aliases)
+	plugin.Categories = slices.Clone(plugin.Categories)
+	plugin.Requires = slices.Clone(plugin.Requires)
+	plugin.Capabilities = slices.Clone(plugin.Capabilities)
+	plugin.Distros = slices.Clone(plugin.Distros)
+	plugin.Providers = slices.Clone(plugin.Providers)
+	return plugin
 }
 
 func Builtins() ([]Plugin, error) {

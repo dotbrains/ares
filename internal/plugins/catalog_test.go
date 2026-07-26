@@ -52,6 +52,29 @@ func TestFind(t *testing.T) {
 	}
 }
 
+func TestCatalogFromMarketplaceReturnsIndependentCatalog(t *testing.T) {
+	catalog, err := CatalogFromMarketplace()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(catalog.Plugins) == 0 {
+		t.Fatal("expected plugins")
+	}
+	catalog.Plugins[0].ID = "mutated"
+	catalog.Plugins[0].Aliases = append(catalog.Plugins[0].Aliases, "mutated")
+
+	fresh, err := CatalogFromMarketplace()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fresh.Plugins[0].ID == "mutated" {
+		t.Fatal("catalog cache was mutated through returned plugin slice")
+	}
+	if contains(fresh.Plugins[0].Aliases, "mutated") {
+		t.Fatal("catalog cache was mutated through returned metadata slice")
+	}
+}
+
 func TestDistroAdapterPrefersExactOSIDOverIDLike(t *testing.T) {
 	plugin, ok := DistroAdapter(HostMatcher{
 		OSID:           "ubuntu",
