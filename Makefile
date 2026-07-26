@@ -37,7 +37,7 @@ release-preflight:
 		tag="$$(git describe --tags --exact-match 2>/dev/null || true)"; \
 		if [ -n "$$tag" ]; then \
 			git fetch origin main --quiet; \
-			test "$$(git rev-list -n 1 "$$tag")" = "$$(git rev-parse origin/main)"; \
+			git merge-base --is-ancestor "$$tag" origin/main; \
 		else \
 			echo "skipping release tag ancestry check: HEAD is not tagged"; \
 		fi; \

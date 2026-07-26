@@ -38,7 +38,7 @@ jobs:
             *) echo "release tag must look like vMAJOR.MINOR.PATCH" >&2; exit 1 ;;
           esac
           git fetch origin main
-          test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$(git rev-parse origin/main)"
+          git merge-base --is-ancestor "$RELEASE_TAG" origin/main
 
   markdown:
     runs-on: ubuntu-latest
