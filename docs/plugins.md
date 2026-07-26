@@ -37,11 +37,13 @@ planned before mutation, and SSH/firewall actions are marked risky in the plan.
 
 Custom plugins can declare `probe`, `plan`, `apply`, `verify`, and `rollback`
 commands in config. `ares` executes custom `probe`, `apply`, and `verify`
-commands with a timeout. Custom command output can emit structured lines
-prefixed with `applied:`, `verified:`, `skipped:`, or `failed:`; `ares` records
-those lines in the run report. `ares rollback last --yes` executes custom
-`rollback` commands recorded in the latest run report. `plan` is preserved as
-metadata for inspection and future richer external orchestration.
+commands with a timeout. If a custom plugin probe exits non-zero, `ares`
+records the result and skips that plugin instead of running `apply`. Custom
+command output can emit structured lines prefixed with `applied:`, `verified:`,
+`skipped:`, or `failed:`; `ares` records those lines in the run report. `ares
+rollback last --yes` executes custom `rollback` commands recorded in the latest
+run report. `plan` is preserved as metadata for inspection and future richer
+external orchestration.
 
 ## Built-Ins
 
@@ -193,6 +195,7 @@ plugins:
 Guidelines for custom plugin commands:
 
 - keep commands idempotent
+- use `probe` to decide whether the plugin should run on the current host
 - fail loudly on partial configuration
 - preserve active SSH access when touching SSH or firewall settings
 - write reversible changes or clear manual rollback steps

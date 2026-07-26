@@ -233,6 +233,38 @@ func TestCustomPluginCommandParsesStructuredOutput(t *testing.T) {
 	}
 }
 
+func TestCustomPluginProbeFailureSkipsPlugin(t *testing.T) {
+	ctx := &Context{}
+	plugin := plugins.Plugin{
+		ID:    "custom-hardening",
+		Kind:  "custom",
+		Probe: "printf 'missing dependency' >&2; exit 1",
+	}
+
+	if ctx.probePlugin(plugin) {
+		t.Fatalf("custom plugin probe passed unexpectedly: %+v", ctx.Result)
+	}
+	if !contains(ctx.Result.Skipped, "custom-hardening: probe did not pass before apply: missing dependency") {
+		t.Fatalf("missing probe failure skip item: %+v", ctx.Result)
+	}
+}
+
+func TestBuiltinPluginProbeFailureDoesNotSkipPlugin(t *testing.T) {
+	ctx := &Context{}
+	plugin := plugins.Plugin{
+		ID:    "fail2ban",
+		Kind:  "builtin",
+		Probe: "printf 'not installed yet' >&2; exit 1",
+	}
+
+	if !ctx.probePlugin(plugin) {
+		t.Fatalf("builtin plugin probe gated apply unexpectedly: %+v", ctx.Result)
+	}
+	if !contains(ctx.Result.Skipped, "fail2ban: probe did not pass before apply: not installed yet") {
+		t.Fatalf("missing probe failure skip item: %+v", ctx.Result)
+	}
+}
+
 func TestRollbackLastRemovesManagedFilesAndRestoresBackups(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "etc", "ssh", "sshd_config.d"), 0o755); err != nil {

@@ -65,7 +65,9 @@ func Run(hardeningPlan plan.Plan, opts Options) (Result, error) {
 	}
 
 	for _, plugin := range hardeningPlan.Plugins {
-		ctx.probePlugin(plugin)
+		if !ctx.probePlugin(plugin) {
+			continue
+		}
 		if err := ctx.applyPlugin(plugin); err != nil {
 			ctx.Result.Failed = append(ctx.Result.Failed, fmt.Sprintf("%s: %v", plugin.ID, err))
 			return ctx.finish(err)
@@ -76,21 +78,23 @@ func Run(hardeningPlan plan.Plan, opts Options) (Result, error) {
 	return ctx.finish(nil)
 }
 
-func (ctx *Context) probePlugin(plugin plugins.Plugin) {
+func (ctx *Context) probePlugin(plugin plugins.Plugin) bool {
 	if plugin.Probe == "" {
 		ctx.Result.Probed = append(ctx.Result.Probed, plugin.ID+": no probe declared")
-		return
+		return true
 	}
 	if ctx.Options.Root != "" {
 		ctx.Result.Probed = append(ctx.Result.Probed, plugin.ID+": would probe with "+plugin.Probe)
-		return
+		return true
 	}
 	cmd := exec.Command("sh", "-lc", plugin.Probe)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		ctx.Result.Skipped = append(ctx.Result.Skipped, plugin.ID+": probe did not pass before apply: "+strings.TrimSpace(string(output)))
+		return plugin.Kind != "custom"
 	} else {
 		ctx.Result.Probed = append(ctx.Result.Probed, plugin.ID+": probe passed")
 	}
+	return true
 }
 
 func (ctx *Context) verifyPlugin(plugin plugins.Plugin) {
