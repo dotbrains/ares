@@ -3,6 +3,7 @@ package cmd
 import (
 	cryptorand "crypto/rand"
 	"math/big"
+	"os"
 
 	figure "github.com/common-nighthawk/go-figure"
 	"github.com/spf13/cobra"
@@ -20,6 +21,9 @@ var bannerFonts = []string{
 }
 
 func printBanner(cmd *cobra.Command) {
+	if os.Getenv("ARES_NO_BANNER") != "" {
+		return
+	}
 	banner := figure.NewFigure("ares", randomBannerFont(), true)
 	cmd.Println(banner.String())
 }

@@ -1,6 +1,7 @@
 package apply
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -97,10 +98,25 @@ func rootedPath(root string, path string) string {
 }
 
 func finishRollback(result Result, runErr error) (Result, error) {
+	if err := writeRollbackReport(result); err != nil && runErr == nil {
+		runErr = err
+	}
 	if err := writeRollbackLog(result); err != nil && runErr == nil {
 		runErr = err
 	}
 	return result, runErr
+}
+
+func writeRollbackReport(result Result) error {
+	data, err := json.MarshalIndent(map[string]any{
+		"applied": result.Applied,
+		"skipped": result.Skipped,
+		"failed":  result.Failed,
+	}, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(result.ReportPath, append(data, '\n'), 0o644)
 }
 
 func writeRollbackLog(result Result) error {

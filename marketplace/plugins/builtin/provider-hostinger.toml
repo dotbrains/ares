@@ -4,6 +4,7 @@ kind = "builtin"
 summary = "Records Hostinger VPS recovery and cloud firewall reminders"
 categories = ["provider", "advisory"]
 capabilities = ["provider-advisory"]
+providers = ["hostinger"]
 probe = "true"
 plan = "builtin:provider-hostinger:plan"
 apply = "builtin:provider-hostinger:apply"

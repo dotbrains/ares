@@ -95,5 +95,6 @@ plugin orchestration.
 
 | Variable | Purpose |
 | --- | --- |
+| `ARES_NO_BANNER` | Suppress the randomized ASCII banner for scripted runs. |
 | `ARES_PROVIDER` | Override provider detection, primarily for tests. |
 | `ARES_ROOT` | Redirect file writes under a test root and avoid running host commands. |

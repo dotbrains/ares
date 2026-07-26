@@ -7,8 +7,12 @@ import (
 )
 
 func TestBuiltinsHaveRequiredMetadata(t *testing.T) {
+	builtins, err := Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
 	seen := map[string]bool{}
-	for _, plugin := range Builtins() {
+	for _, plugin := range builtins {
 		if plugin.ID == "" {
 			t.Fatal("plugin with empty ID")
 		}
@@ -100,6 +104,31 @@ func TestFirstByCapabilitySupportsRequirementAlternatives(t *testing.T) {
 	}
 	if plugin.ID != "firewall-firewalld" {
 		t.Fatalf("plugin ID = %q, want firewall-firewalld", plugin.ID)
+	}
+}
+
+func TestProviderAdvisoryMatchesProviderMetadata(t *testing.T) {
+	plugin, ok := ProviderAdvisory(HostMatcher{Provider: "digitalocean"})
+	if !ok {
+		t.Fatal("expected provider advisory")
+	}
+	if plugin.ID != "provider-digitalocean" {
+		t.Fatalf("plugin ID = %q, want provider-digitalocean", plugin.ID)
+	}
+}
+
+func TestProviderAdvisoriesDeclareProviders(t *testing.T) {
+	builtins, err := Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, plugin := range builtins {
+		if !contains(plugin.Capabilities, "provider-advisory") {
+			continue
+		}
+		if len(plugin.Providers) == 0 {
+			t.Fatalf("%s missing providers metadata", plugin.ID)
+		}
 	}
 }
 

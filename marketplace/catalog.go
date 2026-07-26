@@ -24,6 +24,7 @@ type Plugin struct {
 	Requires       []string
 	Capabilities   []string
 	Distros        []string
+	Providers      []string
 	Probe          string
 	Plan           string
 	Apply          string

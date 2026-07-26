@@ -58,6 +58,17 @@ func TestPluginsListSnapshot(t *testing.T) {
 	}
 }
 
+func TestDefaultRunCanSuppressBanner(t *testing.T) {
+	t.Setenv("ARES_NO_BANNER", "1")
+	output := runSnapshotCommand(t, "--dry-run")
+	if regexp.MustCompile(`(?m)^profile: basic$`).FindString(output) == "" {
+		t.Fatalf("default run missing plan output:\n%s", output)
+	}
+	if regexp.MustCompile(`(?m)^  ____|^ \+-\+`).MatchString(output) {
+		t.Fatalf("banner was not suppressed:\n%s", output)
+	}
+}
+
 func runSnapshotCommand(t *testing.T, args ...string) string {
 	t.Helper()
 	rootDir := t.TempDir()

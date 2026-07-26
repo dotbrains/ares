@@ -4,6 +4,7 @@ kind = "builtin"
 summary = "Records Linode/Akamai VPS recovery and cloud firewall reminders"
 categories = ["provider", "advisory"]
 capabilities = ["provider-advisory"]
+providers = ["linode"]
 probe = "true"
 plan = "builtin:provider-linode:plan"
 apply = "builtin:provider-linode:apply"

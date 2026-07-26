@@ -266,6 +266,9 @@ func TestRollbackLastRemovesManagedFilesAndRestoresBackups(t *testing.T) {
 	if len(result.Applied) == 0 {
 		t.Fatalf("expected rollback applied items: %+v", result)
 	}
+	if _, err := os.Stat(result.ReportPath); err != nil {
+		t.Fatalf("expected rollback report: %v", err)
+	}
 }
 
 func testPlan() plan.Plan {

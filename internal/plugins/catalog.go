@@ -13,6 +13,7 @@ type Catalog = marketplace.Catalog
 type HostMatcher struct {
 	OSID            string
 	IDLike          []string
+	Provider        string
 	PackageManager  string
 	FirewallBackend string
 }
@@ -25,12 +26,12 @@ func CatalogFromMarketplace() (Catalog, error) {
 	return Catalog(catalog), nil
 }
 
-func Builtins() []Plugin {
+func Builtins() ([]Plugin, error) {
 	catalog, err := CatalogFromMarketplace()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return catalog.Plugins
+	return catalog.Plugins, nil
 }
 
 func Find(id string) (Plugin, bool) {
@@ -51,6 +52,19 @@ func FirstByCapability(host HostMatcher, capability string) (Plugin, bool) {
 	return bestHostMatch(host, func(plugin Plugin) bool {
 		return hasCapability(plugin, capability) && matchesRequirements(plugin, host)
 	})
+}
+
+func ProviderAdvisory(host HostMatcher) (Plugin, bool) {
+	catalog, err := CatalogFromMarketplace()
+	if err != nil {
+		return Plugin{}, false
+	}
+	for _, plugin := range catalog.Plugins {
+		if hasCapability(plugin, "provider-advisory") && contains(plugin.Providers, host.Provider) {
+			return plugin, true
+		}
+	}
+	return Plugin{}, false
 }
 
 func bestHostMatch(host HostMatcher, accept func(Plugin) bool) (Plugin, bool) {

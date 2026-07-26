@@ -17,10 +17,15 @@ func newPluginsCmd() *cobra.Command {
 	cmd.AddCommand(&cobra.Command{
 		Use:   "list",
 		Short: "List built-in plugins",
-		Run: func(cmd *cobra.Command, args []string) {
-			for _, plugin := range plugins.Builtins() {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			builtins, err := plugins.Builtins()
+			if err != nil {
+				return err
+			}
+			for _, plugin := range builtins {
 				cmd.Printf("%-22s %-8s %s\n", plugin.ID, plugin.Kind, plugin.Summary)
 			}
+			return nil
 		},
 	})
 

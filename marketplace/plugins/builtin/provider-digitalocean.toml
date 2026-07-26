@@ -4,6 +4,7 @@ kind = "builtin"
 summary = "Records DigitalOcean VPS recovery and cloud firewall reminders"
 categories = ["provider", "advisory"]
 capabilities = ["provider-advisory"]
+providers = ["digitalocean"]
 probe = "true"
 plan = "builtin:provider-digitalocean:plan"
 apply = "builtin:provider-digitalocean:apply"

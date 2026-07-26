@@ -65,6 +65,16 @@ grep -q 'provider-digitalocean' "$provider_root/output.txt"
 grep -q 'recorded provider advisory' "$provider_root/output.txt"
 printf 'ok provider-digitalocean\n'
 
+rollback_root="$(mktemp -d)"
+mkdir -p "$rollback_root/etc/ssh/sshd_config.d"
+printf 'managed\n' > "$rollback_root/etc/ssh/sshd_config.d/99-ares.conf"
+printf 'Port 2222\n' > "$rollback_root/etc/ssh/sshd_config.ares.20260725-170000.bak"
+ARES_ROOT="$rollback_root" "$bin" rollback last --yes >"$rollback_root/rollback.txt" 2>&1
+test ! -e "$rollback_root/etc/ssh/sshd_config.d/99-ares.conf"
+grep -q 'Port 2222' "$rollback_root/etc/ssh/sshd_config"
+test -f "$rollback_root/var/log/ares/rollback-latest.json"
+printf 'ok rollback\n'
+
 install_root="$(mktemp -d)"
 archive_root="$(mktemp -d)"
 tar -czf "$archive_root/ares_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/').tar.gz" -C "$(dirname "$bin")" "$(basename "$bin")"

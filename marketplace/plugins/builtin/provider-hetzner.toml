@@ -4,6 +4,7 @@ kind = "builtin"
 summary = "Records Hetzner VPS recovery and cloud firewall reminders"
 categories = ["provider", "advisory"]
 capabilities = ["provider-advisory"]
+providers = ["hetzner"]
 probe = "true"
 plan = "builtin:provider-hetzner:plan"
 apply = "builtin:provider-hetzner:apply"

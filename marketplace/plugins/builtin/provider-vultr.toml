@@ -4,6 +4,7 @@ kind = "builtin"
 summary = "Records Vultr VPS recovery and cloud firewall reminders"
 categories = ["provider", "advisory"]
 capabilities = ["provider-advisory"]
+providers = ["vultr"]
 probe = "true"
 plan = "builtin:provider-vultr:plan"
 apply = "builtin:provider-vultr:apply"
