@@ -5,6 +5,7 @@
 [![License: PolyForm Shield 1.0.0](https://img.shields.io/badge/license-PolyForm%20Shield%201.0.0-blue.svg)](LICENSE)
 [![Platform: Linux VPS](https://img.shields.io/badge/platform-Linux%20VPS-lightgrey.svg)](docs/supported-distros.md)
 [![Go: 1.24+](https://img.shields.io/badge/go-1.24%2B-00ADD8.svg)](go.mod)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](.pre-commit-config.yaml)
 [![Website: Bun](https://img.shields.io/badge/website-bun-f472b6.svg)](website/package.json)
 [![Distros: Ubuntu Debian RHEL Fedora](https://img.shields.io/badge/distros-Ubuntu%20%7C%20Debian%20%7C%20RHEL%20%7C%20Fedora-64748b.svg)](docs/supported-distros.md)
 

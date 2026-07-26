@@ -105,7 +105,7 @@ export function MarketingFooter() {
             <h4 className="text-cream font-semibold mb-4 text-sm uppercase tracking-wider">Resources</h4>
             <ul className="space-y-3">
               <li><a href="https://github.com/dotbrains/ares/tree/main/docs" className="text-cream/70 hover:text-cream text-sm transition-colors inline-flex items-center gap-1.5" target="_blank" rel="noopener noreferrer">Documentation <ExternalLink className="w-3 h-3" /></a></li>
-              <li><a href="https://github.com/dotbrains/ares/blob/main/SPEC.md" className="text-cream/70 hover:text-cream text-sm transition-colors inline-flex items-center gap-1.5" target="_blank" rel="noopener noreferrer">Specification <ExternalLink className="w-3 h-3" /></a></li>
+              <li><a href="https://github.com/dotbrains/ares/blob/main/docs/README.md" className="text-cream/70 hover:text-cream text-sm transition-colors inline-flex items-center gap-1.5" target="_blank" rel="noopener noreferrer">Docs Index <ExternalLink className="w-3 h-3" /></a></li>
             </ul>
           </div>
           <div>
