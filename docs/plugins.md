@@ -35,10 +35,12 @@ The implementation currently enforces the host-level `confirm` guard for real
 apply mode: root privileges and `--yes` are required. Built-in actions are
 planned before mutation, and SSH/firewall actions are marked risky in the plan.
 
-Custom plugins can declare `probe`, `plan`, `apply`, and `rollback` commands in
-config. The first release executes custom `probe` and `apply`; `plan` and
-`rollback` are preserved as metadata for inspection and future richer lifecycle
-support.
+Custom plugins can declare `probe`, `plan`, `apply`, `verify`, and `rollback`
+commands in config. `ares` executes custom `probe`, `apply`, and `verify`
+commands with a timeout. Custom command output can emit structured lines
+prefixed with `applied:`, `verified:`, `skipped:`, or `failed:`; `ares` records
+those lines in the run report. `plan` and `rollback` are preserved as metadata
+for inspection and future richer external orchestration.
 
 ## Built-Ins
 
@@ -182,7 +184,9 @@ plugins:
       probe: command -v tailscale
       plan: ares-plugin-tailscale-ssh plan
       apply: ares-plugin-tailscale-ssh apply
+      verify: ares-plugin-tailscale-ssh verify
       rollback: ares-plugin-tailscale-ssh rollback
+      timeout_seconds: 120
 ```
 
 Guidelines for custom plugin commands:

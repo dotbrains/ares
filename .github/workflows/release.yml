@@ -22,6 +22,24 @@ env:
   RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+
+      - name: Validate release tag
+        run: |
+          set -euo pipefail
+          case "$RELEASE_TAG" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "release tag must look like vMAJOR.MINOR.PATCH" >&2; exit 1 ;;
+          esac
+          git fetch origin main
+          test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$(git rev-parse origin/main)"
+
   markdown:
     runs-on: ubuntu-latest
     steps:
@@ -127,7 +145,7 @@ jobs:
         run: make integration
 
   goreleaser:
-    needs: [markdown, test, vet, lint, flox, build, integration]
+    needs: [preflight, markdown, test, vet, lint, flox, build, integration]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -146,3 +164,32 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+  verify-assets:
+    needs: [goreleaser]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends jq
+
+      - name: Verify expected assets are published
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG"
+          assets="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$api" | jq -r '.assets[].name' | sort)"
+          expected="$(printf '%s\n' \
+            ares_darwin_amd64.tar.gz \
+            ares_darwin_arm64.tar.gz \
+            ares_linux_amd64.tar.gz \
+            ares_linux_arm64.tar.gz \
+            checksums.txt \
+            | sort)"
+          if [ "$assets" != "$expected" ]; then
+            echo "expected assets:" >&2
+            printf '%s\n' "$expected" >&2
+            echo "published assets:" >&2
+            printf '%s\n' "$assets" >&2
+            exit 1
+          fi

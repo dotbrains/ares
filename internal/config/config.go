@@ -20,11 +20,13 @@ type PluginsConfig struct {
 }
 
 type CustomPlugin struct {
-	Name     string `yaml:"name"`
-	Probe    string `yaml:"probe"`
-	Plan     string `yaml:"plan"`
-	Apply    string `yaml:"apply"`
-	Rollback string `yaml:"rollback,omitempty"`
+	Name           string `yaml:"name"`
+	Probe          string `yaml:"probe"`
+	Plan           string `yaml:"plan"`
+	Apply          string `yaml:"apply"`
+	Verify         string `yaml:"verify,omitempty"`
+	Rollback       string `yaml:"rollback,omitempty"`
+	TimeoutSeconds int    `yaml:"timeout_seconds,omitempty"`
 }
 
 // DefaultConfig returns the built-in default configuration.

@@ -37,6 +37,12 @@ mode requires root privileges and `--yes`.
 | `ares plugins show <id>` | Show plugin metadata, lifecycle commands, categories, requirements, capabilities, and distro hints. |
 | `ares plugins snippet <id>` | Print a YAML config snippet when the plugin provides one. |
 
+## Rollback
+
+| Command | Description |
+| --- | --- |
+| `ares rollback last --yes` | Remove `ares` managed files and restore the newest available `*.ares.*.bak` backups. |
+
 Examples:
 
 ```sh

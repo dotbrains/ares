@@ -88,6 +88,37 @@ jobs:
       - name: Smoke
         run: make smoke
 
+  distro-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        fixture:
+          - ubuntu-24.04
+          - debian-12
+          - debian-11
+          - rocky-9
+          - fedora
+          - arch
+          - opensuse-leap
+          - alpine
+          - oracle-9
+          - amazon-2023
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: make build
+
+      - name: Smoke ${{ matrix.fixture }}
+        env:
+          ARES_SMOKE_FIXTURES: ${{ matrix.fixture }}
+        run: tests/smoke.sh
+
   integration:
     runs-on: ubuntu-latest
     steps:
@@ -111,6 +142,16 @@ jobs:
         with:
           version: v2.16.0
           args: check
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: flox/install-flox-action@v2
+
+      - name: Run security checks
+        run: flox activate -c "make security"
 
   flox:
     runs-on: ubuntu-latest

@@ -4,7 +4,7 @@ LDFLAGS := -s -w -X main.version=$(VERSION)
 GO_PACKAGES := $(shell go list ./...)
 GO_PACKAGE_DIRS := $(shell go list -f '{{.Dir}}' ./...)
 
-.PHONY: build test smoke integration release-check lint actionlint budgets install clean vet markdown ci
+.PHONY: build test smoke integration release-check release-preflight lint actionlint budgets security install clean vet markdown ci
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
@@ -32,6 +32,19 @@ release-check:
 		echo "skipping goreleaser check: git remote 'origin' is not configured"; \
 	fi
 
+release-preflight:
+	@if git remote get-url origin >/dev/null 2>&1; then \
+		tag="$$(git describe --tags --exact-match 2>/dev/null || true)"; \
+		if [ -n "$$tag" ]; then \
+			git fetch origin main --quiet; \
+			test "$$(git rev-list -n 1 "$$tag")" = "$$(git rev-parse origin/main)"; \
+		else \
+			echo "skipping release tag ancestry check: HEAD is not tagged"; \
+		fi; \
+	else \
+		echo "skipping release preflight: git remote 'origin' is not configured"; \
+	fi
+
 vet:
 	go vet $(GO_PACKAGES)
 
@@ -44,8 +57,14 @@ actionlint:
 budgets:
 	scripts/check-file-sizes.sh
 	scripts/check-flat-directories.sh
+	scripts/check-provider-docs.sh
 
-ci: markdown budgets test vet lint actionlint build smoke integration release-check
+security:
+	govulncheck ./...
+	gitleaks detect --source . --redact --no-banner
+	shellcheck -e SC2016 install.sh scripts/*.sh tests/*.sh
+
+ci: markdown budgets test vet lint actionlint security build smoke integration release-check release-preflight
 
 clean:
 	rm -f $(BINARY) coverage.out

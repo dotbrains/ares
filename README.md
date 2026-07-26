@@ -84,6 +84,7 @@ manual `undo-plan.txt`.
 | `ares plugins list` | List embedded plugin catalog entries. |
 | `ares plugins show <id>` | Show plugin metadata and lifecycle commands. |
 | `ares plugins snippet <id>` | Print a copyable config snippet for a plugin. |
+| `ares rollback last --yes` | Remove managed files and restore the newest available backups. |
 
 ## Profiles
 
@@ -130,7 +131,9 @@ plugins:
       probe: command -v tailscale
       plan: ares-plugin-tailscale-ssh plan
       apply: ares-plugin-tailscale-ssh apply
+      verify: ares-plugin-tailscale-ssh verify
       rollback: ares-plugin-tailscale-ssh rollback
+      timeout_seconds: 120
 ```
 
 See [Plugins](docs/plugins.md) for the catalog schema and lifecycle contract.

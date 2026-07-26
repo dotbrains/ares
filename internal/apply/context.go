@@ -1,6 +1,7 @@
 package apply
 
 import (
+	stdctx "context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,6 +13,8 @@ import (
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/plugins"
 )
+
+const defaultCustomPluginTimeout = 2 * time.Minute
 
 type Options struct {
 	DryRun bool
@@ -91,6 +94,11 @@ func (ctx *Context) probePlugin(plugin plugins.Plugin) {
 }
 
 func (ctx *Context) verifyPlugin(plugin plugins.Plugin) {
+	if plugin.Kind == "custom" {
+		ctx.verifyCustomPlugin(plugin)
+		return
+	}
+
 	switch plugin.ID {
 	case "ssh-hardening":
 		ctx.verifyPath(plugin.ID, "/etc/ssh/sshd_config.d/99-ares.conf")
@@ -191,7 +199,67 @@ func (ctx *Context) applyCustomPlugin(plugin plugins.Plugin) error {
 		ctx.Result.Applied = append(ctx.Result.Applied, "would run custom plugin "+plugin.ID+": "+plugin.Apply)
 		return nil
 	}
-	return ctx.run("sh", "-lc", plugin.Apply)
+	output, err := runCustomCommand(plugin, plugin.Apply)
+	ctx.appendCustomOutput(plugin.ID, output)
+	return err
+}
+
+func (ctx *Context) verifyCustomPlugin(plugin plugins.Plugin) {
+	if plugin.Verify == "" {
+		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": no verifier declared")
+		return
+	}
+	if ctx.Options.Root != "" {
+		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": would verify with "+plugin.Verify)
+		return
+	}
+	output, err := runCustomCommand(plugin, plugin.Verify)
+	ctx.appendCustomOutput(plugin.ID, output)
+	if err != nil {
+		ctx.Result.Failed = append(ctx.Result.Failed, plugin.ID+": verify failed: "+err.Error())
+		return
+	}
+	ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": custom verify passed")
+}
+
+func runCustomCommand(plugin plugins.Plugin, command string) (string, error) {
+	timeout := defaultCustomPluginTimeout
+	if plugin.TimeoutSeconds > 0 {
+		timeout = time.Duration(plugin.TimeoutSeconds) * time.Second
+	}
+	commandContext, cancel := stdctx.WithTimeout(stdctx.Background(), timeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(commandContext, "sh", "-lc", command)
+	output, err := cmd.CombinedOutput()
+	if commandContext.Err() == stdctx.DeadlineExceeded {
+		return string(output), fmt.Errorf("command timed out after %s", timeout)
+	}
+	if err != nil {
+		return string(output), fmt.Errorf("%s: %w: %s", command, err, strings.TrimSpace(string(output)))
+	}
+	return string(output), nil
+}
+
+func (ctx *Context) appendCustomOutput(pluginID string, output string) {
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		switch {
+		case strings.HasPrefix(line, "applied:"):
+			ctx.Result.Applied = append(ctx.Result.Applied, pluginID+": "+strings.TrimSpace(strings.TrimPrefix(line, "applied:")))
+		case strings.HasPrefix(line, "verified:"):
+			ctx.Result.Verified = append(ctx.Result.Verified, pluginID+": "+strings.TrimSpace(strings.TrimPrefix(line, "verified:")))
+		case strings.HasPrefix(line, "skipped:"):
+			ctx.Result.Skipped = append(ctx.Result.Skipped, pluginID+": "+strings.TrimSpace(strings.TrimPrefix(line, "skipped:")))
+		case strings.HasPrefix(line, "failed:"):
+			ctx.Result.Failed = append(ctx.Result.Failed, pluginID+": "+strings.TrimSpace(strings.TrimPrefix(line, "failed:")))
+		default:
+			ctx.Result.Applied = append(ctx.Result.Applied, pluginID+": "+line)
+		}
+	}
 }
 
 func (ctx *Context) applyProviderAdvisory(plugin plugins.Plugin) error {

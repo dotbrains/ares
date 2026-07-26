@@ -2,7 +2,11 @@
 set -eu
 
 bin="${ARES_BIN:-./ares}"
-fixtures="ubuntu-24.04 debian-12 debian-11 rocky-9 fedora arch opensuse-leap alpine oracle-9 amazon-2023"
+fixtures="${ARES_SMOKE_FIXTURES:-ubuntu-24.04 debian-12 debian-11 rocky-9 fedora arch opensuse-leap alpine oracle-9 amazon-2023}"
+run_global_checks=1
+if [ -n "${ARES_SMOKE_FIXTURES:-}" ]; then
+  run_global_checks=0
+fi
 
 if [ ! -x "$bin" ]; then
   printf 'smoke: missing executable %s; run make build first\n' "$bin" >&2
@@ -48,6 +52,10 @@ for fixture in $fixtures; do
 
   printf 'ok %s\n' "$fixture"
 done
+
+if [ "$run_global_checks" -eq 0 ]; then
+  exit 0
+fi
 
 provider_root="$(mktemp -d)"
 mkdir -p "$provider_root/etc/ssh"

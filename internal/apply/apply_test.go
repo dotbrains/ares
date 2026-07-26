@@ -9,6 +9,7 @@ import (
 
 	"github.com/dotbrains/ares/internal/config"
 	"github.com/dotbrains/ares/internal/plan"
+	"github.com/dotbrains/ares/internal/plugins"
 	"github.com/dotbrains/ares/internal/system"
 )
 
@@ -202,6 +203,68 @@ func TestInstallCommandUsesPackageManagerSyntax(t *testing.T) {
 				t.Fatalf("args = %q, want %q", strings.Join(args, " "), strings.Join(tc.wantArgs, " "))
 			}
 		})
+	}
+}
+
+func TestCustomPluginCommandParsesStructuredOutput(t *testing.T) {
+	root := t.TempDir()
+	pluginScript := filepath.Join(root, "plugin.sh")
+	if err := os.WriteFile(pluginScript, []byte("#!/usr/bin/env sh\nprintf 'applied: custom apply\\nverified: custom side effect\\n'\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	plugin := plugins.Plugin{
+		ID:             "custom-hardening",
+		Kind:           "custom",
+		TimeoutSeconds: 5,
+	}
+	output, err := runCustomCommand(plugin, pluginScript)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := &Context{}
+	ctx.appendCustomOutput(plugin.ID, output)
+	if !contains(ctx.Result.Applied, "custom-hardening: custom apply") {
+		t.Fatalf("missing custom apply output: %+v", ctx.Result)
+	}
+	if !contains(ctx.Result.Verified, "custom-hardening: custom side effect") {
+		t.Fatalf("missing custom verify output: %+v", ctx.Result)
+	}
+}
+
+func TestRollbackLastRemovesManagedFilesAndRestoresBackups(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "etc", "ssh", "sshd_config.d"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "etc", "ssh", "sshd_config.d", "99-ares.conf"), []byte("managed"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	backup := filepath.Join(root, "etc", "ssh", "sshd_config.ares.20260725-170000.bak")
+	if err := os.WriteFile(backup, []byte("Port 2222\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := RollbackLast(RollbackOptions{
+		Yes:  true,
+		Root: root,
+		Now:  time.Date(2026, 7, 25, 18, 0, 0, 0, time.UTC),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "etc", "ssh", "sshd_config.d", "99-ares.conf")); !os.IsNotExist(err) {
+		t.Fatalf("managed SSH drop-in still exists: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(root, "etc", "ssh", "sshd_config"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "Port 2222\n" {
+		t.Fatalf("restored sshd_config = %q", data)
+	}
+	if len(result.Applied) == 0 {
+		t.Fatalf("expected rollback applied items: %+v", result)
 	}
 }
 

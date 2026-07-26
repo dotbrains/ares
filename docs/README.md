@@ -12,6 +12,8 @@ The docs are grouped by how you use `ares`:
   package managers, firewalls, and provider detection.
 - [Recovery](recovery.md) - lockout avoidance, backups, reports, and manual
   rollback expectations.
+- [Provider recovery notes](providers/README.md) - provider-specific console,
+  firewall, snapshot, and rescue reminders.
 - [Threat model](threat-model.md) - what the first release does and does not
   attempt to defend.
 - [Development](development.md) - local build, test, smoke, integration, and

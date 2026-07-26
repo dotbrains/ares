@@ -15,20 +15,22 @@ import (
 var pluginFiles embed.FS
 
 type Plugin struct {
-	ID           string
-	Aliases      []string
-	Name         string
-	Kind         string
-	Summary      string
-	Categories   []string
-	Requires     []string
-	Capabilities []string
-	Distros      []string
-	Probe        string
-	Plan         string
-	Apply        string
-	Rollback     string
-	Config       string
+	ID             string
+	Aliases        []string
+	Name           string
+	Kind           string
+	Summary        string
+	Categories     []string
+	Requires       []string
+	Capabilities   []string
+	Distros        []string
+	Probe          string
+	Plan           string
+	Apply          string
+	Verify         string
+	Rollback       string
+	Config         string
+	TimeoutSeconds int
 }
 
 type Catalog struct {

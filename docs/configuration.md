@@ -79,13 +79,17 @@ plugins:
       probe: command -v tailscale
       plan: ares-plugin-tailscale-ssh plan
       apply: ares-plugin-tailscale-ssh apply
+      verify: ares-plugin-tailscale-ssh verify
       rollback: ares-plugin-tailscale-ssh rollback
+      timeout_seconds: 120
 ```
 
 For custom plugins, `probe` runs before `apply` when declared. `apply` runs via
-`sh -lc` in real apply mode. `plan` and `rollback` are part of the extension
-contract and are surfaced in plugin metadata, but the first release's apply
-engine only executes custom `probe` and `apply`.
+`sh -lc` in real apply mode, followed by `verify` when declared. Custom command
+output can emit structured lines prefixed with `applied:`, `verified:`,
+`skipped:`, or `failed:`; `ares` records those lines in the run report. `plan`
+and `rollback` are surfaced in plugin metadata and reserved for richer external
+plugin orchestration.
 
 ## Environment
 

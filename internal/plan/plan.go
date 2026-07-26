@@ -70,14 +70,16 @@ func selectPlugins(host system.Host, cfg *config.Config) []plugins.Plugin {
 	}
 	for _, custom := range cfg.Plugins.Custom {
 		selected = append(selected, plugins.Plugin{
-			ID:       custom.Name,
-			Name:     custom.Name,
-			Kind:     "custom",
-			Summary:  "Custom local plugin",
-			Probe:    custom.Probe,
-			Plan:     custom.Plan,
-			Apply:    custom.Apply,
-			Rollback: custom.Rollback,
+			ID:             custom.Name,
+			Name:           custom.Name,
+			Kind:           "custom",
+			Summary:        "Custom local plugin",
+			Probe:          custom.Probe,
+			Plan:           custom.Plan,
+			Apply:          custom.Apply,
+			Verify:         custom.Verify,
+			Rollback:       custom.Rollback,
+			TimeoutSeconds: custom.TimeoutSeconds,
 		})
 	}
 	return selected

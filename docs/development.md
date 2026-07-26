@@ -34,11 +34,23 @@ make vet
 
 `make ci` also enforces source-size budgets. Source files are capped at 500
 lines by default, generated lockfiles and fixtures are excluded, and flat source
-directories are capped at 30 direct files by default.
+directories are capped at 30 direct files by default. The same budget target
+also verifies that every provider advisory plugin has a matching page under
+`docs/providers/`.
+
+Security checks run as part of `make ci`:
+
+- `govulncheck ./...`
+- `gitleaks detect`
+- `shellcheck` for installer, script, and test shell files
 
 `make integration` runs lightweight Ubuntu/Debian container checks by default.
 Use `ARES_FULL_INTEGRATION=1 make integration` to also pull and test heavier
 Rocky/Fedora images.
+
+GitHub Actions also runs a distro fixture smoke matrix so Ubuntu, Debian, Rocky,
+Fedora, Arch, openSUSE Leap, Alpine, Oracle Linux, and Amazon Linux resolution
+failures are reported independently.
 
 Install the pre-commit hook after cloning:
 

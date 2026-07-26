@@ -35,8 +35,12 @@ Each run prepares:
 ```
 
 `latest.json` records applied, skipped, verified, probed, and failed steps.
-`undo-plan.txt` is manual by design: SSH and firewall recovery steps should be
-reviewed before being run on a remote VPS.
+`undo-plan.txt` records recovery guidance.
+
+`ares rollback last --yes` performs the conservative automated subset of that
+guidance: it removes `ares` managed files and restores the newest matching
+`*.ares.*.bak` backup for files that `ares` backed up. It does not blindly reload
+SSH or firewall services on a live host; review provider console access first.
 
 ## Recovery Pattern
 
