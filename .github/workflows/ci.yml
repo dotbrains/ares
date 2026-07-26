@@ -131,6 +131,42 @@ jobs:
       - name: Container integration
         run: make integration
 
+  distro-integration:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: ubuntu:24.04
+            id: ubuntu
+          - image: debian:12
+            id: debian
+          - image: rockylinux:9
+            id: rocky
+          - image: fedora:latest
+            id: fedora
+          - image: archlinux:latest
+            id: arch
+          - image: opensuse/leap:latest
+            id: opensuse
+          - image: alpine:latest
+            id: alpine
+          - image: oraclelinux:9
+            id: oracle
+          - image: amazonlinux:2023
+            id: amazon
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Container integration ${{ matrix.image }}
+        env:
+          ARES_INTEGRATION_IMAGES: ${{ matrix.image }} ${{ matrix.id }}
+        run: make integration
+
   release-check:
     runs-on: ubuntu-latest
     steps:

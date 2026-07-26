@@ -40,6 +40,11 @@ debian:12 debian
     images="$images
 rockylinux:9 rocky
 fedora:latest fedora
+archlinux:latest arch
+opensuse/leap:latest opensuse
+alpine:latest alpine
+oraclelinux:9 oracle
+amazonlinux:2023 amazon
 "
   fi
 fi
@@ -49,6 +54,7 @@ printf '%s\n' "$images" | while read -r image id; do
   root="/tmp/ares-root"
   case "$id" in
     ubuntu|debian) expect_plugin="firewall-ufw" ;;
+    arch|alpine) expect_plugin="firewall-nftables" ;;
     *) expect_plugin="firewall-firewalld" ;;
   esac
   "$runtime" run --rm \

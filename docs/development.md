@@ -45,12 +45,13 @@ Security checks run as part of `make ci`:
 - `shellcheck` for installer, script, and test shell files
 
 `make integration` runs lightweight Ubuntu/Debian container checks by default.
-Use `ARES_FULL_INTEGRATION=1 make integration` to also pull and test heavier
-Rocky/Fedora images.
+Use `ARES_FULL_INTEGRATION=1 make integration` to also pull and test the full
+supported container set: Rocky, Fedora, Arch, openSUSE Leap, Alpine, Oracle
+Linux, and Amazon Linux.
 
-GitHub Actions also runs a distro fixture smoke matrix so Ubuntu, Debian, Rocky,
-Fedora, Arch, openSUSE Leap, Alpine, Oracle Linux, and Amazon Linux resolution
-failures are reported independently.
+GitHub Actions also runs distro fixture smoke and container integration
+matrices so Ubuntu, Debian, Rocky, Fedora, Arch, openSUSE Leap, Alpine, Oracle
+Linux, and Amazon Linux failures are reported independently.
 
 Install the pre-commit hook after cloning:
 
