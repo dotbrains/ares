@@ -1,0 +1,15 @@
+id = "distro-alpine"
+name = "Alpine Linux adapter"
+kind = "builtin"
+summary = "Provides apk, OpenRC, SSH, and service defaults for Alpine Linux VPS hosts"
+categories = ["distro"]
+capabilities = ["package-manager", "service-manager", "ssh-service"]
+distros = ["alpine"]
+probe = "grep -q '^ID=alpine' /etc/os-release"
+plan = "builtin:distro-alpine:plan"
+apply = "builtin:distro-alpine:apply"
+rollback = "builtin:distro-alpine:rollback"
+config = """
+[plugins]
+enabled = ["distro-alpine"]
+"""

@@ -46,6 +46,11 @@ Current built-ins:
 | `distro-debian` | Use apt/systemd/Debian service assumptions. |
 | `distro-rhel` | Use dnf/firewalld/RHEL-family assumptions. |
 | `distro-fedora` | Use dnf/firewalld/Fedora assumptions. |
+| `distro-arch` | Use pacman/nftables/Arch Linux assumptions. |
+| `distro-opensuse` | Use zypper/firewalld/openSUSE Leap assumptions. |
+| `distro-alpine` | Use apk/nftables/Alpine Linux assumptions. |
+| `distro-oracle` | Use dnf/firewalld/Oracle Linux assumptions. |
+| `distro-amazon` | Use dnf/firewalld/Amazon Linux assumptions. |
 | `ssh-hardening` | Write `/etc/ssh/sshd_config.d/99-ares.conf`, validate sshd config, and reload SSH. |
 | `firewall-ufw` | Install and enable UFW with active SSH allowed. |
 | `firewall-firewalld` | Install and enable firewalld with active SSH allowed. |
@@ -53,6 +58,9 @@ Current built-ins:
 | `fail2ban` | Install and enable a conservative SSH jail. |
 | `unattended-upgrades` | Enable apt security updates without automatic reboots. |
 | `dnf-automatic` | Enable dnf security updates. |
+| `pacman-upgrade` | Apply Arch package upgrades. |
+| `zypper-patches` | Apply openSUSE patches. |
+| `apk-upgrade` | Apply Alpine package upgrades. |
 | `sysctl-baseline` | Write conservative network hardening to `/etc/sysctl.d/99-ares.conf`. |
 | `web-profile` | Allow inbound HTTP and HTTPS. |
 | `strict-profile` | Apply stricter fail2ban defaults and record root-lock guidance. |

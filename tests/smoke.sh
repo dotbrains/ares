@@ -2,7 +2,7 @@
 set -eu
 
 bin="${ARES_BIN:-./ares}"
-fixtures="ubuntu-24.04 debian-12 rocky-9 fedora"
+fixtures="ubuntu-24.04 debian-12 debian-11 rocky-9 fedora arch opensuse-leap alpine oracle-9 amazon-2023"
 
 if [ ! -x "$bin" ]; then
   printf 'smoke: missing executable %s; run make build first\n' "$bin" >&2
@@ -28,9 +28,21 @@ for fixture in $fixtures; do
       test -f "$root/etc/apt/apt.conf.d/20auto-upgrades"
       grep -q 'firewall-ufw' "$root/output.txt"
       ;;
-    rocky-*|fedora)
+    rocky-*|fedora|oracle-*|amazon-*)
       test -f "$root/etc/dnf/automatic.conf"
       grep -q 'firewall-firewalld' "$root/output.txt"
+      ;;
+    arch)
+      grep -q 'firewall-nftables' "$root/output.txt"
+      grep -q 'pacman-upgrade' "$root/output.txt"
+      ;;
+    opensuse-leap)
+      grep -q 'firewall-firewalld' "$root/output.txt"
+      grep -q 'zypper-patches' "$root/output.txt"
+      ;;
+    alpine)
+      grep -q 'firewall-nftables' "$root/output.txt"
+      grep -q 'apk-upgrade' "$root/output.txt"
       ;;
   esac
 

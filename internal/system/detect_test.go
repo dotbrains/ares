@@ -87,3 +87,32 @@ func TestPackageAndFirewallDefaultsIgnoreHostCommandsInFixtureMode(t *testing.T)
 		t.Fatalf("FirewallBackend = %q, want firewalld", host.FirewallBackend)
 	}
 }
+
+func TestPackageAndFirewallDefaultsForNewDistros(t *testing.T) {
+	cases := []struct {
+		osID            string
+		packageManager  string
+		firewallBackend string
+	}{
+		{osID: "arch", packageManager: "pacman", firewallBackend: "nftables"},
+		{osID: "opensuse-leap", packageManager: "zypper", firewallBackend: "firewalld"},
+		{osID: "alpine", packageManager: "apk", firewallBackend: "nftables"},
+		{osID: "ol", packageManager: "dnf", firewallBackend: "firewalld"},
+		{osID: "amzn", packageManager: "dnf", firewallBackend: "firewalld"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.osID, func(t *testing.T) {
+			host := Host{OSID: tc.osID}
+			host.PackageManager = packageManager(host, false)
+			host.FirewallBackend = firewallBackend(host, false)
+
+			if host.PackageManager != tc.packageManager {
+				t.Fatalf("PackageManager = %q, want %q", host.PackageManager, tc.packageManager)
+			}
+			if host.FirewallBackend != tc.firewallBackend {
+				t.Fatalf("FirewallBackend = %q, want %q", host.FirewallBackend, tc.firewallBackend)
+			}
+		})
+	}
+}

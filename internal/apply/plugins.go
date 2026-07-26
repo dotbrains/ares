@@ -111,7 +111,7 @@ func (ctx *Context) applyUFW() error {
 	if err := ctx.run(ctx.Plan.Host.PackageManager, "update"); err != nil {
 		return err
 	}
-	if err := ctx.run(ctx.Plan.Host.PackageManager, "install", "-y", "ufw"); err != nil {
+	if err := ctx.installPackages("ufw"); err != nil {
 		return err
 	}
 	if err := ctx.run("ufw", "allow", ctx.Plan.Host.SSHPort+"/tcp"); err != nil {
@@ -153,7 +153,7 @@ func (ctx *Context) applyWebProfile() error {
 }
 
 func (ctx *Context) applyFirewalld() error {
-	if err := ctx.run(ctx.Plan.Host.PackageManager, "install", "-y", "firewalld"); err != nil {
+	if err := ctx.installPackages("firewalld"); err != nil {
 		return err
 	}
 	if err := ctx.run("systemctl", "enable", "--now", "firewalld"); err != nil {
@@ -173,7 +173,7 @@ func (ctx *Context) applyFirewalld() error {
 }
 
 func (ctx *Context) applyNftables() error {
-	if err := ctx.run(ctx.Plan.Host.PackageManager, "install", "-y", "nftables"); err != nil {
+	if err := ctx.installPackages("nftables"); err != nil {
 		return err
 	}
 	if err := ctx.backup("/etc/nftables.conf"); err != nil {
@@ -190,7 +190,7 @@ func (ctx *Context) applyNftables() error {
 }
 
 func (ctx *Context) applyFail2ban() error {
-	if err := ctx.run(ctx.Plan.Host.PackageManager, "install", "-y", "fail2ban"); err != nil {
+	if err := ctx.installPackages("fail2ban"); err != nil {
 		return err
 	}
 	dir := ctx.path("/etc/fail2ban/jail.d")
@@ -210,7 +210,7 @@ func (ctx *Context) applyFail2ban() error {
 }
 
 func (ctx *Context) applyUnattendedUpgrades() error {
-	if err := ctx.run(ctx.Plan.Host.PackageManager, "install", "-y", "unattended-upgrades"); err != nil {
+	if err := ctx.installPackages("unattended-upgrades"); err != nil {
 		return err
 	}
 	dir := ctx.path("/etc/apt/apt.conf.d")
@@ -225,7 +225,7 @@ func (ctx *Context) applyUnattendedUpgrades() error {
 }
 
 func (ctx *Context) applyDNFAutomatic() error {
-	if err := ctx.run(ctx.Plan.Host.PackageManager, "install", "-y", "dnf-automatic"); err != nil {
+	if err := ctx.installPackages("dnf-automatic"); err != nil {
 		return err
 	}
 	dir := ctx.path("/etc/dnf")
@@ -243,6 +243,22 @@ func (ctx *Context) applyDNFAutomatic() error {
 	}
 	ctx.Result.Applied = append(ctx.Result.Applied, "enabled dnf-automatic security updates")
 	return nil
+}
+
+func (ctx *Context) applyPackageUpgrade() error {
+	switch ctx.Plan.Host.PackageManager {
+	case "pacman":
+		return ctx.run("pacman", "-Syu", "--noconfirm")
+	case "zypper":
+		return ctx.run("zypper", "--non-interactive", "patch")
+	case "apk":
+		if err := ctx.run("apk", "update"); err != nil {
+			return err
+		}
+		return ctx.run("apk", "upgrade")
+	default:
+		return fmt.Errorf("unsupported package manager %q for package upgrade", ctx.Plan.Host.PackageManager)
+	}
 }
 
 func (ctx *Context) applySysctlBaseline() error {

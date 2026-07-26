@@ -147,7 +147,7 @@ func packageManager(host Host, probeHostCommands bool) string {
 	switch host.OSID {
 	case "ubuntu", "debian":
 		return "apt-get"
-	case "fedora", "almalinux", "rocky", "rhel":
+	case "fedora", "almalinux", "rocky", "rhel", "ol", "oracle", "amzn", "amazon":
 		return "dnf"
 	case "arch":
 		return "pacman"
@@ -173,8 +173,10 @@ func firewallBackend(host Host, probeHostCommands bool) string {
 	switch host.PackageManager {
 	case "apt-get":
 		return "ufw"
-	case "dnf", "yum":
+	case "dnf", "yum", "zypper":
 		return "firewalld"
+	case "pacman", "apk":
+		return "nftables"
 	default:
 		return "unknown"
 	}
@@ -192,6 +194,9 @@ func firstCommand(names ...string) string {
 func detectInitSystem(root string) string {
 	if _, err := os.Stat(rootPath(root, "/run/systemd/system")); err == nil {
 		return "systemd"
+	}
+	if _, err := os.Stat(rootPath(root, "/run/openrc")); err == nil {
+		return "openrc"
 	}
 	return "unknown"
 }
@@ -226,6 +231,8 @@ func sshServiceName(host Host) string {
 	switch host.OSID {
 	case "ubuntu", "debian":
 		return "ssh"
+	case "alpine":
+		return "sshd"
 	default:
 		return "sshd"
 	}

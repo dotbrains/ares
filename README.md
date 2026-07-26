@@ -7,7 +7,7 @@
 [![Go: 1.24+](https://img.shields.io/badge/go-1.24%2B-00ADD8.svg)](go.mod)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](.pre-commit-config.yaml)
 [![Dev env: Flox](https://img.shields.io/badge/dev%20env-flox-7c3aed.svg)](.flox/env/manifest.toml)
-[![Distros: Ubuntu Debian RHEL Fedora](https://img.shields.io/badge/distros-Ubuntu%20%7C%20Debian%20%7C%20RHEL%20%7C%20Fedora-64748b.svg)](docs/supported-distros.md)
+[![Distros: modular catalog](https://img.shields.io/badge/distros-modular%20catalog-64748b.svg)](docs/supported-distros.md)
 
 `ares` is a modular hardening runner for fresh Linux VPS instances. It detects
 the host, builds a reviewable plan, preserves SSH access, and applies a small
@@ -110,11 +110,12 @@ are added.
 
 Current built-in groups:
 
-- distro adapters for Ubuntu, Debian, RHEL-family images, and Fedora
+- distro adapters for Debian, Ubuntu, RHEL-family, Fedora, Arch, openSUSE,
+  Alpine, Oracle Linux, and Amazon Linux images
 - SSH hardening
 - UFW, firewalld, and nftables firewall adapters
 - fail2ban
-- apt and dnf security update adapters
+- apt, dnf, pacman, zypper, and apk security/update adapters
 - sysctl baseline
 - `web` and `strict` profile plugins
 - provider advisory plugins for common VPS vendors
@@ -154,10 +155,15 @@ provider-level firewall rules.
 First-class distro targets:
 
 - Ubuntu 22.04 and 24.04
-- Debian 12
+- Debian 11 and 12
 - AlmaLinux 9
 - Rocky Linux 9
 - Fedora Server
+- Arch Linux
+- openSUSE Leap
+- Alpine Linux
+- Oracle Linux
+- Amazon Linux
 
 Provider detection is advisory for DigitalOcean, Hostinger, Hetzner, Vultr,
 Linode/Akamai, OVH, and AWS Lightsail.

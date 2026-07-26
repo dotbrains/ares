@@ -1,0 +1,4 @@
+ID=debian
+PRETTY_NAME="Debian GNU/Linux 11 (bullseye)"
+VERSION_ID="11"
+ID_LIKE=debian

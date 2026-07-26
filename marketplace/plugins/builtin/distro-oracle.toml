@@ -1,0 +1,15 @@
+id = "distro-oracle"
+name = "Oracle Linux adapter"
+kind = "builtin"
+summary = "Provides dnf, systemd, SSH, and service defaults for Oracle Linux VPS hosts"
+categories = ["distro"]
+capabilities = ["package-manager", "service-manager", "ssh-service"]
+distros = ["ol", "oracle"]
+probe = "grep -Eq '^ID=(ol|oracle)' /etc/os-release"
+plan = "builtin:distro-oracle:plan"
+apply = "builtin:distro-oracle:apply"
+rollback = "builtin:distro-oracle:rollback"
+config = """
+[plugins]
+enabled = ["distro-oracle"]
+"""

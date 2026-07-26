@@ -1,0 +1,15 @@
+id = "distro-amazon"
+name = "Amazon Linux adapter"
+kind = "builtin"
+summary = "Provides dnf, systemd, SSH, and service defaults for Amazon Linux VPS hosts"
+categories = ["distro"]
+capabilities = ["package-manager", "service-manager", "ssh-service"]
+distros = ["amzn", "amazon"]
+probe = "grep -Eq '^ID=(amzn|amazon)' /etc/os-release"
+plan = "builtin:distro-amazon:plan"
+apply = "builtin:distro-amazon:apply"
+rollback = "builtin:distro-amazon:rollback"
+config = """
+[plugins]
+enabled = ["distro-amazon"]
+"""

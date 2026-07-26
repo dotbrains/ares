@@ -7,10 +7,15 @@ firewall, update, and provider plugins from metadata.
 ## First-Class Targets
 
 - Ubuntu 22.04 and 24.04
-- Debian 12
+- Debian 11 and 12
 - AlmaLinux 9
 - Rocky Linux 9
 - Fedora Server
+- Arch Linux
+- openSUSE Leap
+- Alpine Linux
+- Oracle Linux
+- Amazon Linux
 
 ## Distro Selection
 
@@ -41,6 +46,11 @@ and update plugins resolve correctly.
 | Debian | `apt-get` | `ufw` | `unattended-upgrades` | detected service, usually `ssh` |
 | AlmaLinux/Rocky/RHEL | `dnf` or `yum` | `firewalld` | `dnf-automatic` | detected service, usually `sshd` |
 | Fedora | `dnf` | `firewalld` | `dnf-automatic` | detected service, usually `sshd` |
+| Arch Linux | `pacman` | `nftables` | `pacman -Syu` | detected service, usually `sshd` |
+| openSUSE Leap | `zypper` | `firewalld` | `zypper patch` | detected service, usually `sshd` |
+| Alpine Linux | `apk` | `nftables` | `apk upgrade` | detected service, usually `sshd` |
+| Oracle Linux | `dnf` or `yum` | `firewalld` | `dnf-automatic` | detected service, usually `sshd` |
+| Amazon Linux | `dnf` or `yum` | `firewalld` | `dnf-automatic` | detected service, usually `sshd` |
 
 If the host reports nftables as the active firewall backend, `firewall-auto`
 can resolve to `firewall-nftables`.
@@ -50,12 +60,10 @@ SSH or firewall changes without a matching distro adapter in the plugin catalog.
 
 ## Later Targets
 
-- Debian 11
-- Arch Linux
-- openSUSE Leap
-- Alpine Linux
-- Oracle Linux
-- Amazon Linux
+- openSUSE Tumbleweed
+- AlmaLinux 8
+- Rocky Linux 8
+- Amazon Linux 2 yum-specific automatic updates
 
 ## Providers
 

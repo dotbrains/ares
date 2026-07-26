@@ -90,6 +90,19 @@ func TestFirstByCapabilityMatchesRequirementsAndDistro(t *testing.T) {
 	}
 }
 
+func TestFirstByCapabilitySupportsRequirementAlternatives(t *testing.T) {
+	plugin, ok := FirstByCapability(HostMatcher{
+		OSID:           "opensuse-leap",
+		PackageManager: "zypper",
+	}, "firewall")
+	if !ok {
+		t.Fatal("expected firewall plugin")
+	}
+	if plugin.ID != "firewall-firewalld" {
+		t.Fatalf("plugin ID = %q, want firewall-firewalld", plugin.ID)
+	}
+}
+
 func TestMarketplaceFilesMatchPluginIDs(t *testing.T) {
 	embedded, err := CatalogFromMarketplace()
 	if err != nil {

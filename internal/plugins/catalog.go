@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/dotbrains/ares/marketplace"
 )
@@ -99,14 +100,21 @@ func distroAgnosticMatch(plugin Plugin, _ HostMatcher) bool {
 
 func matchesRequirements(plugin Plugin, host HostMatcher) bool {
 	for _, requirement := range plugin.Requires {
-		switch requirement {
-		case host.PackageManager, host.FirewallBackend:
-			continue
-		default:
+		if !matchesRequirement(requirement, host) {
 			return false
 		}
 	}
 	return true
+}
+
+func matchesRequirement(requirement string, host HostMatcher) bool {
+	for _, alternative := range strings.Split(requirement, "|") {
+		switch alternative {
+		case host.PackageManager, host.FirewallBackend:
+			return true
+		}
+	}
+	return false
 }
 
 func hasCategory(plugin Plugin, category string) bool {

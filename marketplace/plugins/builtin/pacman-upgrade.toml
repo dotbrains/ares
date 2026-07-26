@@ -1,0 +1,16 @@
+id = "pacman-upgrade"
+name = "pacman upgrade"
+kind = "builtin"
+summary = "Applies Arch Linux package upgrades through pacman"
+categories = ["updates", "hardening"]
+requires = ["pacman"]
+capabilities = ["security-updates"]
+distros = ["arch"]
+probe = "command -v pacman"
+plan = "builtin:pacman-upgrade:plan"
+apply = "builtin:pacman-upgrade:apply"
+rollback = "builtin:pacman-upgrade:rollback"
+config = """
+[plugins]
+enabled = ["pacman-upgrade"]
+"""

@@ -175,6 +175,36 @@ func TestRunApplyProviderAdvisoryIsReported(t *testing.T) {
 	}
 }
 
+func TestInstallCommandUsesPackageManagerSyntax(t *testing.T) {
+	cases := []struct {
+		packageManager string
+		wantName       string
+		wantArgs       []string
+	}{
+		{packageManager: "apt-get", wantName: "apt-get", wantArgs: []string{"install", "-y", "fail2ban"}},
+		{packageManager: "dnf", wantName: "dnf", wantArgs: []string{"install", "-y", "fail2ban"}},
+		{packageManager: "yum", wantName: "yum", wantArgs: []string{"install", "-y", "fail2ban"}},
+		{packageManager: "pacman", wantName: "pacman", wantArgs: []string{"-S", "--needed", "--noconfirm", "fail2ban"}},
+		{packageManager: "zypper", wantName: "zypper", wantArgs: []string{"--non-interactive", "install", "fail2ban"}},
+		{packageManager: "apk", wantName: "apk", wantArgs: []string{"add", "fail2ban"}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.packageManager, func(t *testing.T) {
+			name, args, err := installCommand(tc.packageManager, "fail2ban")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if name != tc.wantName {
+				t.Fatalf("name = %q, want %q", name, tc.wantName)
+			}
+			if strings.Join(args, " ") != strings.Join(tc.wantArgs, " ") {
+				t.Fatalf("args = %q, want %q", strings.Join(args, " "), strings.Join(tc.wantArgs, " "))
+			}
+		})
+	}
+}
+
 func testPlan() plan.Plan {
 	return plan.Build(testHost(), config.DefaultConfig())
 }

@@ -1,0 +1,4 @@
+ID=ol
+PRETTY_NAME="Oracle Linux Server 9.4"
+VERSION_ID="9.4"
+ID_LIKE="fedora"

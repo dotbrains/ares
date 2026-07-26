@@ -183,11 +183,11 @@ func actionsForPlugin(host system.Host, profile string, plugin plugins.Plugin) [
 			Title:  "Enable fail2ban",
 			Detail: "Install and enable a conservative SSH jail",
 		}}
-	case "unattended-upgrades", "dnf-automatic":
+	case "unattended-upgrades", "dnf-automatic", "pacman-upgrade", "zypper-patches", "apk-upgrade":
 		return []Action{{
 			Plugin: plugin.ID,
-			Title:  "Enable automatic security updates",
-			Detail: "Use distro-native security updates without automatic reboots",
+			Title:  "Configure distro-native updates",
+			Detail: "Use the selected distro update mechanism without automatic reboots",
 		}}
 	case "sysctl-baseline":
 		return []Action{{

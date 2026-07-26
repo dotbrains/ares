@@ -1,0 +1,15 @@
+id = "distro-arch"
+name = "Arch Linux adapter"
+kind = "builtin"
+summary = "Provides pacman, systemd, SSH, and service defaults for Arch Linux VPS hosts"
+categories = ["distro"]
+capabilities = ["package-manager", "service-manager", "ssh-service"]
+distros = ["arch"]
+probe = "grep -q '^ID=arch' /etc/os-release"
+plan = "builtin:distro-arch:plan"
+apply = "builtin:distro-arch:apply"
+rollback = "builtin:distro-arch:rollback"
+config = """
+[plugins]
+enabled = ["distro-arch"]
+"""

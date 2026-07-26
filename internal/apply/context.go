@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -99,6 +100,8 @@ func (ctx *Context) verifyPlugin(plugin plugins.Plugin) {
 		ctx.verifyPath(plugin.ID, "/etc/apt/apt.conf.d/20auto-upgrades")
 	case "dnf-automatic":
 		ctx.verifyPath(plugin.ID, "/etc/dnf/automatic.conf")
+	case "pacman-upgrade", "zypper-patches", "apk-upgrade":
+		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": package upgrade command completed")
 	case "sysctl-baseline":
 		ctx.verifyPath(plugin.ID, "/etc/sysctl.d/99-ares.conf")
 	case "firewall-ufw":
@@ -139,9 +142,12 @@ func (ctx *Context) prepareReportPaths() error {
 }
 
 func (ctx *Context) applyPlugin(plugin plugins.Plugin) error {
+	if slices.Contains(plugin.Categories, "distro") {
+		ctx.Result.Applied = append(ctx.Result.Applied, plugin.ID+": selected "+ctx.Plan.Host.PackageManager+"/"+ctx.Plan.Host.InitSystem+" distro adapter")
+		return nil
+	}
+
 	switch plugin.ID {
-	case "distro-ubuntu", "distro-debian":
-		ctx.Result.Applied = append(ctx.Result.Applied, plugin.ID+": selected apt/systemd distro adapter")
 	case "ssh-hardening":
 		return ctx.applySSHHardening()
 	case "firewall-ufw":
@@ -156,6 +162,8 @@ func (ctx *Context) applyPlugin(plugin plugins.Plugin) error {
 		return ctx.applyUnattendedUpgrades()
 	case "dnf-automatic":
 		return ctx.applyDNFAutomatic()
+	case "pacman-upgrade", "zypper-patches", "apk-upgrade":
+		return ctx.applyPackageUpgrade()
 	case "sysctl-baseline":
 		return ctx.applySysctlBaseline()
 	case "web-profile":
@@ -214,6 +222,36 @@ func (ctx *Context) run(name string, args ...string) error {
 		ctx.Result.Applied = append(ctx.Result.Applied, strings.TrimSpace(string(output)))
 	}
 	return nil
+}
+
+func (ctx *Context) installPackages(packages ...string) error {
+	name, args, err := installCommand(ctx.Plan.Host.PackageManager, packages...)
+	if err != nil {
+		return err
+	}
+	return ctx.run(name, args...)
+}
+
+func installCommand(packageManager string, packages ...string) (string, []string, error) {
+	switch packageManager {
+	case "apt-get":
+		args := append([]string{"install", "-y"}, packages...)
+		return packageManager, args, nil
+	case "dnf", "yum":
+		args := append([]string{"install", "-y"}, packages...)
+		return packageManager, args, nil
+	case "pacman":
+		args := append([]string{"-S", "--needed", "--noconfirm"}, packages...)
+		return packageManager, args, nil
+	case "zypper":
+		args := append([]string{"--non-interactive", "install"}, packages...)
+		return packageManager, args, nil
+	case "apk":
+		args := append([]string{"add"}, packages...)
+		return packageManager, args, nil
+	default:
+		return "", nil, fmt.Errorf("unsupported package manager %q", packageManager)
+	}
 }
 
 func (ctx *Context) backup(path string) error {

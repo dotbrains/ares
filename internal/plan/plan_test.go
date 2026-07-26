@@ -46,6 +46,77 @@ func TestBuildResolvesRHELDefaults(t *testing.T) {
 	}
 }
 
+func TestBuildResolvesNewDistroDefaults(t *testing.T) {
+	cases := []struct {
+		name            string
+		host            system.Host
+		expectedPlugins []string
+	}{
+		{
+			name: "arch",
+			host: hostForDistro("arch", "pacman", "nftables"),
+			expectedPlugins: []string{
+				"distro-arch",
+				"firewall-nftables",
+				"pacman-upgrade",
+			},
+		},
+		{
+			name: "opensuse",
+			host: hostForDistro("opensuse-leap", "zypper", "firewalld"),
+			expectedPlugins: []string{
+				"distro-opensuse",
+				"firewall-firewalld",
+				"zypper-patches",
+			},
+		},
+		{
+			name: "alpine",
+			host: hostForDistro("alpine", "apk", "nftables"),
+			expectedPlugins: []string{
+				"distro-alpine",
+				"firewall-nftables",
+				"apk-upgrade",
+			},
+		},
+		{
+			name: "oracle",
+			host: hostForDistro("ol", "dnf", "firewalld"),
+			expectedPlugins: []string{
+				"distro-oracle",
+				"firewall-firewalld",
+				"dnf-automatic",
+			},
+		},
+		{
+			name: "amazon",
+			host: hostForDistro("amzn", "dnf", "firewalld"),
+			expectedPlugins: []string{
+				"distro-amazon",
+				"firewall-firewalld",
+				"dnf-automatic",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := Build(tc.host, config.DefaultConfig())
+			for _, id := range tc.expectedPlugins {
+				if !hasPlugin(result, id) {
+					t.Fatalf("expected %s in %+v", id, result.Plugins)
+				}
+			}
+			if hasPlugin(result, "unattended-upgrades") {
+				t.Fatalf("unexpected apt update plugin in %+v", result.Plugins)
+			}
+			if len(result.Warnings) != 0 {
+				t.Fatalf("unexpected warnings: %v", result.Warnings)
+			}
+		})
+	}
+}
+
 func TestBuildWarnsForUnsupportedDistroAndNoSSH(t *testing.T) {
 	host := system.Host{
 		OSID:            "void",
@@ -117,6 +188,19 @@ func ubuntuHost() system.Host {
 		InitSystem:      "systemd",
 		FirewallBackend: "ufw",
 		SSHService:      "ssh",
+		SSHPort:         "22",
+		RunningOverSSH:  true,
+	}
+}
+
+func hostForDistro(osID string, packageManager string, firewallBackend string) system.Host {
+	return system.Host{
+		OSID:            osID,
+		OSName:          osID,
+		PackageManager:  packageManager,
+		InitSystem:      "systemd",
+		FirewallBackend: firewallBackend,
+		SSHService:      "sshd",
 		SSHPort:         "22",
 		RunningOverSSH:  true,
 	}

@@ -1,0 +1,16 @@
+id = "apk-upgrade"
+name = "apk upgrade"
+kind = "builtin"
+summary = "Applies Alpine package upgrades through apk"
+categories = ["updates", "hardening"]
+requires = ["apk"]
+capabilities = ["security-updates"]
+distros = ["alpine"]
+probe = "command -v apk"
+plan = "builtin:apk-upgrade:plan"
+apply = "builtin:apk-upgrade:apply"
+rollback = "builtin:apk-upgrade:rollback"
+config = """
+[plugins]
+enabled = ["apk-upgrade"]
+"""

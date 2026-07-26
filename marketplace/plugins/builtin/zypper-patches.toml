@@ -1,0 +1,16 @@
+id = "zypper-patches"
+name = "zypper patches"
+kind = "builtin"
+summary = "Applies openSUSE security and recommended patches through zypper"
+categories = ["updates", "hardening"]
+requires = ["zypper"]
+capabilities = ["security-updates"]
+distros = ["opensuse-leap"]
+probe = "command -v zypper"
+plan = "builtin:zypper-patches:plan"
+apply = "builtin:zypper-patches:apply"
+rollback = "builtin:zypper-patches:rollback"
+config = """
+[plugins]
+enabled = ["zypper-patches"]
+"""

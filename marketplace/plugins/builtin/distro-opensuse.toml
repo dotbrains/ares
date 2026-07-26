@@ -1,0 +1,15 @@
+id = "distro-opensuse"
+name = "openSUSE Leap adapter"
+kind = "builtin"
+summary = "Provides zypper, systemd, SSH, and service defaults for openSUSE Leap VPS hosts"
+categories = ["distro"]
+capabilities = ["package-manager", "service-manager", "ssh-service"]
+distros = ["opensuse-leap"]
+probe = "grep -q '^ID=opensuse-leap' /etc/os-release"
+plan = "builtin:distro-opensuse:plan"
+apply = "builtin:distro-opensuse:apply"
+rollback = "builtin:distro-opensuse:rollback"
+config = """
+[plugins]
+enabled = ["distro-opensuse"]
+"""
