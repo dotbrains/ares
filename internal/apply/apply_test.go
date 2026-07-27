@@ -265,6 +265,46 @@ func TestBuiltinPluginProbeFailureDoesNotSkipPlugin(t *testing.T) {
 	}
 }
 
+func TestVerifyPluginOrErrorReturnsErrorWhenBuiltinVerificationFails(t *testing.T) {
+	root := t.TempDir()
+	ctx := &Context{
+		Options: Options{Root: root},
+		Plan:    testPlan(),
+	}
+
+	err := ctx.verifyPluginOrError(plugins.Plugin{
+		ID:   "ssh-hardening",
+		Kind: "builtin",
+	})
+	if err == nil {
+		t.Fatal("expected verification error")
+	}
+	if !contains(ctx.Result.Failed, "ssh-hardening: expected /etc/ssh/sshd_config.d/99-ares.conf was not present") {
+		t.Fatalf("missing verification failure: %+v", ctx.Result)
+	}
+}
+
+func TestVerifyPluginOrErrorReturnsErrorWhenCustomVerificationFails(t *testing.T) {
+	root := t.TempDir()
+	verifyScript := filepath.Join(root, "verify.sh")
+	if err := os.WriteFile(verifyScript, []byte("#!/usr/bin/env sh\nprintf 'failed: custom check failed\\n'\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	ctx := &Context{Plan: testPlan()}
+
+	err := ctx.verifyPluginOrError(plugins.Plugin{
+		ID:     "custom-hardening",
+		Kind:   "custom",
+		Verify: verifyScript,
+	})
+	if err == nil {
+		t.Fatal("expected verification error")
+	}
+	if !contains(ctx.Result.Failed, "custom-hardening: custom check failed") {
+		t.Fatalf("missing custom verification failure: %+v", ctx.Result)
+	}
+}
+
 func TestRollbackLastRemovesManagedFilesAndRestoresBackups(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "etc", "ssh", "sshd_config.d"), 0o755); err != nil {

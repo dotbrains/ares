@@ -72,7 +72,9 @@ func Run(hardeningPlan plan.Plan, opts Options) (Result, error) {
 			ctx.Result.Failed = append(ctx.Result.Failed, fmt.Sprintf("%s: %v", plugin.ID, err))
 			return ctx.finish(err)
 		}
-		ctx.verifyPlugin(plugin)
+		if err := ctx.verifyPluginOrError(plugin); err != nil {
+			return ctx.finish(err)
+		}
 	}
 
 	return ctx.finish(nil)
@@ -131,6 +133,15 @@ func (ctx *Context) verifyPlugin(plugin plugins.Plugin) {
 		}
 		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": no verifier declared")
 	}
+}
+
+func (ctx *Context) verifyPluginOrError(plugin plugins.Plugin) error {
+	failuresBeforeVerify := len(ctx.Result.Failed)
+	ctx.verifyPlugin(plugin)
+	if len(ctx.Result.Failed) > failuresBeforeVerify {
+		return fmt.Errorf("%s verification failed", plugin.ID)
+	}
+	return nil
 }
 
 func (ctx *Context) verifyPath(pluginID string, path string) {

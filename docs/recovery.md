@@ -22,6 +22,7 @@ The first release implements these safety behaviors:
 - firewall plans preserve the detected active SSH port
 - nftables and dnf automatic configs are backed up before replacement when
   existing files are present
+- verifier failures fail the run after writing reports
 - run reports are written under `/var/log/ares`
 
 ## Reports
