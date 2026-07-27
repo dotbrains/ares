@@ -51,7 +51,9 @@ Linux, and Amazon Linux.
 
 GitHub Actions also runs distro fixture smoke and container integration
 matrices so Ubuntu, Debian, Rocky, Fedora, Arch, openSUSE Leap, Alpine, Oracle
-Linux, and Amazon Linux failures are reported independently.
+Linux, and Amazon Linux failures are reported independently. The release
+workflow runs the same supported-distro container matrix before publishing
+artifacts.
 
 Install the pre-commit hook after cloning:
 
