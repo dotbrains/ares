@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 
+	"github.com/dotbrains/ares/internal/plugins"
 	"gopkg.in/yaml.v3"
 )
 
@@ -82,6 +85,9 @@ func Load() (*Config, error) {
 	if err := yaml.Unmarshal(data, cfg); err != nil {
 		return nil, fmt.Errorf("parsing config %s: %w", path, err)
 	}
+	if err := Validate(cfg); err != nil {
+		return nil, fmt.Errorf("validating config %s: %w", path, err)
+	}
 	return cfg, nil
 }
 
@@ -95,11 +101,42 @@ func LoadFrom(path string) (*Config, error) {
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
-	cfg := &Config{}
+	cfg := DefaultConfig()
 	if err := yaml.Unmarshal(data, cfg); err != nil {
 		return nil, fmt.Errorf("parsing config %s: %w", path, err)
 	}
+	if err := Validate(cfg); err != nil {
+		return nil, fmt.Errorf("validating config %s: %w", path, err)
+	}
 	return cfg, nil
+}
+
+// Validate checks loaded configuration before a plan can silently omit behavior.
+func Validate(cfg *Config) error {
+	if cfg == nil {
+		return fmt.Errorf("config is nil")
+	}
+	if !slices.Contains([]string{"basic", "web", "strict"}, cfg.Profile) {
+		return fmt.Errorf("unknown profile %q", cfg.Profile)
+	}
+	for _, id := range cfg.Plugins.Enabled {
+		switch id {
+		case "firewall-auto", "security-updates":
+			continue
+		}
+		if _, ok := plugins.Find(id); !ok {
+			return fmt.Errorf("unknown enabled plugin %q", id)
+		}
+	}
+	for _, plugin := range cfg.Plugins.Custom {
+		if strings.TrimSpace(plugin.Name) == "" {
+			return fmt.Errorf("custom plugin name is required")
+		}
+		if plugin.TimeoutSeconds < 0 {
+			return fmt.Errorf("custom plugin %q timeout_seconds must be non-negative", plugin.Name)
+		}
+	}
+	return nil
 }
 
 // Save writes the config to disk, creating directories as needed.

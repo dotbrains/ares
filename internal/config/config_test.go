@@ -103,6 +103,25 @@ func TestLoadFrom_NoFile(t *testing.T) {
 	}
 }
 
+func TestLoadFrom_MergesWithDefaults(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "profile-only.yaml")
+	if err := os.WriteFile(path, []byte("profile: web\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := LoadFrom(path)
+	if err != nil {
+		t.Fatalf("LoadFrom error: %v", err)
+	}
+	if cfg.Profile != "web" {
+		t.Fatalf("Profile = %q, want web", cfg.Profile)
+	}
+	if len(cfg.Plugins.Enabled) == 0 {
+		t.Fatal("LoadFrom dropped default enabled plugins")
+	}
+}
+
 func TestLoadFrom_InvalidYAML(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "bad.yaml")
@@ -111,5 +130,56 @@ func TestLoadFrom_InvalidYAML(t *testing.T) {
 	_, err := LoadFrom(path)
 	if err == nil {
 		t.Fatal("expected error for invalid YAML")
+	}
+}
+
+func TestLoadFrom_RejectsUnknownProfile(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "bad-profile.yaml")
+	if err := os.WriteFile(path, []byte("profile: typo\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := LoadFrom(path)
+	if err == nil {
+		t.Fatal("expected error for unknown profile")
+	}
+}
+
+func TestLoadFrom_RejectsUnknownEnabledPlugin(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "bad-plugin.yaml")
+	if err := os.WriteFile(path, []byte("plugins:\n  enabled:\n    - ssh-hardening\n    - typo-plugin\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := LoadFrom(path)
+	if err == nil {
+		t.Fatal("expected error for unknown enabled plugin")
+	}
+}
+
+func TestLoadFrom_AllowsVirtualPluginSelectors(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "virtual-plugins.yaml")
+	if err := os.WriteFile(path, []byte("plugins:\n  enabled:\n    - firewall-auto\n    - security-updates\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := LoadFrom(path); err != nil {
+		t.Fatalf("LoadFrom rejected virtual plugin selectors: %v", err)
+	}
+}
+
+func TestLoadFrom_RejectsInvalidCustomPlugin(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "bad-custom.yaml")
+	if err := os.WriteFile(path, []byte("plugins:\n  custom:\n    - name: ''\n      timeout_seconds: -1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := LoadFrom(path)
+	if err == nil {
+		t.Fatal("expected error for invalid custom plugin")
 	}
 }

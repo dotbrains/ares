@@ -6,6 +6,10 @@
 ~/.config/ares/config.yaml
 ```
 
+Loaded config is validated before planning. Unknown profiles, unknown enabled
+plugin IDs, blank custom plugin names, and negative custom plugin timeouts fail
+early instead of silently producing a weaker plan.
+
 Create the default file:
 
 ```sh
