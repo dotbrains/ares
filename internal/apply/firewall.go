@@ -59,6 +59,9 @@ func (ctx *Context) applyNftables() error {
 	if err := ctx.writeNftablesRules(ctx.Plan.Host.SSHPort); err != nil {
 		return err
 	}
+	if err := ctx.run("nft", "-c", "-f", "/etc/nftables.conf"); err != nil {
+		return err
+	}
 	if err := ctx.run("systemctl", "enable", "--now", "nftables"); err != nil {
 		return err
 	}
@@ -86,10 +89,11 @@ func (ctx *Context) applyWebProfile() error {
 		if err := ctx.writeNftablesRules(ctx.Plan.Host.SSHPort, "80", "443"); err != nil {
 			return err
 		}
-		if ctx.Options.Root == "" {
-			if err := ctx.run("nft", "-f", "/etc/nftables.conf"); err != nil {
-				return err
-			}
+		if err := ctx.run("nft", "-c", "-f", "/etc/nftables.conf"); err != nil {
+			return err
+		}
+		if err := ctx.run("nft", "-f", "/etc/nftables.conf"); err != nil {
+			return err
 		}
 		ctx.Result.Applied = append(ctx.Result.Applied, "allowed HTTP and HTTPS")
 		return nil

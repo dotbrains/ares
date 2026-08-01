@@ -193,6 +193,12 @@ func TestRunApplyWebProfileWritesNftablesWebRules(t *testing.T) {
 	if !contains(result.Applied, "allowed HTTP and HTTPS") {
 		t.Fatalf("missing web profile applied item: %+v", result)
 	}
+	if !contains(result.Applied, "would run: nft -c -f /etc/nftables.conf") {
+		t.Fatalf("missing nftables validation command: %+v", result.Applied)
+	}
+	if !contains(result.Applied, "would run: nft -f /etc/nftables.conf") {
+		t.Fatalf("missing nftables load command: %+v", result.Applied)
+	}
 }
 
 func TestRunApplyProviderAdvisoryIsReported(t *testing.T) {

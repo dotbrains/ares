@@ -20,6 +20,7 @@ The first release implements these safety behaviors:
 - SSH hardening writes a drop-in at `/etc/ssh/sshd_config.d/99-ares.conf`
 - SSH hardening validates `sshd -t` before reloading the detected SSH service
 - firewall plans preserve the detected active SSH port
+- generated nftables configs are validated with `nft -c -f` before loading
 - nftables and dnf automatic configs are backed up before replacement when
   existing files are present; when a file is touched more than once in a run,
   the first backup is preserved
