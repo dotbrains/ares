@@ -26,6 +26,9 @@ func newRootCmd(version string) *cobra.Command {
 				return err
 			}
 			applyFlagOverrides(cfg, profile)
+			if err := config.Validate(cfg); err != nil {
+				return err
+			}
 			host, err := system.Detect()
 			if err != nil {
 				return err

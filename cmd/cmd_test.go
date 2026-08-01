@@ -41,6 +41,22 @@ func TestNewRootCmd_Version(t *testing.T) {
 	}
 }
 
+func TestRootCmdRejectsUnknownProfileOverride(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+
+	root := newRootCmd("test")
+	root.SetArgs([]string{"--profile", "unknown", "--dry-run"})
+
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("expected unknown profile error")
+	}
+	if !strings.Contains(err.Error(), `unknown profile "unknown"`) {
+		t.Fatalf("error = %v, want unknown profile", err)
+	}
+}
+
 func TestExecute_Help(t *testing.T) {
 	root := newRootCmd("dev")
 	root.SetArgs([]string{"--help"})
