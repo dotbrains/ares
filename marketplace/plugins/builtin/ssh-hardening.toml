@@ -9,6 +9,9 @@ probe = "test -d /etc/ssh"
 plan = "builtin:ssh-hardening:plan"
 apply = "builtin:ssh-hardening:apply"
 rollback = "builtin:ssh-hardening:rollback"
+managed_files = ["/etc/ssh/sshd_config.d/99-ares.conf"]
+backup_files = ["/etc/ssh/sshd_config"]
+rollback_steps = ["remove /etc/ssh/sshd_config.d/99-ares.conf", "restore /etc/ssh/sshd_config backup"]
 config = """
 [plugins]
 enabled = ["ssh-hardening"]

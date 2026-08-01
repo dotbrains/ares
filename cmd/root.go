@@ -8,6 +8,7 @@ import (
 	"github.com/dotbrains/ares/internal/apply"
 	"github.com/dotbrains/ares/internal/config"
 	"github.com/dotbrains/ares/internal/plan"
+	"github.com/dotbrains/ares/internal/reports"
 	"github.com/spf13/cobra"
 )
 
@@ -78,11 +79,11 @@ func applyFlagOverrides(cfg *config.Config, profile string) {
 }
 
 func printRunJSON(cmd *cobra.Command, hardeningPlan plan.Plan, result apply.Result, runErr error) error {
-	data, err := json.MarshalIndent(map[string]any{
-		"schema_version": "ares.run.v1",
-		"plan":           hardeningPlan,
-		"result":         result,
-		"error":          errorString(runErr),
+	data, err := json.MarshalIndent(reports.RunOutput{
+		SchemaVersion: reports.RunSchemaVersion,
+		Plan:          hardeningPlan,
+		Result:        result,
+		Error:         errorString(runErr),
 	}, "", "  ")
 	if err != nil {
 		return err

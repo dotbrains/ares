@@ -9,6 +9,8 @@ probe = "true"
 plan = "builtin:strict-profile:plan"
 apply = "builtin:strict-profile:apply"
 rollback = "builtin:strict-profile:rollback"
+managed_files = ["/etc/fail2ban/jail.d/ares-sshd.conf"]
+rollback_steps = ["review root account lockout guidance"]
 config = """
 profile = "strict"
 """

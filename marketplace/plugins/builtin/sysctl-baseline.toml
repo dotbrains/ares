@@ -8,6 +8,8 @@ probe = "command -v sysctl"
 plan = "builtin:sysctl-baseline:plan"
 apply = "builtin:sysctl-baseline:apply"
 rollback = "builtin:sysctl-baseline:rollback"
+managed_files = ["/etc/sysctl.d/99-ares.conf"]
+rollback_steps = ["remove /etc/sysctl.d/99-ares.conf"]
 config = """
 [plugins]
 enabled = ["sysctl-baseline"]

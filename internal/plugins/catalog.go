@@ -56,6 +56,9 @@ func clonePlugin(plugin Plugin) Plugin {
 	plugin.Capabilities = slices.Clone(plugin.Capabilities)
 	plugin.Distros = slices.Clone(plugin.Distros)
 	plugin.Providers = slices.Clone(plugin.Providers)
+	plugin.ManagedFiles = slices.Clone(plugin.ManagedFiles)
+	plugin.BackupFiles = slices.Clone(plugin.BackupFiles)
+	plugin.RollbackSteps = slices.Clone(plugin.RollbackSteps)
 	return plugin
 }
 

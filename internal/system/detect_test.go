@@ -165,6 +165,9 @@ func TestDetectWithProberUsesInjectedHostFacts(t *testing.T) {
 	if host.PackageManager != "apt-get" || host.InitSystem != "systemd" || host.FirewallBackend != "ufw" {
 		t.Fatalf("unexpected distro defaults: %+v", host)
 	}
+	if host.Facts["package_manager"].Source != "catalog default" || host.Facts["ssh_port"].Confidence != "medium" {
+		t.Fatalf("unexpected fact metadata: %+v", host.Facts)
+	}
 }
 
 type fakeProber struct {

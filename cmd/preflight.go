@@ -7,6 +7,7 @@ import (
 
 	"github.com/dotbrains/ares/internal/apply"
 	"github.com/dotbrains/ares/internal/plan"
+	"github.com/dotbrains/ares/internal/reports"
 	"github.com/dotbrains/ares/internal/safety"
 	"github.com/dotbrains/ares/internal/system"
 	"github.com/spf13/cobra"
@@ -14,14 +15,7 @@ import (
 
 type preflightCheck = safety.Decision
 
-type preflightReport struct {
-	SchemaVersion string                   `json:"schema_version"`
-	Profile       string                   `json:"profile"`
-	Host          system.Host              `json:"host"`
-	Plugins       []string                 `json:"plugins"`
-	Checks        []preflightCheck         `json:"checks"`
-	Transaction   apply.TransactionSummary `json:"transaction"`
-}
+type preflightReport = reports.PreflightReport
 
 func newPreflightCmd() *cobra.Command {
 	var profile string
@@ -66,7 +60,7 @@ func buildPreflightReport(host system.Host, hardeningPlan plan.Plan, checks []pr
 		ids = append(ids, plugin.ID)
 	}
 	return preflightReport{
-		SchemaVersion: "ares.preflight.v1",
+		SchemaVersion: reports.PreflightSchemaVersion,
 		Profile:       hardeningPlan.Profile,
 		Host:          host,
 		Plugins:       ids,

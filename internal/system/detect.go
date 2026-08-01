@@ -27,6 +27,12 @@ type Host struct {
 	SSHPort         string
 	RunningOverSSH  bool
 	Architecture    string
+	Facts           map[string]Fact `json:"facts,omitempty"`
+}
+
+type Fact struct {
+	Source     string `json:"source"`
+	Confidence string `json:"confidence"`
 }
 
 type Prober interface {
@@ -86,14 +92,41 @@ func DetectWithProber(prober Prober) (Host, error) {
 		SSHPort:        detectSSHPortWithProber(prober, rootPath(root, "/etc/ssh/sshd_config")),
 		RunningOverSSH: prober.Env("SSH_CONNECTION") != "" || prober.Env("SSH_CLIENT") != "",
 		Architecture:   prober.GOARCH(),
+		Facts: map[string]Fact{
+			"os":           {Source: osReleasePath, Confidence: "high"},
+			"provider":     {Source: "dmi/env", Confidence: "medium"},
+			"ssh_port":     {Source: rootPath(root, "/etc/ssh/sshd_config"), Confidence: "medium"},
+			"architecture": {Source: "runtime", Confidence: "high"},
+		},
 	}
 	probeHostCommands := root == "" && !osReleaseOverride
 	host.PackageManager = packageManagerWithProber(prober, host, probeHostCommands)
 	host.InitSystem = initSystemWithProber(prober, host, root)
 	host.SSHService = sshServiceName(host)
 	host.FirewallBackend = firewallBackendWithProber(prober, host, probeHostCommands)
+	host.Facts["package_manager"] = factForDetection(probeHostCommands, host.PackageManager)
+	host.Facts["init_system"] = factForValue(host.InitSystem, "filesystem/catalog")
+	host.Facts["ssh_service"] = factForValue(host.SSHService, "catalog")
+	host.Facts["firewall_backend"] = factForDetection(probeHostCommands, host.FirewallBackend)
 
 	return host, nil
+}
+
+func factForDetection(probed bool, value string) Fact {
+	if value == "" || value == "unknown" {
+		return Fact{Source: "unknown", Confidence: "low"}
+	}
+	if probed {
+		return Fact{Source: "host command", Confidence: "high"}
+	}
+	return Fact{Source: "catalog default", Confidence: "medium"}
+}
+
+func factForValue(value string, source string) Fact {
+	if value == "" || value == "unknown" {
+		return Fact{Source: "unknown", Confidence: "low"}
+	}
+	return Fact{Source: source, Confidence: "medium"}
 }
 
 func readOSRelease(path string) (map[string]string, error) {

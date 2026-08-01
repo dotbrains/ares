@@ -9,14 +9,11 @@ import (
 
 	"github.com/dotbrains/ares/internal/config"
 	"github.com/dotbrains/ares/internal/plan"
+	"github.com/dotbrains/ares/internal/reports"
 	"github.com/dotbrains/ares/internal/system"
 )
 
-type Decision struct {
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	Detail string `json:"detail"`
-}
+type Decision = reports.Decision
 
 type Facts struct {
 	Host         system.Host

@@ -10,6 +10,9 @@ probe = "rpm -q dnf-automatic"
 plan = "builtin:dnf-automatic:plan"
 apply = "builtin:dnf-automatic:apply"
 rollback = "builtin:dnf-automatic:rollback"
+managed_files = ["/etc/dnf/automatic.conf"]
+backup_files = ["/etc/dnf/automatic.conf"]
+rollback_steps = ["restore /etc/dnf/automatic.conf backup"]
 config = """
 [plugins]
 enabled = ["dnf-automatic"]

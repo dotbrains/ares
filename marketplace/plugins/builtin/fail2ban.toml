@@ -9,6 +9,8 @@ probe = "command -v fail2ban-client"
 plan = "builtin:fail2ban:plan"
 apply = "builtin:fail2ban:apply"
 rollback = "builtin:fail2ban:rollback"
+managed_files = ["/etc/fail2ban/jail.d/ares-sshd.conf"]
+rollback_steps = ["remove /etc/fail2ban/jail.d/ares-sshd.conf"]
 config = """
 [plugins]
 enabled = ["fail2ban"]

@@ -1,15 +1,15 @@
 package apply
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
+	"github.com/dotbrains/ares/internal/hostfs"
 	"github.com/dotbrains/ares/internal/plugins"
+	"github.com/dotbrains/ares/internal/reports"
 )
 
 type RollbackOptions struct {
@@ -19,23 +19,13 @@ type RollbackOptions struct {
 	Now    time.Time
 }
 
-type runReport struct {
-	SchemaVersion string             `json:"schema_version"`
-	Transaction   TransactionSummary `json:"transaction"`
-	Plugins       []struct {
-		ID             string `json:"ID"`
-		Kind           string `json:"Kind"`
-		Rollback       string `json:"Rollback"`
-		TimeoutSeconds int    `json:"TimeoutSeconds"`
-	} `json:"plugins"`
-}
-
 func RollbackLast(opts RollbackOptions) (Result, error) {
 	if opts.Now.IsZero() {
 		opts.Now = time.Now()
 	}
 	result := Result{}
-	base := rootedPath(opts.Root, "/var/log/ares")
+	fs := hostfs.FS{Root: opts.Root, Now: opts.Now}
+	base := fs.Path("/var/log/ares")
 	if err := os.MkdirAll(base, 0o755); err != nil {
 		return result, fmt.Errorf("creating report directory: %w", err)
 	}
@@ -79,7 +69,7 @@ func RollbackLast(opts RollbackOptions) (Result, error) {
 	return finishRollback(result, rollbackError(result))
 }
 
-func rollbackCustomPlugins(result *Result, root string, report runReport) {
+func rollbackCustomPlugins(result *Result, root string, report reports.LatestRunReport) {
 	for _, plugin := range report.Plugins {
 		if plugin.Kind != "custom" || plugin.Rollback == "" {
 			continue
@@ -176,7 +166,7 @@ func previewTransactionRollback(result *Result, transaction TransactionSummary) 
 	}
 }
 
-func previewCustomRollback(result *Result, report runReport) {
+func previewCustomRollback(result *Result, report reports.LatestRunReport) {
 	for _, plugin := range report.Plugins {
 		if plugin.Kind == "custom" && plugin.Rollback != "" {
 			result.Applied = append(result.Applied, "would run custom rollback "+plugin.ID+": "+plugin.Rollback)
@@ -184,13 +174,12 @@ func previewCustomRollback(result *Result, report runReport) {
 	}
 }
 
-func readLatestRunReport(path string) (runReport, error) {
-	var report runReport
-	data, err := os.ReadFile(path)
+func readLatestRunReport(path string) (reports.LatestRunReport, error) {
+	report, err := reports.ReadLatestRun(path)
 	if err != nil {
-		return report, fmt.Errorf("latest report unavailable")
-	}
-	if err := json.Unmarshal(data, &report); err != nil {
+		if os.IsNotExist(err) {
+			return report, fmt.Errorf("latest report unavailable")
+		}
 		return report, fmt.Errorf("latest report is invalid")
 	}
 	return report, nil
@@ -206,8 +195,8 @@ func appendCustomRollbackOutput(result *Result, pluginID string, output string) 
 }
 
 func rollbackManagedFile(result *Result, root string, path string) {
-	fullPath := rootedPath(root, path)
-	if err := os.Remove(fullPath); err != nil {
+	fs := hostfs.FS{Root: root}
+	if err := fs.Remove(path); err != nil {
 		if os.IsNotExist(err) {
 			result.Skipped = append(result.Skipped, path+": already absent")
 			return
@@ -219,35 +208,17 @@ func rollbackManagedFile(result *Result, root string, path string) {
 }
 
 func restoreNewestBackup(result *Result, root string, path string) {
-	fullPath := rootedPath(root, path)
-	matches, err := filepath.Glob(fullPath + ".ares.*.bak")
-	if err != nil || len(matches) == 0 {
-		result.Skipped = append(result.Skipped, path+": no ares backup found")
-		return
-	}
-	sort.Strings(matches)
-	backup := matches[len(matches)-1]
-	data, err := os.ReadFile(backup)
+	fs := hostfs.FS{Root: root}
+	backup, restored, err := fs.RestoreNewestBackup(path)
 	if err != nil {
-		result.Failed = append(result.Failed, path+": read backup: "+err.Error())
-		return
-	}
-	if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
-		result.Failed = append(result.Failed, path+": create parent: "+err.Error())
-		return
-	}
-	if err := os.WriteFile(fullPath, data, 0o600); err != nil {
 		result.Failed = append(result.Failed, path+": restore backup: "+err.Error())
 		return
 	}
-	result.Applied = append(result.Applied, "restored "+path+" from "+strings.TrimPrefix(backup, root))
-}
-
-func rootedPath(root string, path string) string {
-	if root == "" {
-		return path
+	if !restored {
+		result.Skipped = append(result.Skipped, path+": no ares backup found")
+		return
 	}
-	return filepath.Join(root, strings.TrimPrefix(path, "/"))
+	result.Applied = append(result.Applied, "restored "+path+" from "+backup)
 }
 
 func finishRollback(result Result, runErr error) (Result, error) {
@@ -268,16 +239,12 @@ func rollbackError(result Result) error {
 }
 
 func writeRollbackReport(result Result) error {
-	data, err := json.MarshalIndent(map[string]any{
-		"schema_version": "ares.rollback.v1",
-		"applied":        result.Applied,
-		"skipped":        result.Skipped,
-		"failed":         result.Failed,
-	}, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(result.ReportPath, append(data, '\n'), 0o644)
+	return reports.WriteJSON(result.ReportPath, reports.RollbackReport{
+		SchemaVersion: reports.RollbackSchemaVersion,
+		Applied:       result.Applied,
+		Skipped:       result.Skipped,
+		Failed:        result.Failed,
+	})
 }
 
 func writeRollbackLog(result Result) error {

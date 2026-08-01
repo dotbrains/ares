@@ -1,10 +1,11 @@
 package apply
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/dotbrains/ares/internal/reports"
 )
 
 func (ctx *Context) finish(runErr error) (Result, error) {
@@ -21,29 +22,20 @@ func (ctx *Context) finish(runErr error) (Result, error) {
 }
 
 func (ctx *Context) writeReport() error {
-	data, err := json.MarshalIndent(map[string]any{
-		"schema_version":     "ares.report.v1",
-		"profile":            ctx.Plan.Profile,
-		"host":               ctx.Plan.Host,
-		"plugins":            ctx.Plan.Plugins,
-		"warnings":           ctx.Plan.Warnings,
-		"ssh_lockout_policy": ctx.Result.SSHLockoutPolicy,
-		"transaction": map[string]any{
-			"files":          ctx.Result.Transaction.Files,
-			"commands":       ctx.Result.Transaction.Commands,
-			"backups":        ctx.Result.Transaction.Backups,
-			"rollback_steps": ctx.Result.Transaction.RollbackSteps,
-		},
-		"probed":   ctx.Result.Probed,
-		"verified": ctx.Result.Verified,
-		"applied":  ctx.Result.Applied,
-		"skipped":  ctx.Result.Skipped,
-		"failed":   ctx.Result.Failed,
-	}, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(ctx.Result.ReportPath, append(data, '\n'), 0o644)
+	return reports.WriteJSON(ctx.Result.ReportPath, reports.RunReport{
+		SchemaVersion:    reports.ReportSchemaVersion,
+		Profile:          ctx.Plan.Profile,
+		Host:             ctx.Plan.Host,
+		Plugins:          ctx.Plan.Plugins,
+		Warnings:         ctx.Plan.Warnings,
+		SSHLockoutPolicy: ctx.Result.SSHLockoutPolicy,
+		Transaction:      ctx.Result.Transaction,
+		Probed:           ctx.Result.Probed,
+		Verified:         ctx.Result.Verified,
+		Applied:          ctx.Result.Applied,
+		Skipped:          ctx.Result.Skipped,
+		Failed:           ctx.Result.Failed,
+	})
 }
 
 func (ctx *Context) writeLog() error {

@@ -11,6 +11,8 @@ probe = "dpkg -s unattended-upgrades"
 plan = "builtin:unattended-upgrades:plan"
 apply = "builtin:unattended-upgrades:apply"
 rollback = "builtin:unattended-upgrades:rollback"
+managed_files = ["/etc/apt/apt.conf.d/20auto-upgrades"]
+rollback_steps = ["review /etc/apt/apt.conf.d/20auto-upgrades"]
 config = """
 [plugins]
 enabled = ["unattended-upgrades"]

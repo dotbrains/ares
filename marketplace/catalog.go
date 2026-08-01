@@ -25,10 +25,13 @@ type Plugin struct {
 	Capabilities    []string
 	Distros         []string
 	Providers       []string
-	PackageManager  string `toml:"package_manager"`
-	InitSystem      string `toml:"init_system"`
-	FirewallBackend string `toml:"firewall_backend"`
-	SSHService      string `toml:"ssh_service"`
+	ManagedFiles    []string `toml:"managed_files"`
+	BackupFiles     []string `toml:"backup_files"`
+	RollbackSteps   []string `toml:"rollback_steps"`
+	PackageManager  string   `toml:"package_manager"`
+	InitSystem      string   `toml:"init_system"`
+	FirewallBackend string   `toml:"firewall_backend"`
+	SSHService      string   `toml:"ssh_service"`
 	Probe           string
 	Plan            string
 	Apply           string

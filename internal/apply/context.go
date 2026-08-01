@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/dotbrains/ares/internal/customoutput"
 	iexec "github.com/dotbrains/ares/internal/exec"
+	"github.com/dotbrains/ares/internal/hostfs"
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/plugins"
 	"github.com/dotbrains/ares/internal/safety"
@@ -43,6 +44,10 @@ type Context struct {
 	Options Options
 	Plan    plan.Plan
 	Result  Result
+}
+
+func (ctx *Context) fs() hostfs.FS {
+	return hostfs.FS{Root: ctx.Options.Root, Now: ctx.Options.Now}
 }
 
 func Run(hardeningPlan plan.Plan, opts Options) (Result, error) {
@@ -150,9 +155,9 @@ func (ctx *Context) prepareReportPaths() error {
 		return fmt.Errorf("creating report directory: %w", err)
 	}
 	stamp := ctx.Options.Now.Format("20060102-150405")
-	ctx.Result.LogPath = filepath.Join(base, "ares-"+stamp+".log")
-	ctx.Result.ReportPath = filepath.Join(base, "latest.json")
-	ctx.Result.UndoPlanPath = filepath.Join(base, "undo-plan.txt")
+	ctx.Result.LogPath = ctx.path("/var/log/ares/ares-" + stamp + ".log")
+	ctx.Result.ReportPath = ctx.path("/var/log/ares/latest.json")
+	ctx.Result.UndoPlanPath = ctx.path("/var/log/ares/undo-plan.txt")
 	return nil
 }
 
@@ -208,24 +213,11 @@ func runCustomCommand(plugin plugins.Plugin, command string) (string, error) {
 }
 
 func (ctx *Context) appendCustomOutput(pluginID string, output string) {
-	for _, line := range strings.Split(output, "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		switch {
-		case strings.HasPrefix(line, "applied:"):
-			ctx.Result.Applied = append(ctx.Result.Applied, pluginID+": "+strings.TrimSpace(strings.TrimPrefix(line, "applied:")))
-		case strings.HasPrefix(line, "verified:"):
-			ctx.Result.Verified = append(ctx.Result.Verified, pluginID+": "+strings.TrimSpace(strings.TrimPrefix(line, "verified:")))
-		case strings.HasPrefix(line, "skipped:"):
-			ctx.Result.Skipped = append(ctx.Result.Skipped, pluginID+": "+strings.TrimSpace(strings.TrimPrefix(line, "skipped:")))
-		case strings.HasPrefix(line, "failed:"):
-			ctx.Result.Failed = append(ctx.Result.Failed, pluginID+": "+strings.TrimSpace(strings.TrimPrefix(line, "failed:")))
-		default:
-			ctx.Result.Applied = append(ctx.Result.Applied, pluginID+": "+line)
-		}
-	}
+	parsed := customoutput.Parse(pluginID, output)
+	ctx.Result.Applied = append(ctx.Result.Applied, parsed.Applied...)
+	ctx.Result.Verified = append(ctx.Result.Verified, parsed.Verified...)
+	ctx.Result.Skipped = append(ctx.Result.Skipped, parsed.Skipped...)
+	ctx.Result.Failed = append(ctx.Result.Failed, parsed.Failed...)
 }
 
 func (ctx *Context) applyProviderAdvisory(plugin plugins.Plugin) error {
@@ -236,10 +228,7 @@ func (ctx *Context) applyProviderAdvisory(plugin plugins.Plugin) error {
 }
 
 func (ctx *Context) path(path string) string {
-	if ctx.Options.Root == "" {
-		return path
-	}
-	return filepath.Join(ctx.Options.Root, strings.TrimPrefix(path, "/"))
+	return ctx.fs().Path(path)
 }
 
 func (ctx *Context) run(name string, args ...string) error {
@@ -289,28 +278,18 @@ func installCommand(packageManager string, packages ...string) (string, []string
 }
 
 func (ctx *Context) backup(path string) error {
-	source := ctx.path(path)
-	if _, err := os.Stat(source); err != nil {
-		if os.IsNotExist(err) {
-			ctx.Result.Skipped = append(ctx.Result.Skipped, "backup skipped; missing "+path)
-			return nil
-		}
-		return err
-	}
-	backupPath := source + ".ares." + ctx.Options.Now.Format("20060102-150405") + ".bak"
-	if _, err := os.Stat(backupPath); err == nil {
-		ctx.Result.Skipped = append(ctx.Result.Skipped, "backup skipped; existing "+strings.TrimPrefix(backupPath, ctx.Options.Root))
-		return nil
-	} else if !os.IsNotExist(err) {
-		return err
-	}
-	data, err := os.ReadFile(source)
+	backupPath, created, err := ctx.fs().Backup(path)
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(backupPath, data, 0o600); err != nil {
-		return err
+	if backupPath == "" {
+		ctx.Result.Skipped = append(ctx.Result.Skipped, "backup skipped; missing "+path)
+		return nil
 	}
-	ctx.Result.Applied = append(ctx.Result.Applied, "backed up "+path+" to "+strings.TrimPrefix(backupPath, ctx.Options.Root))
+	if !created {
+		ctx.Result.Skipped = append(ctx.Result.Skipped, "backup skipped; existing "+backupPath)
+		return nil
+	}
+	ctx.Result.Applied = append(ctx.Result.Applied, "backed up "+path+" to "+backupPath)
 	return nil
 }

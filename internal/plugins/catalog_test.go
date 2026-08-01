@@ -171,6 +171,24 @@ func TestProviderAdvisoriesDeclareProviders(t *testing.T) {
 	}
 }
 
+func TestManagedFilePluginsDeclareTransactionFacts(t *testing.T) {
+	builtins, err := Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, plugin := range builtins {
+		switch plugin.ID {
+		case "ssh-hardening", "firewall-nftables", "fail2ban", "unattended-upgrades", "dnf-automatic", "sysctl-baseline", "strict-profile":
+			if len(plugin.ManagedFiles) == 0 {
+				t.Fatalf("%s missing managed_files metadata", plugin.ID)
+			}
+			if len(plugin.RollbackSteps) == 0 {
+				t.Fatalf("%s missing rollback_steps metadata", plugin.ID)
+			}
+		}
+	}
+}
+
 func TestMarketplaceFilesMatchPluginIDs(t *testing.T) {
 	embedded, err := CatalogFromMarketplace()
 	if err != nil {

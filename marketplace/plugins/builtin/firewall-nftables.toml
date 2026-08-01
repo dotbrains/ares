@@ -8,6 +8,9 @@ probe = "command -v nft"
 plan = "builtin:firewall-nftables:plan"
 apply = "builtin:firewall-nftables:apply"
 rollback = "builtin:firewall-nftables:rollback"
+managed_files = ["/etc/nftables.conf"]
+backup_files = ["/etc/nftables.conf"]
+rollback_steps = ["restore /etc/nftables.conf backup"]
 config = """
 [plugins]
 enabled = ["firewall-nftables"]

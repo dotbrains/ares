@@ -7,14 +7,10 @@ import (
 
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/plugins"
+	"github.com/dotbrains/ares/internal/reports"
 )
 
-type TransactionSummary struct {
-	Files         []string `json:"files"`
-	Commands      []string `json:"commands"`
-	Backups       []string `json:"backups"`
-	RollbackSteps []string `json:"rollback_steps"`
-}
+type TransactionSummary = reports.TransactionSummary
 
 func BuildTransaction(hardeningPlan plan.Plan) TransactionSummary {
 	var summary TransactionSummary
@@ -32,12 +28,12 @@ func addPluginTransaction(summary *TransactionSummary, hardeningPlan plan.Plan, 
 	if slices.Contains(plugin.Categories, "distro") || strings.HasPrefix(plugin.ID, "provider-") {
 		return
 	}
+	summary.Files = append(summary.Files, plugin.ManagedFiles...)
+	summary.Backups = append(summary.Backups, plugin.BackupFiles...)
+	summary.RollbackSteps = append(summary.RollbackSteps, plugin.RollbackSteps...)
 	switch plugin.ID {
 	case "ssh-hardening":
-		summary.Files = append(summary.Files, "/etc/ssh/sshd_config.d/99-ares.conf")
-		summary.Backups = append(summary.Backups, "/etc/ssh/sshd_config")
 		summary.Commands = append(summary.Commands, "sshd -t", "systemctl reload "+hardeningPlan.Host.SSHService)
-		summary.RollbackSteps = append(summary.RollbackSteps, "remove /etc/ssh/sshd_config.d/99-ares.conf", "restore /etc/ssh/sshd_config backup")
 	case "firewall-ufw":
 		summary.Commands = append(summary.Commands,
 			hardeningPlan.Host.PackageManager+" update",
@@ -60,23 +56,13 @@ func addPluginTransaction(summary *TransactionSummary, hardeningPlan plan.Plan, 
 		)
 		summary.RollbackSteps = append(summary.RollbackSteps, "review firewalld ports/services and reload after manual rollback")
 	case "firewall-nftables":
-		summary.Files = append(summary.Files, "/etc/nftables.conf")
-		summary.Backups = append(summary.Backups, "/etc/nftables.conf")
 		summary.Commands = append(summary.Commands, installCommandString(hardeningPlan.Host.PackageManager, "nftables"), "nft -c -f /etc/nftables.conf", "systemctl enable --now nftables", "nft list ruleset")
-		summary.RollbackSteps = append(summary.RollbackSteps, "restore /etc/nftables.conf backup")
 	case "fail2ban":
-		summary.Files = append(summary.Files, "/etc/fail2ban/jail.d/ares-sshd.conf")
 		summary.Commands = append(summary.Commands, installCommandString(hardeningPlan.Host.PackageManager, "fail2ban"), "systemctl enable --now fail2ban")
-		summary.RollbackSteps = append(summary.RollbackSteps, "remove /etc/fail2ban/jail.d/ares-sshd.conf")
 	case "unattended-upgrades":
-		summary.Files = append(summary.Files, "/etc/apt/apt.conf.d/20auto-upgrades")
 		summary.Commands = append(summary.Commands, hardeningPlan.Host.PackageManager+" update", installCommandString(hardeningPlan.Host.PackageManager, "unattended-upgrades"))
-		summary.RollbackSteps = append(summary.RollbackSteps, "review /etc/apt/apt.conf.d/20auto-upgrades")
 	case "dnf-automatic":
-		summary.Files = append(summary.Files, "/etc/dnf/automatic.conf")
-		summary.Backups = append(summary.Backups, "/etc/dnf/automatic.conf")
 		summary.Commands = append(summary.Commands, installCommandString(hardeningPlan.Host.PackageManager, "dnf-automatic"), "systemctl enable --now dnf-automatic.timer")
-		summary.RollbackSteps = append(summary.RollbackSteps, "restore /etc/dnf/automatic.conf backup")
 	case "pacman-upgrade":
 		summary.Commands = append(summary.Commands, "pacman -Syu --noconfirm")
 	case "zypper-patches":
@@ -84,14 +70,10 @@ func addPluginTransaction(summary *TransactionSummary, hardeningPlan plan.Plan, 
 	case "apk-upgrade":
 		summary.Commands = append(summary.Commands, "apk update", "apk upgrade")
 	case "sysctl-baseline":
-		summary.Files = append(summary.Files, "/etc/sysctl.d/99-ares.conf")
 		summary.Commands = append(summary.Commands, "sysctl --system")
-		summary.RollbackSteps = append(summary.RollbackSteps, "remove /etc/sysctl.d/99-ares.conf")
 	case "web-profile":
 		addWebTransaction(summary, hardeningPlan)
 	case "strict-profile":
-		summary.Files = append(summary.Files, "/etc/fail2ban/jail.d/ares-sshd.conf")
-		summary.RollbackSteps = append(summary.RollbackSteps, "review root account lockout guidance")
 	default:
 		if plugin.Kind == "custom" {
 			addCustomTransaction(summary, plugin)
