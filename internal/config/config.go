@@ -128,12 +128,25 @@ func Validate(cfg *Config) error {
 			return fmt.Errorf("unknown enabled plugin %q", id)
 		}
 	}
+	customNames := map[string]bool{}
 	for _, plugin := range cfg.Plugins.Custom {
-		if strings.TrimSpace(plugin.Name) == "" {
+		name := strings.TrimSpace(plugin.Name)
+		if name == "" {
 			return fmt.Errorf("custom plugin name is required")
 		}
+		if customNames[name] {
+			return fmt.Errorf("duplicate custom plugin name %q", name)
+		}
+		customNames[name] = true
+		switch name {
+		case "firewall-auto", "security-updates":
+			return fmt.Errorf("custom plugin name %q conflicts with a reserved plugin selector", name)
+		}
+		if _, ok := plugins.Find(name); ok {
+			return fmt.Errorf("custom plugin name %q conflicts with a built-in plugin", name)
+		}
 		if plugin.TimeoutSeconds < 0 {
-			return fmt.Errorf("custom plugin %q timeout_seconds must be non-negative", plugin.Name)
+			return fmt.Errorf("custom plugin %q timeout_seconds must be non-negative", name)
 		}
 	}
 	return nil

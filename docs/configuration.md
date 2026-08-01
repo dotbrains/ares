@@ -94,7 +94,8 @@ output can emit structured lines prefixed with `applied:`, `verified:`,
 `skipped:`, or `failed:`; `ares` records those lines in the run report. `ares
 rollback last --yes` executes custom `rollback` commands recorded in the latest
 run report. `plan` is surfaced in plugin metadata and reserved for richer
-external plugin orchestration.
+external plugin orchestration. Custom plugin names must be unique and must not
+reuse built-in plugin IDs or reserved selectors such as `firewall-auto`.
 
 ## Environment
 

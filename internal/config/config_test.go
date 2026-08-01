@@ -183,3 +183,36 @@ func TestLoadFrom_RejectsInvalidCustomPlugin(t *testing.T) {
 		t.Fatal("expected error for invalid custom plugin")
 	}
 }
+
+func TestLoadFrom_RejectsCustomPluginNameCollision(t *testing.T) {
+	cases := []struct {
+		name string
+		yaml string
+	}{
+		{
+			name: "builtin",
+			yaml: "plugins:\n  custom:\n    - name: ssh-hardening\n",
+		},
+		{
+			name: "reserved selector",
+			yaml: "plugins:\n  custom:\n    - name: firewall-auto\n",
+		},
+		{
+			name: "duplicate custom",
+			yaml: "plugins:\n  custom:\n    - name: tailscale-ssh\n    - name: tailscale-ssh\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "bad-custom.yaml")
+			if err := os.WriteFile(path, []byte(tc.yaml), 0o644); err != nil {
+				t.Fatal(err)
+			}
+
+			if _, err := LoadFrom(path); err == nil {
+				t.Fatal("expected custom plugin name collision error")
+			}
+		})
+	}
+}
