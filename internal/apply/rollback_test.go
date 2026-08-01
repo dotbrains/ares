@@ -45,6 +45,17 @@ func TestRollbackLastRemovesManagedFilesAndRestoresBackups(t *testing.T) {
 	if _, err := os.Stat(result.ReportPath); err != nil {
 		t.Fatalf("expected rollback report: %v", err)
 	}
+	data, err = os.ReadFile(result.ReportPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rollbackReport map[string]any
+	if err := json.Unmarshal(data, &rollbackReport); err != nil {
+		t.Fatal(err)
+	}
+	if rollbackReport["schema_version"] != "ares.rollback.v1" {
+		t.Fatalf("schema_version = %v", rollbackReport["schema_version"])
+	}
 }
 
 func TestRollbackLastRunsCustomRollbackFromLatestReport(t *testing.T) {

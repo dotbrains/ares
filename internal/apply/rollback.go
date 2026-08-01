@@ -20,8 +20,9 @@ type RollbackOptions struct {
 }
 
 type runReport struct {
-	Transaction TransactionSummary `json:"transaction"`
-	Plugins     []struct {
+	SchemaVersion string             `json:"schema_version"`
+	Transaction   TransactionSummary `json:"transaction"`
+	Plugins       []struct {
 		ID             string `json:"ID"`
 		Kind           string `json:"Kind"`
 		Rollback       string `json:"Rollback"`
@@ -268,9 +269,10 @@ func rollbackError(result Result) error {
 
 func writeRollbackReport(result Result) error {
 	data, err := json.MarshalIndent(map[string]any{
-		"applied": result.Applied,
-		"skipped": result.Skipped,
-		"failed":  result.Failed,
+		"schema_version": "ares.rollback.v1",
+		"applied":        result.Applied,
+		"skipped":        result.Skipped,
+		"failed":         result.Failed,
 	}, "", "  ")
 	if err != nil {
 		return err

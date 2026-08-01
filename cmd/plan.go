@@ -3,9 +3,6 @@ package cmd
 import (
 	"encoding/json"
 
-	"github.com/dotbrains/ares/internal/config"
-	"github.com/dotbrains/ares/internal/plan"
-	"github.com/dotbrains/ares/internal/system"
 	"github.com/spf13/cobra"
 )
 
@@ -17,28 +14,19 @@ func newPlanCmd() *cobra.Command {
 		Use:   "plan",
 		Short: "Show the hardening plan",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load()
+			runtime, err := buildCommandRuntime(profile)
 			if err != nil {
 				return err
 			}
-			applyFlagOverrides(cfg, profile)
-			if err := config.Validate(cfg); err != nil {
-				return err
-			}
-			host, err := system.Detect()
-			if err != nil {
-				return err
-			}
-			hardeningPlan := plan.Build(host, cfg)
 			if jsonOutput {
-				data, err := json.MarshalIndent(hardeningPlan, "", "  ")
+				data, err := json.MarshalIndent(runtime.Plan, "", "  ")
 				if err != nil {
 					return err
 				}
 				cmd.Println(string(data))
 				return nil
 			}
-			printPlan(cmd, hardeningPlan)
+			printPlan(cmd, runtime.Plan)
 			return nil
 		},
 	}

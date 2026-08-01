@@ -56,6 +56,9 @@ func CatalogFromFiles() (Catalog, error) {
 		}
 		catalog.Plugins = append(catalog.Plugins, plugin)
 	}
+	if err := validateCatalog(catalog); err != nil {
+		return Catalog{}, err
+	}
 	return catalog, nil
 }
 
@@ -100,6 +103,66 @@ func validatePluginPath(path string, plugin Plugin) error {
 	want := strings.TrimSuffix(filepath.Base(path), ".toml")
 	if plugin.ID != want {
 		return fmt.Errorf("plugin file %s declares id %q, expected %q", path, plugin.ID, want)
+	}
+	return nil
+}
+
+func validateCatalog(catalog Catalog) error {
+	ids := map[string]string{}
+	capabilities := map[string]string{}
+	for _, plugin := range catalog.Plugins {
+		if previous, ok := ids[plugin.ID]; ok {
+			return fmt.Errorf("duplicate plugin id %q declared by %s and %s", plugin.ID, previous, plugin.ID)
+		}
+		ids[plugin.ID] = plugin.ID
+		for _, capability := range plugin.Capabilities {
+			capabilities[capability] = capability
+		}
+	}
+	for _, plugin := range catalog.Plugins {
+		if plugin.Kind == "" {
+			return fmt.Errorf("plugin %s is missing kind", plugin.ID)
+		}
+		if plugin.Summary == "" {
+			return fmt.Errorf("plugin %s is missing summary", plugin.ID)
+		}
+		if err := validateKnownValues(plugin, ids, capabilities); err != nil {
+			return err
+		}
+		if strings.HasPrefix(plugin.ID, "provider-") && !contains(plugin.Capabilities, "provider-advisory") {
+			return fmt.Errorf("provider plugin %s must declare provider-advisory capability", plugin.ID)
+		}
+	}
+	return nil
+}
+
+func validateKnownValues(plugin Plugin, ids map[string]string, capabilities map[string]string) error {
+	for _, category := range plugin.Categories {
+		switch category {
+		case "advisory", "distro", "firewall", "hardening", "kernel", "network", "profile", "provider", "ssh", "updates":
+		default:
+			return fmt.Errorf("plugin %s has unknown category %q", plugin.ID, category)
+		}
+	}
+	for _, capability := range plugin.Capabilities {
+		switch capability {
+		case "fail2ban", "firewall", "package-manager", "profile-strict", "profile-web", "provider-advisory", "security-updates", "service-manager", "ssh-hardening", "ssh-service", "sysctl":
+		default:
+			return fmt.Errorf("plugin %s has unknown capability %q", plugin.ID, capability)
+		}
+	}
+	for _, requirement := range plugin.Requires {
+		for _, alternative := range strings.Split(requirement, "|") {
+			switch alternative {
+			case "apt-get", "dnf", "yum", "pacman", "zypper", "apk", "ufw", "firewalld", "nftables":
+				continue
+			}
+			if _, ok := ids[alternative]; !ok {
+				if _, ok := capabilities[alternative]; !ok {
+					return fmt.Errorf("plugin %s has unknown requirement %q", plugin.ID, alternative)
+				}
+			}
+		}
 	}
 	return nil
 }

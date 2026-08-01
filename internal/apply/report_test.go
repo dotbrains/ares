@@ -34,10 +34,13 @@ func TestRunReportSchemaIncludesRecoveryFields(t *testing.T) {
 	if err := json.Unmarshal(data, &report); err != nil {
 		t.Fatal(err)
 	}
-	for _, key := range []string{"profile", "host", "plugins", "warnings", "transaction", "probed", "verified", "applied", "skipped", "failed"} {
+	for _, key := range []string{"schema_version", "profile", "host", "plugins", "warnings", "transaction", "probed", "verified", "applied", "skipped", "failed"} {
 		if _, ok := report[key]; !ok {
 			t.Fatalf("report missing %q: %s", key, data)
 		}
+	}
+	if report["schema_version"] != "ares.report.v1" {
+		t.Fatalf("schema_version = %v", report["schema_version"])
 	}
 
 	transaction, ok := report["transaction"].(map[string]any)

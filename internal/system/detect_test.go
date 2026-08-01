@@ -1,6 +1,7 @@
 package system
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -136,4 +137,66 @@ func TestPackageAndFirewallDefaultsForNewDistros(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDetectWithProberUsesInjectedHostFacts(t *testing.T) {
+	prober := fakeProber{
+		env: map[string]string{
+			"ARES_ROOT": "/fixture",
+		},
+		files: map[string]string{
+			"/fixture/etc/os-release":              "ID=ubuntu\nPRETTY_NAME=\"Ubuntu 24.04 LTS\"\nVERSION_ID=\"24.04\"\nID_LIKE=debian\n",
+			"/fixture/etc/ssh/sshd_config":         "Port 2200\n",
+			"/fixture/sys/class/dmi/id/sys_vendor": "DigitalOcean\n",
+		},
+		stats: map[string]bool{
+			"/fixture/run/systemd/system": true,
+		},
+		arch: "arm64",
+	}
+
+	host, err := DetectWithProber(prober)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if host.Provider != "digitalocean" || host.SSHPort != "2200" || host.Architecture != "arm64" {
+		t.Fatalf("unexpected host: %+v", host)
+	}
+	if host.PackageManager != "apt-get" || host.InitSystem != "systemd" || host.FirewallBackend != "ufw" {
+		t.Fatalf("unexpected distro defaults: %+v", host)
+	}
+}
+
+type fakeProber struct {
+	env   map[string]string
+	files map[string]string
+	stats map[string]bool
+	paths map[string]bool
+	arch  string
+}
+
+func (prober fakeProber) Env(name string) string {
+	return prober.env[name]
+}
+
+func (prober fakeProber) ReadFile(path string) ([]byte, error) {
+	if value, ok := prober.files[path]; ok {
+		return []byte(value), nil
+	}
+	return nil, errors.New("missing")
+}
+
+func (prober fakeProber) Stat(path string) error {
+	if prober.stats[path] {
+		return nil
+	}
+	return errors.New("missing")
+}
+
+func (prober fakeProber) LookPath(name string) bool {
+	return prober.paths[name]
+}
+
+func (prober fakeProber) GOARCH() string {
+	return prober.arch
 }

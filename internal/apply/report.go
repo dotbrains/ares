@@ -22,10 +22,11 @@ func (ctx *Context) finish(runErr error) (Result, error) {
 
 func (ctx *Context) writeReport() error {
 	data, err := json.MarshalIndent(map[string]any{
-		"profile":  ctx.Plan.Profile,
-		"host":     ctx.Plan.Host,
-		"plugins":  ctx.Plan.Plugins,
-		"warnings": ctx.Plan.Warnings,
+		"schema_version":     "ares.report.v1",
+		"profile":            ctx.Plan.Profile,
+		"host":               ctx.Plan.Host,
+		"plugins":            ctx.Plan.Plugins,
+		"warnings":           ctx.Plan.Warnings,
 		"ssh_lockout_policy": ctx.Result.SSHLockoutPolicy,
 		"transaction": map[string]any{
 			"files":          ctx.Result.Transaction.Files,

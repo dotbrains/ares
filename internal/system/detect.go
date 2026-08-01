@@ -29,14 +29,50 @@ type Host struct {
 	Architecture    string
 }
 
+type Prober interface {
+	Env(string) string
+	ReadFile(string) ([]byte, error)
+	Stat(string) error
+	LookPath(string) bool
+	GOARCH() string
+}
+
+type RealProber struct{}
+
+func (RealProber) Env(name string) string {
+	return os.Getenv(name)
+}
+
+func (RealProber) ReadFile(path string) ([]byte, error) {
+	return os.ReadFile(path)
+}
+
+func (RealProber) Stat(path string) error {
+	_, err := os.Stat(path)
+	return err
+}
+
+func (RealProber) LookPath(name string) bool {
+	_, err := exec.LookPath(name)
+	return err == nil
+}
+
+func (RealProber) GOARCH() string {
+	return runtime.GOARCH
+}
+
 func Detect() (Host, error) {
-	root := os.Getenv("ARES_ROOT")
-	osReleaseOverride := os.Getenv("ARES_OS_RELEASE") != ""
-	osReleasePath := os.Getenv("ARES_OS_RELEASE")
+	return DetectWithProber(RealProber{})
+}
+
+func DetectWithProber(prober Prober) (Host, error) {
+	root := prober.Env("ARES_ROOT")
+	osReleaseOverride := prober.Env("ARES_OS_RELEASE") != ""
+	osReleasePath := prober.Env("ARES_OS_RELEASE")
 	if osReleasePath == "" {
 		osReleasePath = rootPath(root, "/etc/os-release")
 	}
-	osRelease, err := readOSRelease(osReleasePath)
+	osRelease, err := readOSReleaseWithProber(prober, osReleasePath)
 	if err != nil {
 		return Host{}, err
 	}
@@ -46,29 +82,32 @@ func Detect() (Host, error) {
 		OSName:         osRelease["PRETTY_NAME"],
 		OSVersion:      osRelease["VERSION_ID"],
 		IDLike:         strings.Fields(osRelease["ID_LIKE"]),
-		Provider:       detectProvider(root),
-		SSHPort:        detectSSHPort(rootPath(root, "/etc/ssh/sshd_config")),
-		RunningOverSSH: os.Getenv("SSH_CONNECTION") != "" || os.Getenv("SSH_CLIENT") != "",
-		Architecture:   runtime.GOARCH,
+		Provider:       detectProviderWithProber(prober, root),
+		SSHPort:        detectSSHPortWithProber(prober, rootPath(root, "/etc/ssh/sshd_config")),
+		RunningOverSSH: prober.Env("SSH_CONNECTION") != "" || prober.Env("SSH_CLIENT") != "",
+		Architecture:   prober.GOARCH(),
 	}
 	probeHostCommands := root == "" && !osReleaseOverride
-	host.PackageManager = packageManager(host, probeHostCommands)
-	host.InitSystem = initSystem(host, root)
+	host.PackageManager = packageManagerWithProber(prober, host, probeHostCommands)
+	host.InitSystem = initSystemWithProber(prober, host, root)
 	host.SSHService = sshServiceName(host)
-	host.FirewallBackend = firewallBackend(host, probeHostCommands)
+	host.FirewallBackend = firewallBackendWithProber(prober, host, probeHostCommands)
 
 	return host, nil
 }
 
 func readOSRelease(path string) (map[string]string, error) {
-	file, err := os.Open(path)
+	return readOSReleaseWithProber(RealProber{}, path)
+}
+
+func readOSReleaseWithProber(prober Prober, path string) (map[string]string, error) {
+	data, err := prober.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", path, err)
 	}
-	defer file.Close()
 
 	values := map[string]string{}
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(strings.NewReader(string(data)))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" || strings.HasPrefix(line, "#") {
@@ -89,8 +128,8 @@ func readOSRelease(path string) (map[string]string, error) {
 	return values, nil
 }
 
-func detectProvider(root string) string {
-	if provider := strings.TrimSpace(os.Getenv("ARES_PROVIDER")); provider != "" {
+func detectProviderWithProber(prober Prober, root string) string {
+	if provider := strings.TrimSpace(prober.Env("ARES_PROVIDER")); provider != "" {
 		return normalizeProvider(provider)
 	}
 	probeFiles := []string{
@@ -100,7 +139,7 @@ func detectProvider(root string) string {
 	}
 	var values []string
 	for _, path := range probeFiles {
-		data, err := os.ReadFile(rootPath(root, path))
+		data, err := prober.ReadFile(rootPath(root, path))
 		if err == nil {
 			values = append(values, string(data))
 		}
@@ -142,8 +181,12 @@ func normalizeProvider(value string) string {
 }
 
 func packageManager(host Host, probeHostCommands bool) string {
+	return packageManagerWithProber(RealProber{}, host, probeHostCommands)
+}
+
+func packageManagerWithProber(prober Prober, host Host, probeHostCommands bool) string {
 	if probeHostCommands {
-		if detected := firstCommand("apt-get", "dnf", "yum", "pacman", "zypper", "apk"); detected != "unknown" {
+		if detected := firstCommandWithProber(prober, "apt-get", "dnf", "yum", "pacman", "zypper", "apk"); detected != "unknown" {
 			return detected
 		}
 	}
@@ -154,13 +197,17 @@ func packageManager(host Host, probeHostCommands bool) string {
 }
 
 func firewallBackend(host Host, probeHostCommands bool) string {
-	if probeHostCommands && commandExists("ufw") {
+	return firewallBackendWithProber(RealProber{}, host, probeHostCommands)
+}
+
+func firewallBackendWithProber(prober Prober, host Host, probeHostCommands bool) string {
+	if probeHostCommands && prober.LookPath("ufw") {
 		return "ufw"
 	}
-	if probeHostCommands && commandExists("firewall-cmd") {
+	if probeHostCommands && prober.LookPath("firewall-cmd") {
 		return "firewalld"
 	}
-	if probeHostCommands && commandExists("nft") {
+	if probeHostCommands && prober.LookPath("nft") {
 		return "nftables"
 	}
 	if plugin, ok := distroPlugin(host); ok && plugin.FirewallBackend != "" {
@@ -169,27 +216,31 @@ func firewallBackend(host Host, probeHostCommands bool) string {
 	return "unknown"
 }
 
-func firstCommand(names ...string) string {
+func firstCommandWithProber(prober Prober, names ...string) string {
 	for _, name := range names {
-		if _, err := exec.LookPath(name); err == nil {
+		if prober.LookPath(name) {
 			return name
 		}
 	}
 	return "unknown"
 }
 
-func detectInitSystem(root string) string {
-	if _, err := os.Stat(rootPath(root, "/run/systemd/system")); err == nil {
+func detectInitSystemWithProber(prober Prober, root string) string {
+	if err := prober.Stat(rootPath(root, "/run/systemd/system")); err == nil {
 		return "systemd"
 	}
-	if _, err := os.Stat(rootPath(root, "/run/openrc")); err == nil {
+	if err := prober.Stat(rootPath(root, "/run/openrc")); err == nil {
 		return "openrc"
 	}
 	return "unknown"
 }
 
 func initSystem(host Host, root string) string {
-	if detected := detectInitSystem(root); detected != "unknown" {
+	return initSystemWithProber(RealProber{}, host, root)
+}
+
+func initSystemWithProber(prober Prober, host Host, root string) string {
+	if detected := detectInitSystemWithProber(prober, root); detected != "unknown" {
 		return detected
 	}
 	if plugin, ok := distroPlugin(host); ok && plugin.InitSystem != "" {
@@ -206,7 +257,11 @@ func rootPath(root string, path string) string {
 }
 
 func detectSSHPort(path string) string {
-	data, err := os.ReadFile(path)
+	return detectSSHPortWithProber(RealProber{}, path)
+}
+
+func detectSSHPortWithProber(prober Prober, path string) string {
+	data, err := prober.ReadFile(path)
 	if err != nil {
 		return "22"
 	}
@@ -234,11 +289,6 @@ func sshServiceName(host Host) string {
 		return plugin.SSHService
 	}
 	return "sshd"
-}
-
-func commandExists(name string) bool {
-	_, err := exec.LookPath(name)
-	return err == nil
 }
 
 func distroPlugin(host Host) (plugins.Plugin, bool) {

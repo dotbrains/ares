@@ -50,13 +50,6 @@ func (ctx *Context) ensurePublicKeyAccessBeforeSSHHardening() error {
 	return fmt.Errorf("SSH hardening would disable password auth, but no authorized_keys file was found for the current or root account")
 }
 
-func sshLockoutPolicy(opts Options) string {
-	if opts.AllowPasswordLockout {
-		return "password lockout explicitly allowed by config or CLI"
-	}
-	return "refuse active SSH password lockout without authorized_keys"
-}
-
 func authorizedKeyCandidates() []string {
 	candidates := []string{"/root/.ssh/authorized_keys"}
 	if home := strings.TrimSpace(os.Getenv("HOME")); home != "" {

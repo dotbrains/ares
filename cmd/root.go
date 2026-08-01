@@ -8,7 +8,6 @@ import (
 	"github.com/dotbrains/ares/internal/apply"
 	"github.com/dotbrains/ares/internal/config"
 	"github.com/dotbrains/ares/internal/plan"
-	"github.com/dotbrains/ares/internal/system"
 	"github.com/spf13/cobra"
 )
 
@@ -24,34 +23,25 @@ func newRootCmd(version string) *cobra.Command {
 		Short: "Modular VPS hardening runner",
 		Long:  "ares hardens fresh Linux VPS instances with a safe, modular plugin-based execution model. It detects the host distro, plans changes, preserves SSH access, and applies provider-agnostic security defaults.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load()
+			runtime, err := buildCommandRuntime(profile)
 			if err != nil {
 				return err
 			}
-			applyFlagOverrides(cfg, profile)
 			if cmd.Flags().Changed("allow-password-lockout") {
-				cfg.SSH.AllowPasswordLockout = allowPasswordLockout
+				runtime.Config.SSH.AllowPasswordLockout = allowPasswordLockout
 			}
-			if err := config.Validate(cfg); err != nil {
-				return err
-			}
-			host, err := system.Detect()
-			if err != nil {
-				return err
-			}
-			hardeningPlan := plan.Build(host, cfg)
 			if !jsonOutput {
 				printBanner(cmd)
-				printPlan(cmd, hardeningPlan)
+				printPlan(cmd, runtime.Plan)
 			}
-			result, err := apply.Run(hardeningPlan, apply.Options{
+			result, err := apply.Run(runtime.Plan, apply.Options{
 				DryRun:               dryRun,
 				Yes:                  yes,
 				Root:                 os.Getenv("ARES_ROOT"),
-				AllowPasswordLockout: cfg.SSH.AllowPasswordLockout,
+				AllowPasswordLockout: runtime.Config.SSH.AllowPasswordLockout,
 			})
 			if jsonOutput {
-				return printRunJSON(cmd, hardeningPlan, result, err)
+				return printRunJSON(cmd, runtime.Plan, result, err)
 			}
 			printApplyResult(cmd, result)
 			return err
@@ -89,9 +79,10 @@ func applyFlagOverrides(cfg *config.Config, profile string) {
 
 func printRunJSON(cmd *cobra.Command, hardeningPlan plan.Plan, result apply.Result, runErr error) error {
 	data, err := json.MarshalIndent(map[string]any{
-		"plan":   hardeningPlan,
-		"result": result,
-		"error":  errorString(runErr),
+		"schema_version": "ares.run.v1",
+		"plan":           hardeningPlan,
+		"result":         result,
+		"error":          errorString(runErr),
 	}, "", "  ")
 	if err != nil {
 		return err
