@@ -26,6 +26,12 @@ func (ctx *Context) writeReport() error {
 		"host":     ctx.Plan.Host,
 		"plugins":  ctx.Plan.Plugins,
 		"warnings": ctx.Plan.Warnings,
+		"transaction": map[string]any{
+			"files":          ctx.Result.Transaction.Files,
+			"commands":       ctx.Result.Transaction.Commands,
+			"backups":        ctx.Result.Transaction.Backups,
+			"rollback_steps": ctx.Result.Transaction.RollbackSteps,
+		},
 		"probed":   ctx.Result.Probed,
 		"verified": ctx.Result.Verified,
 		"applied":  ctx.Result.Applied,

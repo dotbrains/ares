@@ -18,6 +18,7 @@ mode requires root privileges and `--yes`.
 | Command | Description |
 | --- | --- |
 | `ares plan [--profile <profile>]` | Detect the host and print the selected plan without applying changes. |
+| `ares preflight [--profile <profile>]` | Check root/test-root readiness, SSH detection, host support, report writability, and transaction summary without applying changes. |
 | `ares detect` | Print detected OS, provider, architecture, package manager, init system, SSH service, SSH port, firewall backend, and SSH-session status. |
 | `ares status` | Print host detection plus selected profile, plugin count, and warning count. |
 | `ares --version` | Print the binary version. |

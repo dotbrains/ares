@@ -57,6 +57,46 @@ func TestRootCmdRejectsUnknownProfileOverride(t *testing.T) {
 	}
 }
 
+func TestPreflightUsesTestRootAndPrintsTransaction(t *testing.T) {
+	rootDir := t.TempDir()
+	sshDir := filepath.Join(rootDir, "etc", "ssh")
+	if err := os.MkdirAll(sshDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sshDir, "sshd_config"), []byte("Port 2222\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("ARES_ROOT", rootDir)
+	t.Setenv("ARES_OS_RELEASE", filepath.Join("..", "tests", "fixtures", "os-release", "ubuntu-24.04"))
+	t.Setenv("HOME", t.TempDir())
+
+	root := newRootCmd("test")
+	buf := &bytes.Buffer{}
+	root.SetOut(buf)
+	root.SetErr(buf)
+	root.SetArgs([]string{"preflight"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	output := buf.String()
+	for _, want := range []string{
+		"preflight:",
+		"privileges: pass (ARES_ROOT test root active)",
+		"ssh session: warn",
+		"provider: warn",
+		"provider advisory: warn",
+		"reports: pass",
+		"transaction:",
+		"/etc/ssh/sshd_config.d/99-ares.conf",
+		"ufw allow 2222/tcp",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("preflight output missing %q:\n%s", want, output)
+		}
+	}
+}
+
 func TestExecute_Help(t *testing.T) {
 	root := newRootCmd("dev")
 	root.SetArgs([]string{"--help"})

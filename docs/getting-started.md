@@ -55,6 +55,15 @@ sudo ares --dry-run
 port, firewall backend, CPU architecture, and provider hint. It then prints the
 selected plugins and actions.
 
+Run preflight before applying on a real host:
+
+```sh
+sudo ares preflight
+```
+
+Preflight checks privileges, SSH/session detection, host support, report
+writability, and the transaction summary without applying hardening changes.
+
 Apply only after reviewing that plan:
 
 ```sh
@@ -63,6 +72,9 @@ sudo ares --yes
 
 Apply mode requires both root privileges and `--yes`. Without both, `ares`
 prints the plan and exits with an error before mutating the host.
+
+Dry-run and apply reports include a transaction summary with planned files,
+commands, backups, and rollback steps.
 
 ## Profiles
 

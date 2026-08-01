@@ -19,6 +19,8 @@ The first release implements these safety behaviors:
 - SSH hardening backs up `/etc/ssh/sshd_config`
 - SSH hardening writes a drop-in at `/etc/ssh/sshd_config.d/99-ares.conf`
 - SSH hardening validates `sshd -t` before reloading the detected SSH service
+- real SSH hardening refuses to disable password auth during an active SSH
+  session unless an authorized key file is present for a likely login account
 - firewall plans preserve the detected active SSH port
 - generated nftables configs are validated with `nft -c -f` before loading
 - nftables and dnf automatic configs are backed up before replacement when
@@ -37,8 +39,9 @@ Each run prepares:
 /var/log/ares/undo-plan.txt
 ```
 
-`latest.json` records applied, skipped, verified, probed, and failed steps.
-`undo-plan.txt` records recovery guidance.
+`latest.json` records applied, skipped, verified, probed, and failed steps. It
+also records a transaction summary with planned files, commands, backups, and
+rollback steps. `undo-plan.txt` records recovery guidance.
 
 `ares rollback last --yes` performs the conservative automated subset of that
 guidance: it removes `ares` managed files and restores the newest matching

@@ -24,14 +24,15 @@ type Options struct {
 }
 
 type Result struct {
-	LogPath      string
-	ReportPath   string
-	UndoPlanPath string
-	Probed       []string
-	Verified     []string
-	Applied      []string
-	Skipped      []string
-	Failed       []string
+	LogPath      string             `json:"-"`
+	ReportPath   string             `json:"-"`
+	UndoPlanPath string             `json:"-"`
+	Transaction  TransactionSummary `json:"transaction"`
+	Probed       []string           `json:"probed"`
+	Verified     []string           `json:"verified"`
+	Applied      []string           `json:"applied"`
+	Skipped      []string           `json:"skipped"`
+	Failed       []string           `json:"failed"`
 }
 
 type Context struct {
@@ -48,6 +49,7 @@ func Run(hardeningPlan plan.Plan, opts Options) (Result, error) {
 		Options: opts,
 		Plan:    hardeningPlan,
 	}
+	ctx.Result.Transaction = BuildTransaction(hardeningPlan)
 
 	if err := ctx.prepareReportPaths(); err != nil {
 		return ctx.Result, err
@@ -136,13 +138,13 @@ func (ctx *Context) verifyPlugin(plugin plugins.Plugin) {
 	case "sysctl-baseline":
 		ctx.verifyPath(plugin.ID, "/etc/sysctl.d/99-ares.conf")
 	case "firewall-ufw":
-		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": SSH port "+ctx.Plan.Host.SSHPort+"/tcp preserved")
+		ctx.verifyUFW(plugin.ID)
 	case "firewall-firewalld":
-		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": SSH port "+ctx.Plan.Host.SSHPort+"/tcp preserved")
+		ctx.verifyFirewalld(plugin.ID)
 	case "firewall-nftables":
-		ctx.verifyPath(plugin.ID, "/etc/nftables.conf")
+		ctx.verifyNftables(plugin.ID)
 	case "web-profile":
-		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": HTTP/HTTPS allow rules requested")
+		ctx.verifyWebProfile(plugin.ID)
 	default:
 		if strings.HasPrefix(plugin.ID, "provider-") {
 			ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": advisory recorded")

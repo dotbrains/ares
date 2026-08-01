@@ -61,6 +61,13 @@ func printApplyResult(cmd *cobra.Command, result apply.Result) {
 	if result.UndoPlanPath != "" {
 		cmd.Printf("undo plan: %s\n", result.UndoPlanPath)
 	}
+	if len(result.Transaction.Files) > 0 || len(result.Transaction.Commands) > 0 || len(result.Transaction.Backups) > 0 {
+		cmd.Println("transaction:")
+		printNamedList(cmd, "files", result.Transaction.Files)
+		printNamedList(cmd, "commands", result.Transaction.Commands)
+		printNamedList(cmd, "backups", result.Transaction.Backups)
+		printNamedList(cmd, "rollback", result.Transaction.RollbackSteps)
+	}
 	if len(result.Applied) > 0 {
 		cmd.Println("applied:")
 		for _, item := range result.Applied {
@@ -78,5 +85,15 @@ func printApplyResult(cmd *cobra.Command, result apply.Result) {
 		for _, item := range result.Failed {
 			cmd.Printf("  - %s\n", item)
 		}
+	}
+}
+
+func printNamedList(cmd *cobra.Command, name string, values []string) {
+	if len(values) == 0 {
+		return
+	}
+	cmd.Printf("  %s:\n", name)
+	for _, value := range values {
+		cmd.Printf("    - %s\n", value)
 	}
 }

@@ -59,6 +59,7 @@ func newRootCmd(version string) *cobra.Command {
 	root.AddCommand(newConfigCmd())
 	root.AddCommand(newDetectCmd())
 	root.AddCommand(newPlanCmd())
+	root.AddCommand(newPreflightCmd())
 	root.AddCommand(newPluginsCmd())
 	root.AddCommand(newRollbackCmd())
 	root.AddCommand(newStatusCmd())
