@@ -347,6 +347,12 @@ func (ctx *Context) backup(path string) error {
 		return err
 	}
 	backupPath := source + ".ares." + ctx.Options.Now.Format("20060102-150405") + ".bak"
+	if _, err := os.Stat(backupPath); err == nil {
+		ctx.Result.Skipped = append(ctx.Result.Skipped, "backup skipped; existing "+strings.TrimPrefix(backupPath, ctx.Options.Root))
+		return nil
+	} else if !os.IsNotExist(err) {
+		return err
+	}
 	data, err := os.ReadFile(source)
 	if err != nil {
 		return err

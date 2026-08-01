@@ -21,7 +21,8 @@ The first release implements these safety behaviors:
 - SSH hardening validates `sshd -t` before reloading the detected SSH service
 - firewall plans preserve the detected active SSH port
 - nftables and dnf automatic configs are backed up before replacement when
-  existing files are present
+  existing files are present; when a file is touched more than once in a run,
+  the first backup is preserved
 - verifier failures fail the run after writing reports
 - run reports are written under `/var/log/ares`
 
