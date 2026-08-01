@@ -79,7 +79,7 @@ Current built-ins:
 | `zypper-patches` | Apply openSUSE patches. |
 | `apk-upgrade` | Apply Alpine package upgrades. |
 | `sysctl-baseline` | Write conservative network hardening to `/etc/sysctl.d/99-ares.conf`. |
-| `web-profile` | Allow inbound HTTP and HTTPS. |
+| `web-profile` | Allow inbound HTTP and HTTPS through UFW, firewalld, or nftables. |
 | `strict-profile` | Apply stricter fail2ban defaults and record root-lock guidance. |
 | `provider-*` | Record provider recovery reminders without mutating provider APIs. |
 

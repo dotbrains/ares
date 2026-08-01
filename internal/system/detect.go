@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/dotbrains/ares/internal/plugins"
@@ -216,11 +217,16 @@ func detectSSHPort(path string) string {
 			continue
 		}
 		fields := strings.Fields(line)
-		if len(fields) >= 2 && strings.EqualFold(fields[0], "Port") {
+		if len(fields) >= 2 && strings.EqualFold(fields[0], "Port") && validPort(fields[1]) {
 			return fields[1]
 		}
 	}
 	return "22"
+}
+
+func validPort(value string) bool {
+	port, err := strconv.Atoi(value)
+	return err == nil && port > 0 && port <= 65535
 }
 
 func sshServiceName(host Host) string {

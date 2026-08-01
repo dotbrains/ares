@@ -68,7 +68,8 @@ flowchart TD
 | Amazon Linux | `dnf` or `yum` | `firewalld` | `dnf-automatic` | detected service, usually `sshd` |
 
 If the host reports nftables as the active firewall backend, `firewall-auto`
-can resolve to `firewall-nftables`.
+can resolve to `firewall-nftables`. The `web` profile keeps the same backend
+and adds HTTP/HTTPS rules to the generated nftables policy.
 
 Unsupported hosts produce warnings in the plan. They should not receive blind
 SSH or firewall changes without a matching distro adapter in the plugin catalog.

@@ -42,6 +42,17 @@ func TestDetectSSHPortDefault(t *testing.T) {
 	}
 }
 
+func TestDetectSSHPortIgnoresInvalidPort(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "sshd_config")
+	if err := os.WriteFile(path, []byte("Port not-a-port\nPort 70000\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := detectSSHPort(path); got != "22" {
+		t.Fatalf("detectSSHPort() = %q, want 22", got)
+	}
+}
+
 func TestRootPath(t *testing.T) {
 	got := rootPath("/tmp/ares-root", "/etc/ssh/sshd_config")
 	want := filepath.Join("/tmp/ares-root", "etc", "ssh", "sshd_config")

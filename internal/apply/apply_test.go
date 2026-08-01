@@ -150,6 +150,51 @@ func TestRunApplyStrictProfileOverwritesFail2banDefaults(t *testing.T) {
 	}
 }
 
+func TestRunApplyWebProfileWritesNftablesWebRules(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "etc", "ssh"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "etc", "ssh", "sshd_config"), []byte("Port 2222\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.Profile = "web"
+	host := system.Host{
+		OSID:            "arch",
+		OSName:          "Arch Linux",
+		PackageManager:  "pacman",
+		InitSystem:      "systemd",
+		FirewallBackend: "nftables",
+		SSHService:      "sshd",
+		SSHPort:         "2222",
+		RunningOverSSH:  true,
+	}
+	result, err := Run(plan.Build(host, cfg), Options{
+		Yes:  true,
+		Root: root,
+		Now:  time.Date(2026, 7, 25, 17, 0, 0, 0, time.UTC),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(root, "etc", "nftables.conf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rules := string(data)
+	for _, want := range []string{"tcp dport 2222 accept", "tcp dport 80 accept", "tcp dport 443 accept"} {
+		if !strings.Contains(rules, want) {
+			t.Fatalf("nftables rules missing %q:\n%s", want, rules)
+		}
+	}
+	if !contains(result.Applied, "allowed HTTP and HTTPS") {
+		t.Fatalf("missing web profile applied item: %+v", result)
+	}
+}
+
 func TestRunApplyProviderAdvisoryIsReported(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "etc", "ssh"), 0o755); err != nil {

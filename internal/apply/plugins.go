@@ -44,7 +44,7 @@ table inet ares {
     type filter hook input priority 0; policy drop;
     ct state established,related accept
     iif lo accept
-    tcp dport %s accept
+%s
     ip protocol icmp accept
     ip6 nexthdr icmpv6 accept
   }
