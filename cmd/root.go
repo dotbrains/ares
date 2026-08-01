@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -15,6 +16,7 @@ func newRootCmd(version string) *cobra.Command {
 	var profile string
 	var yes bool
 	var dryRun bool
+	var jsonOutput bool
 	var allowPasswordLockout bool
 
 	root := &cobra.Command{
@@ -27,6 +29,9 @@ func newRootCmd(version string) *cobra.Command {
 				return err
 			}
 			applyFlagOverrides(cfg, profile)
+			if cmd.Flags().Changed("allow-password-lockout") {
+				cfg.SSH.AllowPasswordLockout = allowPasswordLockout
+			}
 			if err := config.Validate(cfg); err != nil {
 				return err
 			}
@@ -35,14 +40,19 @@ func newRootCmd(version string) *cobra.Command {
 				return err
 			}
 			hardeningPlan := plan.Build(host, cfg)
-			printBanner(cmd)
-			printPlan(cmd, hardeningPlan)
+			if !jsonOutput {
+				printBanner(cmd)
+				printPlan(cmd, hardeningPlan)
+			}
 			result, err := apply.Run(hardeningPlan, apply.Options{
 				DryRun:               dryRun,
 				Yes:                  yes,
 				Root:                 os.Getenv("ARES_ROOT"),
-				AllowPasswordLockout: allowPasswordLockout,
+				AllowPasswordLockout: cfg.SSH.AllowPasswordLockout,
 			})
+			if jsonOutput {
+				return printRunJSON(cmd, hardeningPlan, result, err)
+			}
 			printApplyResult(cmd, result)
 			return err
 		},
@@ -55,6 +65,7 @@ func newRootCmd(version string) *cobra.Command {
 	root.SetVersionTemplate(fmt.Sprintf("ares version %s\n", version))
 	root.Flags().StringVar(&profile, "profile", "", "hardening profile: basic, web, strict")
 	root.Flags().BoolVar(&dryRun, "dry-run", false, "show the hardening plan without applying changes")
+	root.Flags().BoolVar(&jsonOutput, "json", false, "print dry-run/apply result as JSON")
 	root.Flags().BoolVarP(&yes, "yes", "y", false, "answer yes to confirmation prompts")
 	root.Flags().BoolVar(&allowPasswordLockout, "allow-password-lockout", false, "explicitly allow SSH hardening to disable password auth without detected authorized_keys")
 
@@ -74,6 +85,26 @@ func applyFlagOverrides(cfg *config.Config, profile string) {
 	if profile != "" {
 		cfg.Profile = profile
 	}
+}
+
+func printRunJSON(cmd *cobra.Command, hardeningPlan plan.Plan, result apply.Result, runErr error) error {
+	data, err := json.MarshalIndent(map[string]any{
+		"plan":   hardeningPlan,
+		"result": result,
+		"error":  errorString(runErr),
+	}, "", "  ")
+	if err != nil {
+		return err
+	}
+	cmd.Println(string(data))
+	return runErr
+}
+
+func errorString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }
 
 // Execute runs the root command.

@@ -13,9 +13,10 @@ import (
 )
 
 type RollbackOptions struct {
-	Yes  bool
-	Root string
-	Now  time.Time
+	Yes    bool
+	DryRun bool
+	Root   string
+	Now    time.Time
 }
 
 type runReport struct {
@@ -41,6 +42,19 @@ func RollbackLast(opts RollbackOptions) (Result, error) {
 	result.LogPath = filepath.Join(base, "rollback-"+stamp+".log")
 	result.ReportPath = filepath.Join(base, "rollback-latest.json")
 	result.UndoPlanPath = filepath.Join(base, "undo-plan.txt")
+
+	if opts.DryRun {
+		report, reportErr := readLatestRunReport(filepath.Join(base, "latest.json"))
+		if reportErr != nil {
+			result.Skipped = append(result.Skipped, "latest report unavailable for rollback preview: "+reportErr.Error())
+			previewLegacyManagedFiles(&result)
+		} else {
+			previewTransactionRollback(&result, report.Transaction)
+			previewCustomRollback(&result, report)
+		}
+		result.Skipped = append(result.Skipped, "dry-run requested; no rollback changes applied")
+		return finishRollback(result, nil)
+	}
 
 	if !opts.Yes {
 		return finishRollback(result, fmt.Errorf("rollback requires --yes after reviewing the undo plan"))
@@ -121,6 +135,51 @@ func rollbackTransaction(result *Result, root string, transaction TransactionSum
 			continue
 		}
 		rollbackManagedFile(result, root, path)
+	}
+}
+
+func previewLegacyManagedFiles(result *Result) {
+	for _, path := range []string{
+		"/etc/ssh/sshd_config.d/99-ares.conf",
+		"/etc/fail2ban/jail.d/ares-sshd.conf",
+		"/etc/apt/apt.conf.d/20auto-upgrades",
+		"/etc/sysctl.d/99-ares.conf",
+	} {
+		result.Applied = append(result.Applied, "would remove "+path)
+	}
+	for _, path := range []string{
+		"/etc/ssh/sshd_config",
+		"/etc/nftables.conf",
+		"/etc/dnf/automatic.conf",
+	} {
+		result.Applied = append(result.Applied, "would restore newest backup for "+path)
+	}
+}
+
+func previewTransactionRollback(result *Result, transaction TransactionSummary) {
+	if len(transaction.Files) == 0 && len(transaction.Backups) == 0 {
+		result.Skipped = append(result.Skipped, "latest report has no transaction summary; using legacy rollback targets")
+		previewLegacyManagedFiles(result)
+		return
+	}
+	backedUp := map[string]bool{}
+	for _, path := range transaction.Backups {
+		backedUp[path] = true
+		result.Applied = append(result.Applied, "would restore newest backup for "+path)
+	}
+	for _, path := range transaction.Files {
+		if backedUp[path] {
+			continue
+		}
+		result.Applied = append(result.Applied, "would remove "+path)
+	}
+}
+
+func previewCustomRollback(result *Result, report runReport) {
+	for _, plugin := range report.Plugins {
+		if plugin.Kind == "custom" && plugin.Rollback != "" {
+			result.Applied = append(result.Applied, "would run custom rollback "+plugin.ID+": "+plugin.Rollback)
+		}
 	}
 }
 

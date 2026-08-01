@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"encoding/json"
+
 	"github.com/dotbrains/ares/internal/config"
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/system"
@@ -9,6 +11,7 @@ import (
 
 func newPlanCmd() *cobra.Command {
 	var profile string
+	var jsonOutput bool
 
 	cmd := &cobra.Command{
 		Use:   "plan",
@@ -26,10 +29,20 @@ func newPlanCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			printPlan(cmd, plan.Build(host, cfg))
+			hardeningPlan := plan.Build(host, cfg)
+			if jsonOutput {
+				data, err := json.MarshalIndent(hardeningPlan, "", "  ")
+				if err != nil {
+					return err
+				}
+				cmd.Println(string(data))
+				return nil
+			}
+			printPlan(cmd, hardeningPlan)
 			return nil
 		},
 	}
 	cmd.Flags().StringVar(&profile, "profile", "", "hardening profile: basic, web, strict")
+	cmd.Flags().BoolVar(&jsonOutput, "json", false, "print the hardening plan as JSON")
 	return cmd
 }

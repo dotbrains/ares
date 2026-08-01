@@ -15,6 +15,11 @@ import (
 type Config struct {
 	Profile string        `yaml:"profile"`
 	Plugins PluginsConfig `yaml:"plugins"`
+	SSH     SSHConfig     `yaml:"ssh,omitempty"`
+}
+
+type SSHConfig struct {
+	AllowPasswordLockout bool `yaml:"allow_password_lockout,omitempty"`
 }
 
 type PluginsConfig struct {

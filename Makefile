@@ -4,7 +4,7 @@ LDFLAGS := -s -w -X main.version=$(VERSION)
 GO_PACKAGES := $(shell go list ./...)
 GO_PACKAGE_DIRS := $(shell go list -f '{{.Dir}}' ./...)
 
-.PHONY: build test smoke integration release-check release-preflight lint actionlint budgets security install clean vet markdown ci
+.PHONY: build test smoke integration release-artifact-smoke release-check release-preflight lint actionlint budgets security install clean vet markdown ci
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
@@ -21,6 +21,9 @@ markdown:
 
 smoke: build
 	tests/smoke.sh
+
+release-artifact-smoke: build
+	tests/release-artifact-smoke.sh
 
 integration:
 	tests/integration.sh
@@ -64,7 +67,7 @@ security:
 	gitleaks detect --source . --redact --no-banner
 	shellcheck -e SC2016 install.sh scripts/*.sh tests/*.sh
 
-ci: markdown budgets test vet lint actionlint security build smoke integration release-check release-preflight
+ci: markdown budgets test vet lint actionlint security build smoke integration release-artifact-smoke release-check release-preflight
 
 clean:
 	rm -f $(BINARY) coverage.out

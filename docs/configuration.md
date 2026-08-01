@@ -28,6 +28,8 @@ The built-in default is equivalent to:
 
 ```yaml
 profile: basic
+ssh:
+  allow_password_lockout: false
 plugins:
   enabled:
     - ssh-hardening
@@ -41,6 +43,10 @@ plugins:
 `firewall-nftables` based on host detection. `security-updates` resolves to
 `unattended-upgrades` on apt-based distros and `dnf-automatic` on dnf/yum-based
 distros.
+
+`ssh.allow_password_lockout` persists the same explicit intent as
+`--allow-password-lockout`: when true, `ares` may disable SSH password auth even
+if it cannot detect an authorized key for a likely login account.
 
 ## Profiles
 
@@ -98,6 +104,8 @@ external plugin orchestration. Custom plugin names must be unique and must not
 reuse built-in plugin IDs or reserved selectors such as `firewall-auto`. Custom
 commands must be single-line, non-blank strings. If `verify` or `rollback` is
 declared, `apply` must also be declared.
+`ares preflight` checks that the first executable in each declared custom
+command is available without executing the command.
 
 ## Environment
 

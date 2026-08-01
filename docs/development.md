@@ -10,6 +10,7 @@ small packages:
 - `internal/plan/` - plugin selection and action planning
 - `internal/apply/` - guarded apply engine, reports, backups, and verifiers
 - `tests/` - smoke and container integration scripts
+- `docs/adr/` - accepted safety and architecture decisions
 
 ## Build and Test
 
@@ -28,6 +29,7 @@ Without Flox, install the equivalent tools on your host and run:
 make build
 make test
 make smoke
+make release-artifact-smoke
 make integration
 make vet
 ```
@@ -43,6 +45,10 @@ Security checks run as part of `make ci`:
 - `govulncheck ./...`
 - `gitleaks detect`
 - `shellcheck` for installer, script, and test shell files
+
+`make release-artifact-smoke` builds a release-shaped archive, installs from it,
+then runs version, preflight JSON, and fixture apply checks through the installed
+binary.
 
 `make integration` runs lightweight Ubuntu/Debian container checks by default.
 Use `ARES_FULL_INTEGRATION=1 make integration` to also pull and test the full

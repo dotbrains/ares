@@ -49,6 +49,8 @@ guidance: it uses the latest transaction summary when available, removes
 recorded managed files, and restores the newest matching `*.ares.*.bak` backup
 for files that `ares` backed up. It does not blindly reload SSH or firewall
 services on a live host; review provider console access first.
+Use `ares rollback last --dry-run` to preview the remove, restore, and custom
+rollback actions before changing files.
 For custom plugins, rollback executes the `rollback` commands recorded in the
 latest run report. If any rollback step fails, the command exits nonzero after
 writing `rollback-latest.json`.

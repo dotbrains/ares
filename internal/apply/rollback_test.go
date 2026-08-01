@@ -134,6 +134,44 @@ func TestRollbackLastUsesTransactionSummary(t *testing.T) {
 	}
 }
 
+func TestRollbackLastDryRunPreviewsTransactionSummary(t *testing.T) {
+	root := t.TempDir()
+	reportDir := filepath.Join(root, "var", "log", "ares")
+	if err := os.MkdirAll(reportDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "managed.conf"), []byte("managed"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	report := map[string]any{
+		"transaction": map[string]any{
+			"files":   []string{"/managed.conf"},
+			"backups": []string{"/state.conf"},
+		},
+	}
+	data, err := json.Marshal(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(reportDir, "latest.json"), data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := RollbackLast(RollbackOptions{DryRun: true, Root: root})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !contains(result.Applied, "would remove /managed.conf") {
+		t.Fatalf("missing remove preview: %+v", result)
+	}
+	if !contains(result.Applied, "would restore newest backup for /state.conf") {
+		t.Fatalf("missing restore preview: %+v", result)
+	}
+	if _, err := os.Stat(filepath.Join(root, "managed.conf")); err != nil {
+		t.Fatalf("dry-run removed file: %v", err)
+	}
+}
+
 func TestRollbackLastReturnsErrorWhenManagedFileRemovalFails(t *testing.T) {
 	root := t.TempDir()
 	managedPath := filepath.Join(root, "etc", "ssh", "sshd_config.d", "99-ares.conf")

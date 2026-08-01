@@ -52,7 +52,7 @@ func (ctx *Context) ensurePublicKeyAccessBeforeSSHHardening() error {
 
 func sshLockoutPolicy(opts Options) string {
 	if opts.AllowPasswordLockout {
-		return "password lockout explicitly allowed"
+		return "password lockout explicitly allowed by config or CLI"
 	}
 	return "refuse active SSH password lockout without authorized_keys"
 }

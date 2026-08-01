@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	osexec "os/exec"
 	"path/filepath"
 	"strings"
 
@@ -49,7 +50,7 @@ func newPreflightCmd() *cobra.Command {
 				return err
 			}
 			hardeningPlan := plan.Build(host, cfg)
-			checks := buildPreflightChecks(host, hardeningPlan, os.Getenv("ARES_ROOT"))
+			checks := buildPreflightChecks(host, hardeningPlan, cfg, os.Getenv("ARES_ROOT"))
 			report := buildPreflightReport(host, hardeningPlan, checks)
 			if jsonOutput {
 				if err := printPreflightJSON(cmd, report); err != nil {
@@ -69,7 +70,7 @@ func newPreflightCmd() *cobra.Command {
 	return cmd
 }
 
-func buildPreflightChecks(host system.Host, hardeningPlan plan.Plan, root string) []preflightCheck {
+func buildPreflightChecks(host system.Host, hardeningPlan plan.Plan, cfg *config.Config, root string) []preflightCheck {
 	checks := []preflightCheck{
 		rootCheck(root),
 		sshSessionCheck(host),
@@ -90,6 +91,7 @@ func buildPreflightChecks(host system.Host, hardeningPlan plan.Plan, root string
 		checks = append(checks, preflightCheck{Name: "plan warnings", Status: "warn", Detail: fmt.Sprintf("%d warning(s)", len(hardeningPlan.Warnings))})
 	}
 	checks = append(checks, reportDirectoryCheck(root))
+	checks = append(checks, customPluginCommandChecks(cfg)...)
 	return checks
 }
 
@@ -131,6 +133,53 @@ func providerAdvisoryCheck(hardeningPlan plan.Plan) preflightCheck {
 		}
 	}
 	return preflightCheck{Name: "provider advisory", Status: "warn", Detail: "no provider advisory selected"}
+}
+
+func customPluginCommandChecks(cfg *config.Config) []preflightCheck {
+	var checks []preflightCheck
+	for _, plugin := range cfg.Plugins.Custom {
+		for _, command := range []struct {
+			name  string
+			value string
+		}{
+			{name: "probe", value: plugin.Probe},
+			{name: "apply", value: plugin.Apply},
+			{name: "verify", value: plugin.Verify},
+			{name: "rollback", value: plugin.Rollback},
+		} {
+			if strings.TrimSpace(command.value) == "" {
+				continue
+			}
+			checks = append(checks, customCommandCheck(plugin.Name, command.name, command.value))
+		}
+	}
+	return checks
+}
+
+func customCommandCheck(pluginName string, phase string, command string) preflightCheck {
+	executable := firstCommandWord(command)
+	name := "custom " + pluginName + " " + phase
+	if executable == "" {
+		return preflightCheck{Name: name, Status: "fail", Detail: "missing executable"}
+	}
+	if strings.Contains(executable, "/") {
+		if _, err := os.Stat(executable); err != nil {
+			return preflightCheck{Name: name, Status: "fail", Detail: executable + " not found"}
+		}
+		return preflightCheck{Name: name, Status: "pass", Detail: executable}
+	}
+	if path, err := osexec.LookPath(executable); err == nil {
+		return preflightCheck{Name: name, Status: "pass", Detail: path}
+	}
+	return preflightCheck{Name: name, Status: "fail", Detail: executable + " not found on PATH"}
+}
+
+func firstCommandWord(command string) string {
+	fields := strings.Fields(command)
+	if len(fields) == 0 {
+		return ""
+	}
+	return fields[0]
 }
 
 func reportDirectoryCheck(root string) preflightCheck {

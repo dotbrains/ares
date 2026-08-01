@@ -6,7 +6,7 @@ and otherwise use the built-in default config.
 ## Root Command
 
 ```sh
-ares [--profile basic|web|strict] [--dry-run] [--yes] [--allow-password-lockout]
+ares [--profile basic|web|strict] [--dry-run] [--json] [--yes] [--allow-password-lockout]
 ```
 
 The root command detects the host, prints a hardening plan, and then runs the
@@ -17,7 +17,7 @@ mode requires root privileges and `--yes`.
 
 | Command | Description |
 | --- | --- |
-| `ares plan [--profile <profile>]` | Detect the host and print the selected plan without applying changes. |
+| `ares plan [--profile <profile>] [--json]` | Detect the host and print the selected plan without applying changes. |
 | `ares preflight [--profile <profile>] [--json]` | Check root/test-root readiness, SSH detection, host support, report writability, and transaction summary without applying changes. |
 | `ares detect` | Print detected OS, provider, architecture, package manager, init system, SSH service, SSH port, firewall backend, and SSH-session status. |
 | `ares status` | Print host detection plus selected profile, plugin count, and warning count. |
@@ -42,6 +42,7 @@ mode requires root privileges and `--yes`.
 
 | Command | Description |
 | --- | --- |
+| `ares rollback last --dry-run` | Preview transaction-summary rollback actions without changing files. |
 | `ares rollback last --yes` | Remove `ares` managed files and restore the newest available `*.ares.*.bak` backups. Exits nonzero if any rollback step fails. |
 
 Examples:
