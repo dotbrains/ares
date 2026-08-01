@@ -1,6 +1,8 @@
 id = "zypper-patches"
 name = "zypper patches"
 kind = "builtin"
+behavior = "security-updates"
+verifier = "command"
 summary = "Applies openSUSE security and recommended patches through zypper"
 categories = ["updates", "hardening"]
 requires = ["zypper"]

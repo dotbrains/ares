@@ -1,6 +1,8 @@
 id = "provider-vultr"
 name = "Vultr advisory"
 kind = "builtin"
+behavior = "provider-advisory"
+verifier = "provider-advisory"
 summary = "Records Vultr VPS recovery and cloud firewall reminders"
 categories = ["provider", "advisory"]
 capabilities = ["provider-advisory"]

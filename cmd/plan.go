@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 
+	"github.com/dotbrains/ares/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +15,7 @@ func newPlanCmd() *cobra.Command {
 		Use:   "plan",
 		Short: "Show the hardening plan",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			runtime, err := buildCommandRuntime(profile)
+			runtime, err := buildCommandRuntime(config.Overrides{Profile: profile})
 			if err != nil {
 				return err
 			}

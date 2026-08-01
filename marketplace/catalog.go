@@ -25,6 +25,8 @@ type Plugin struct {
 	Capabilities    []string
 	Distros         []string
 	Providers       []string
+	Behavior        string
+	Verifier        string
 	ManagedFiles    []string `toml:"managed_files"`
 	BackupFiles     []string `toml:"backup_files"`
 	RollbackSteps   []string `toml:"rollback_steps"`
@@ -129,6 +131,9 @@ func validateCatalog(catalog Catalog) error {
 		if plugin.Summary == "" {
 			return fmt.Errorf("plugin %s is missing summary", plugin.ID)
 		}
+		if plugin.Behavior == "" {
+			return fmt.Errorf("plugin %s is missing behavior", plugin.ID)
+		}
 		if err := validateKnownValues(plugin, ids, capabilities); err != nil {
 			return err
 		}
@@ -152,6 +157,18 @@ func validateKnownValues(plugin Plugin, ids map[string]string, capabilities map[
 		case "fail2ban", "firewall", "package-manager", "profile-strict", "profile-web", "provider-advisory", "security-updates", "service-manager", "ssh-hardening", "ssh-service", "sysctl":
 		default:
 			return fmt.Errorf("plugin %s has unknown capability %q", plugin.ID, capability)
+		}
+	}
+	switch plugin.Behavior {
+	case "distro", "provider-advisory", "ssh-hardening", "firewall", "fail2ban", "security-updates", "sysctl", "web-profile", "strict-profile":
+	default:
+		return fmt.Errorf("plugin %s has unknown behavior %q", plugin.ID, plugin.Behavior)
+	}
+	if plugin.Verifier != "" {
+		switch plugin.Verifier {
+		case "path", "command", "firewall", "provider-advisory", "custom", "none":
+		default:
+			return fmt.Errorf("plugin %s has unknown verifier %q", plugin.ID, plugin.Verifier)
 		}
 	}
 	for _, requirement := range plugin.Requires {

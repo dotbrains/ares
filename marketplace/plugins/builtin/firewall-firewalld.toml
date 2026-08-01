@@ -1,6 +1,8 @@
 id = "firewall-firewalld"
 name = "firewalld firewall"
 kind = "builtin"
+behavior = "firewall"
+verifier = "firewall"
 summary = "Configures firewalld with safe VPS defaults"
 categories = ["firewall", "network"]
 requires = ["dnf|yum|zypper"]

@@ -1,6 +1,8 @@
 id = "distro-amazon"
 name = "Amazon Linux adapter"
 kind = "builtin"
+behavior = "distro"
+verifier = "none"
 summary = "Provides dnf, systemd, SSH, and service defaults for Amazon Linux VPS hosts"
 categories = ["distro"]
 capabilities = ["package-manager", "service-manager", "ssh-service"]

@@ -189,6 +189,18 @@ func TestManagedFilePluginsDeclareTransactionFacts(t *testing.T) {
 	}
 }
 
+func TestBuiltinsDeclareBehaviorDescriptors(t *testing.T) {
+	builtins, err := Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, plugin := range builtins {
+		if plugin.Behavior == "" {
+			t.Fatalf("%s missing behavior descriptor", plugin.ID)
+		}
+	}
+}
+
 func TestMarketplaceFilesMatchPluginIDs(t *testing.T) {
 	embedded, err := CatalogFromMarketplace()
 	if err != nil {

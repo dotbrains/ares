@@ -1,6 +1,8 @@
 id = "distro-debian"
 name = "Debian adapter"
 kind = "builtin"
+behavior = "distro"
+verifier = "none"
 summary = "Provides apt, systemd, SSH, and service defaults for Debian VPS hosts"
 categories = ["distro"]
 capabilities = ["package-manager", "service-manager", "ssh-service"]

@@ -1,6 +1,8 @@
 id = "distro-opensuse"
 name = "openSUSE Leap adapter"
 kind = "builtin"
+behavior = "distro"
+verifier = "none"
 summary = "Provides zypper, systemd, SSH, and service defaults for openSUSE Leap VPS hosts"
 categories = ["distro"]
 capabilities = ["package-manager", "service-manager", "ssh-service"]

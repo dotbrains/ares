@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/dotbrains/ares/internal/apply"
+	"github.com/dotbrains/ares/internal/config"
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/reports"
 	"github.com/dotbrains/ares/internal/safety"
@@ -25,7 +26,7 @@ func newPreflightCmd() *cobra.Command {
 		Use:   "preflight",
 		Short: "Check apply readiness without changing the host",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			runtime, err := buildCommandRuntime(profile)
+			runtime, err := buildCommandRuntime(config.Overrides{Profile: profile})
 			if err != nil {
 				return err
 			}

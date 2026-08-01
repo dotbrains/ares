@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/dotbrains/ares/internal/operations"
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/plugins"
 	"github.com/dotbrains/ares/internal/reports"
@@ -13,119 +14,146 @@ import (
 type TransactionSummary = reports.TransactionSummary
 
 func BuildTransaction(hardeningPlan plan.Plan) TransactionSummary {
-	var summary TransactionSummary
-	for _, plugin := range hardeningPlan.Plugins {
-		addPluginTransaction(&summary, hardeningPlan, plugin)
-	}
-	summary.Files = uniqueStrings(summary.Files)
-	summary.Commands = uniqueStrings(summary.Commands)
-	summary.Backups = uniqueStrings(summary.Backups)
-	summary.RollbackSteps = uniqueStrings(summary.RollbackSteps)
-	return summary
+	return operations.Summary(BuildOperations(hardeningPlan))
 }
 
-func addPluginTransaction(summary *TransactionSummary, hardeningPlan plan.Plan, plugin plugins.Plugin) {
-	if slices.Contains(plugin.Categories, "distro") || strings.HasPrefix(plugin.ID, "provider-") {
-		return
+func BuildOperations(hardeningPlan plan.Plan) []operations.Operation {
+	var ops []operations.Operation
+	for _, plugin := range hardeningPlan.Plugins {
+		ops = append(ops, operationsForPlugin(hardeningPlan, plugin)...)
 	}
-	summary.Files = append(summary.Files, plugin.ManagedFiles...)
-	summary.Backups = append(summary.Backups, plugin.BackupFiles...)
-	summary.RollbackSteps = append(summary.RollbackSteps, plugin.RollbackSteps...)
+	return ops
+}
+
+func operationsForPlugin(hardeningPlan plan.Plan, plugin plugins.Plugin) []operations.Operation {
+	if slices.Contains(plugin.Categories, "distro") || strings.HasPrefix(plugin.ID, "provider-") {
+		return nil
+	}
+	var ops []operations.Operation
+	for _, path := range plugin.ManagedFiles {
+		ops = append(ops, operations.Operation{Kind: operations.WriteFile, Plugin: plugin.ID, Path: path})
+	}
+	for _, path := range plugin.BackupFiles {
+		ops = append(ops, operations.Operation{Kind: operations.BackupFile, Plugin: plugin.ID, Path: path})
+	}
+	for _, step := range plugin.RollbackSteps {
+		ops = append(ops, operations.Operation{Kind: operations.RollbackNote, Plugin: plugin.ID, Note: step})
+	}
 	switch plugin.ID {
 	case "ssh-hardening":
-		summary.Commands = append(summary.Commands, "sshd -t", "systemctl reload "+hardeningPlan.Host.SSHService)
+		ops = append(ops,
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "sshd", Args: []string{"-t"}},
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "systemctl", Args: []string{"reload", hardeningPlan.Host.SSHService}},
+		)
 	case "firewall-ufw":
-		summary.Commands = append(summary.Commands,
-			hardeningPlan.Host.PackageManager+" update",
-			installCommandString(hardeningPlan.Host.PackageManager, "ufw"),
-			"ufw allow "+hardeningPlan.Host.SSHPort+"/tcp",
-			"ufw default deny incoming",
-			"ufw default allow outgoing",
-			"ufw --force enable",
-			"ufw status",
+		ops = append(ops,
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: hardeningPlan.Host.PackageManager, Args: []string{"update"}},
+			installOperation(plugin.ID, hardeningPlan.Host.PackageManager, "ufw"),
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "ufw", Args: []string{"allow", hardeningPlan.Host.SSHPort + "/tcp"}},
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "ufw", Args: []string{"default", "deny", "incoming"}},
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "ufw", Args: []string{"default", "allow", "outgoing"}},
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "ufw", Args: []string{"--force", "enable"}},
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "ufw", Args: []string{"status"}},
 		)
-		summary.RollbackSteps = append(summary.RollbackSteps, "review firewall rules and run ufw disable if needed")
+		ops = append(ops, operations.Operation{Kind: operations.RollbackNote, Plugin: plugin.ID, Note: "review firewall rules and run ufw disable if needed"})
 	case "firewall-firewalld":
-		summary.Commands = append(summary.Commands,
-			installCommandString(hardeningPlan.Host.PackageManager, "firewalld"),
-			"systemctl enable --now firewalld",
-			"firewall-cmd --permanent --add-port="+hardeningPlan.Host.SSHPort+"/tcp",
-			"firewall-cmd --set-default-zone=public",
-			"firewall-cmd --reload",
-			"firewall-cmd --list-all",
+		ops = append(ops,
+			installOperation(plugin.ID, hardeningPlan.Host.PackageManager, "firewalld"),
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "systemctl", Args: []string{"enable", "--now", "firewalld"}},
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "firewall-cmd", Args: []string{"--permanent", "--add-port=" + hardeningPlan.Host.SSHPort + "/tcp"}},
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "firewall-cmd", Args: []string{"--set-default-zone=public"}},
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "firewall-cmd", Args: []string{"--reload"}},
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "firewall-cmd", Args: []string{"--list-all"}},
 		)
-		summary.RollbackSteps = append(summary.RollbackSteps, "review firewalld ports/services and reload after manual rollback")
+		ops = append(ops, operations.Operation{Kind: operations.RollbackNote, Plugin: plugin.ID, Note: "review firewalld ports/services and reload after manual rollback"})
 	case "firewall-nftables":
-		summary.Commands = append(summary.Commands, installCommandString(hardeningPlan.Host.PackageManager, "nftables"), "nft -c -f /etc/nftables.conf", "systemctl enable --now nftables", "nft list ruleset")
+		ops = append(ops, installOperation(plugin.ID, hardeningPlan.Host.PackageManager, "nftables"))
+		ops = append(ops,
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "nft", Args: []string{"-c", "-f", "/etc/nftables.conf"}},
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "systemctl", Args: []string{"enable", "--now", "nftables"}},
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "nft", Args: []string{"list", "ruleset"}},
+		)
 	case "fail2ban":
-		summary.Commands = append(summary.Commands, installCommandString(hardeningPlan.Host.PackageManager, "fail2ban"), "systemctl enable --now fail2ban")
+		ops = append(ops, installOperation(plugin.ID, hardeningPlan.Host.PackageManager, "fail2ban"))
+		ops = append(ops, operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "systemctl", Args: []string{"enable", "--now", "fail2ban"}})
 	case "unattended-upgrades":
-		summary.Commands = append(summary.Commands, hardeningPlan.Host.PackageManager+" update", installCommandString(hardeningPlan.Host.PackageManager, "unattended-upgrades"))
+		ops = append(ops,
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: hardeningPlan.Host.PackageManager, Args: []string{"update"}},
+			installOperation(plugin.ID, hardeningPlan.Host.PackageManager, "unattended-upgrades"),
+		)
 	case "dnf-automatic":
-		summary.Commands = append(summary.Commands, installCommandString(hardeningPlan.Host.PackageManager, "dnf-automatic"), "systemctl enable --now dnf-automatic.timer")
+		ops = append(ops, installOperation(plugin.ID, hardeningPlan.Host.PackageManager, "dnf-automatic"))
+		ops = append(ops, operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "systemctl", Args: []string{"enable", "--now", "dnf-automatic.timer"}})
 	case "pacman-upgrade":
-		summary.Commands = append(summary.Commands, "pacman -Syu --noconfirm")
+		ops = append(ops, operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "pacman", Args: []string{"-Syu", "--noconfirm"}})
 	case "zypper-patches":
-		summary.Commands = append(summary.Commands, "zypper --non-interactive patch")
+		ops = append(ops, operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "zypper", Args: []string{"--non-interactive", "patch"}})
 	case "apk-upgrade":
-		summary.Commands = append(summary.Commands, "apk update", "apk upgrade")
+		ops = append(ops,
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "apk", Args: []string{"update"}},
+			operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "apk", Args: []string{"upgrade"}},
+		)
 	case "sysctl-baseline":
-		summary.Commands = append(summary.Commands, "sysctl --system")
+		ops = append(ops, operations.Operation{Kind: operations.RunCommand, Plugin: plugin.ID, Command: "sysctl", Args: []string{"--system"}})
 	case "web-profile":
-		addWebTransaction(summary, hardeningPlan)
+		ops = append(ops, webOperations(plugin.ID, hardeningPlan)...)
 	case "strict-profile":
 	default:
 		if plugin.Kind == "custom" {
-			addCustomTransaction(summary, plugin)
+			ops = append(ops, customOperations(plugin)...)
 		}
 	}
+	return ops
 }
 
-func addWebTransaction(summary *TransactionSummary, hardeningPlan plan.Plan) {
+func webOperations(pluginID string, hardeningPlan plan.Plan) []operations.Operation {
 	switch hardeningPlan.Host.FirewallBackend {
 	case "firewalld":
-		summary.Commands = append(summary.Commands, "firewall-cmd --permanent --add-service=http", "firewall-cmd --permanent --add-service=https", "firewall-cmd --reload", "firewall-cmd --list-all")
+		return []operations.Operation{
+			{Kind: operations.RunCommand, Plugin: pluginID, Command: "firewall-cmd", Args: []string{"--permanent", "--add-service=http"}},
+			{Kind: operations.RunCommand, Plugin: pluginID, Command: "firewall-cmd", Args: []string{"--permanent", "--add-service=https"}},
+			{Kind: operations.RunCommand, Plugin: pluginID, Command: "firewall-cmd", Args: []string{"--reload"}},
+			{Kind: operations.RunCommand, Plugin: pluginID, Command: "firewall-cmd", Args: []string{"--list-all"}},
+		}
 	case "nftables":
-		summary.Files = append(summary.Files, "/etc/nftables.conf")
-		summary.Backups = append(summary.Backups, "/etc/nftables.conf")
-		summary.Commands = append(summary.Commands, "nft -c -f /etc/nftables.conf", "nft -f /etc/nftables.conf", "nft list ruleset")
+		return []operations.Operation{
+			{Kind: operations.WriteFile, Plugin: pluginID, Path: "/etc/nftables.conf"},
+			{Kind: operations.BackupFile, Plugin: pluginID, Path: "/etc/nftables.conf"},
+			{Kind: operations.RunCommand, Plugin: pluginID, Command: "nft", Args: []string{"-c", "-f", "/etc/nftables.conf"}},
+			{Kind: operations.RunCommand, Plugin: pluginID, Command: "nft", Args: []string{"-f", "/etc/nftables.conf"}},
+			{Kind: operations.RunCommand, Plugin: pluginID, Command: "nft", Args: []string{"list", "ruleset"}},
+		}
 	case "ufw":
-		summary.Commands = append(summary.Commands, "ufw allow 80/tcp", "ufw allow 443/tcp", "ufw status")
+		return []operations.Operation{
+			{Kind: operations.RunCommand, Plugin: pluginID, Command: "ufw", Args: []string{"allow", "80/tcp"}},
+			{Kind: operations.RunCommand, Plugin: pluginID, Command: "ufw", Args: []string{"allow", "443/tcp"}},
+			{Kind: operations.RunCommand, Plugin: pluginID, Command: "ufw", Args: []string{"status"}},
+		}
 	}
+	return nil
 }
 
-func addCustomTransaction(summary *TransactionSummary, plugin plugins.Plugin) {
+func customOperations(plugin plugins.Plugin) []operations.Operation {
+	var ops []operations.Operation
 	if plugin.Probe != "" {
-		summary.Commands = append(summary.Commands, "custom "+plugin.ID+" probe: "+plugin.Probe)
+		ops = append(ops, operations.Operation{Kind: operations.CustomCommand, Plugin: plugin.ID, Phase: "probe", Command: plugin.Probe})
 	}
 	if plugin.Apply != "" {
-		summary.Commands = append(summary.Commands, "custom "+plugin.ID+" apply: "+plugin.Apply)
+		ops = append(ops, operations.Operation{Kind: operations.CustomCommand, Plugin: plugin.ID, Phase: "apply", Command: plugin.Apply})
 	}
 	if plugin.Verify != "" {
-		summary.Commands = append(summary.Commands, "custom "+plugin.ID+" verify: "+plugin.Verify)
+		ops = append(ops, operations.Operation{Kind: operations.CustomCommand, Plugin: plugin.ID, Phase: "verify", Command: plugin.Verify})
 	}
 	if plugin.Rollback != "" {
-		summary.RollbackSteps = append(summary.RollbackSteps, "custom "+plugin.ID+" rollback: "+plugin.Rollback)
+		ops = append(ops, operations.Operation{Kind: operations.RollbackNote, Plugin: plugin.ID, Note: "custom " + plugin.ID + " rollback: " + plugin.Rollback})
 	}
+	return ops
 }
 
-func installCommandString(packageManager string, packages ...string) string {
+func installOperation(pluginID string, packageManager string, packages ...string) operations.Operation {
 	name, args, err := installCommand(packageManager, packages...)
 	if err != nil {
-		return fmt.Sprintf("install %s with unsupported package manager %s", strings.Join(packages, " "), packageManager)
+		return operations.Operation{Kind: operations.RunCommand, Plugin: pluginID, Command: fmt.Sprintf("install %s with unsupported package manager %s", strings.Join(packages, " "), packageManager)}
 	}
-	return name + " " + strings.Join(args, " ")
-}
-
-func uniqueStrings(values []string) []string {
-	seen := map[string]bool{}
-	result := make([]string, 0, len(values))
-	for _, value := range values {
-		if value == "" || seen[value] {
-			continue
-		}
-		seen[value] = true
-		result = append(result, value)
-	}
-	return result
+	return operations.Operation{Kind: operations.RunCommand, Plugin: pluginID, Command: name, Args: args}
 }

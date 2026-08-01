@@ -1,6 +1,8 @@
 id = "distro-ubuntu"
 name = "Ubuntu adapter"
 kind = "builtin"
+behavior = "distro"
+verifier = "none"
 summary = "Provides apt, systemd, SSH, and service defaults for Ubuntu VPS hosts"
 categories = ["distro"]
 capabilities = ["package-manager", "service-manager", "ssh-service"]

@@ -1,6 +1,8 @@
 id = "pacman-upgrade"
 name = "pacman upgrade"
 kind = "builtin"
+behavior = "security-updates"
+verifier = "command"
 summary = "Applies Arch Linux package upgrades through pacman"
 categories = ["updates", "hardening"]
 requires = ["pacman"]

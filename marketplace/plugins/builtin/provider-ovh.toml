@@ -1,6 +1,8 @@
 id = "provider-ovh"
 name = "OVH advisory"
 kind = "builtin"
+behavior = "provider-advisory"
+verifier = "provider-advisory"
 summary = "Records OVH VPS recovery and cloud firewall reminders"
 categories = ["provider", "advisory"]
 capabilities = ["provider-advisory"]

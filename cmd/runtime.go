@@ -7,18 +7,15 @@ import (
 )
 
 type commandRuntime struct {
-	Config *config.Config
-	Host   system.Host
-	Plan   plan.Plan
+	Config    *config.Config
+	Effective *config.Effective
+	Host      system.Host
+	Plan      plan.Plan
 }
 
-func buildCommandRuntime(profile string) (commandRuntime, error) {
-	cfg, err := config.Load()
+func buildCommandRuntime(overrides config.Overrides) (commandRuntime, error) {
+	effective, err := config.LoadEffective(overrides)
 	if err != nil {
-		return commandRuntime{}, err
-	}
-	applyFlagOverrides(cfg, profile)
-	if err := config.Validate(cfg); err != nil {
 		return commandRuntime{}, err
 	}
 	host, err := system.Detect()
@@ -26,8 +23,9 @@ func buildCommandRuntime(profile string) (commandRuntime, error) {
 		return commandRuntime{}, err
 	}
 	return commandRuntime{
-		Config: cfg,
-		Host:   host,
-		Plan:   plan.Build(host, cfg),
+		Config:    effective.Config,
+		Effective: effective,
+		Host:      host,
+		Plan:      plan.Build(host, effective.Config),
 	}, nil
 }

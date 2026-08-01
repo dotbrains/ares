@@ -9,6 +9,7 @@ import (
 
 	"github.com/dotbrains/ares/internal/hostfs"
 	"github.com/dotbrains/ares/internal/plugins"
+	"github.com/dotbrains/ares/internal/recovery"
 	"github.com/dotbrains/ares/internal/reports"
 )
 
@@ -40,8 +41,7 @@ func RollbackLast(opts RollbackOptions) (Result, error) {
 			result.Skipped = append(result.Skipped, "latest report unavailable for rollback preview: "+reportErr.Error())
 			previewLegacyManagedFiles(&result)
 		} else {
-			previewTransactionRollback(&result, report.Transaction)
-			previewCustomRollback(&result, report)
+			previewRecoveryPlan(&result, recovery.FromReport(report))
 		}
 		result.Skipped = append(result.Skipped, "dry-run requested; no rollback changes applied")
 		return finishRollback(result, nil)
@@ -59,8 +59,7 @@ func RollbackLast(opts RollbackOptions) (Result, error) {
 		result.Skipped = append(result.Skipped, "latest report unavailable for transaction rollback: "+reportErr.Error())
 		rollbackLegacyManagedFiles(&result, opts.Root)
 	} else {
-		rollbackTransaction(&result, opts.Root, report.Transaction)
-		rollbackCustomPlugins(&result, opts.Root, report)
+		executeRecoveryPlan(&result, opts.Root, recovery.FromReport(report))
 	}
 
 	if opts.Root == "" {
@@ -90,6 +89,17 @@ func rollbackCustomPlugins(result *Result, root string, report reports.LatestRun
 			result.Failed = append(result.Failed, custom.ID+": rollback failed: "+err.Error())
 		}
 	}
+}
+
+func executeRecoveryPlan(result *Result, root string, plan recovery.Plan) {
+	if plan.Legacy {
+		result.Skipped = append(result.Skipped, "latest report has no transaction summary; using legacy rollback targets")
+		rollbackLegacyManagedFiles(result, root)
+		rollbackCustomPlugins(result, root, reports.LatestRunReport{Plugins: plan.Custom})
+		return
+	}
+	rollbackTransaction(result, root, plan.Transaction)
+	rollbackCustomPlugins(result, root, reports.LatestRunReport{Plugins: plan.Custom})
 }
 
 func rollbackLegacyManagedFiles(result *Result, root string) {
@@ -147,31 +157,13 @@ func previewLegacyManagedFiles(result *Result) {
 	}
 }
 
-func previewTransactionRollback(result *Result, transaction TransactionSummary) {
-	if len(transaction.Files) == 0 && len(transaction.Backups) == 0 {
+func previewRecoveryPlan(result *Result, plan recovery.Plan) {
+	applied, legacy := recovery.Preview(plan)
+	if legacy {
 		result.Skipped = append(result.Skipped, "latest report has no transaction summary; using legacy rollback targets")
 		previewLegacyManagedFiles(result)
-		return
 	}
-	backedUp := map[string]bool{}
-	for _, path := range transaction.Backups {
-		backedUp[path] = true
-		result.Applied = append(result.Applied, "would restore newest backup for "+path)
-	}
-	for _, path := range transaction.Files {
-		if backedUp[path] {
-			continue
-		}
-		result.Applied = append(result.Applied, "would remove "+path)
-	}
-}
-
-func previewCustomRollback(result *Result, report reports.LatestRunReport) {
-	for _, plugin := range report.Plugins {
-		if plugin.Kind == "custom" && plugin.Rollback != "" {
-			result.Applied = append(result.Applied, "would run custom rollback "+plugin.ID+": "+plugin.Rollback)
-		}
-	}
+	result.Applied = append(result.Applied, applied...)
 }
 
 func readLatestRunReport(path string) (reports.LatestRunReport, error) {

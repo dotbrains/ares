@@ -1,6 +1,8 @@
 id = "distro-rhel"
 name = "RHEL-family adapter"
 kind = "builtin"
+behavior = "distro"
+verifier = "none"
 summary = "Provides dnf, systemd, SSH, and service defaults for AlmaLinux and Rocky Linux"
 categories = ["distro"]
 capabilities = ["package-manager", "service-manager", "ssh-service"]

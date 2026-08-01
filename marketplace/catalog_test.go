@@ -9,6 +9,7 @@ func TestCatalogValidationRejectsUnknownRequirement(t *testing.T) {
 	err := validateCatalog(Catalog{Plugins: []Plugin{{
 		ID:           "bad",
 		Kind:         "builtin",
+		Behavior:     "sysctl",
 		Summary:      "Bad plugin",
 		Categories:   []string{"hardening"},
 		Capabilities: []string{"sysctl"},

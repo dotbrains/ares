@@ -1,6 +1,8 @@
 id = "sysctl-baseline"
 name = "Kernel network baseline"
 kind = "builtin"
+behavior = "sysctl"
+verifier = "path"
 summary = "Applies conservative VPS-safe network sysctl hardening"
 categories = ["kernel", "network", "hardening"]
 capabilities = ["sysctl"]

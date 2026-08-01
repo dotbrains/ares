@@ -252,3 +252,24 @@ func TestLoadFrom_RejectsUnsafeCustomPluginCommands(t *testing.T) {
 		})
 	}
 }
+
+func TestEffectiveConfigTracksCLIOverrideSources(t *testing.T) {
+	cfg := DefaultConfig()
+	effective, err := EffectiveConfig(cfg, true, Overrides{
+		Profile:                 "web",
+		AllowPasswordLockout:    true,
+		AllowPasswordLockoutSet: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if effective.Config.Profile != "web" || !effective.Config.SSH.AllowPasswordLockout {
+		t.Fatalf("unexpected effective config: %+v", effective.Config)
+	}
+	if effective.Sources["profile"] != SourceCLI {
+		t.Fatalf("profile source = %q", effective.Sources["profile"])
+	}
+	if effective.Sources["ssh.allow_password_lockout"] != SourceCLI {
+		t.Fatalf("ssh source = %q", effective.Sources["ssh.allow_password_lockout"])
+	}
+}

@@ -1,6 +1,8 @@
 id = "distro-alpine"
 name = "Alpine Linux adapter"
 kind = "builtin"
+behavior = "distro"
+verifier = "none"
 summary = "Provides apk, OpenRC, SSH, and service defaults for Alpine Linux VPS hosts"
 categories = ["distro"]
 capabilities = ["package-manager", "service-manager", "ssh-service"]

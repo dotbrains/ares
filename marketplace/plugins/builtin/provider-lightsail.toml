@@ -1,6 +1,8 @@
 id = "provider-lightsail"
 name = "Lightsail advisory"
 kind = "builtin"
+behavior = "provider-advisory"
+verifier = "provider-advisory"
 summary = "Records AWS Lightsail recovery and cloud firewall reminders"
 categories = ["provider", "advisory"]
 capabilities = ["provider-advisory"]

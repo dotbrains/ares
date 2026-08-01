@@ -24,12 +24,13 @@ func newRootCmd(version string) *cobra.Command {
 		Short: "Modular VPS hardening runner",
 		Long:  "ares hardens fresh Linux VPS instances with a safe, modular plugin-based execution model. It detects the host distro, plans changes, preserves SSH access, and applies provider-agnostic security defaults.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			runtime, err := buildCommandRuntime(profile)
+			runtime, err := buildCommandRuntime(config.Overrides{
+				Profile:                 profile,
+				AllowPasswordLockout:    allowPasswordLockout,
+				AllowPasswordLockoutSet: cmd.Flags().Changed("allow-password-lockout"),
+			})
 			if err != nil {
 				return err
-			}
-			if cmd.Flags().Changed("allow-password-lockout") {
-				runtime.Config.SSH.AllowPasswordLockout = allowPasswordLockout
 			}
 			if !jsonOutput {
 				printBanner(cmd)
@@ -70,12 +71,6 @@ func newRootCmd(version string) *cobra.Command {
 	root.AddCommand(newStatusCmd())
 
 	return root
-}
-
-func applyFlagOverrides(cfg *config.Config, profile string) {
-	if profile != "" {
-		cfg.Profile = profile
-	}
 }
 
 func printRunJSON(cmd *cobra.Command, hardeningPlan plan.Plan, result apply.Result, runErr error) error {

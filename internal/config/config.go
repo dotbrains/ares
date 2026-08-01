@@ -96,24 +96,41 @@ func Load() (*Config, error) {
 	return cfg, nil
 }
 
+func LoadEffective(overrides Overrides) (*Effective, error) {
+	path, err := ConfigPath()
+	if err != nil {
+		return EffectiveConfig(DefaultConfig(), false, overrides)
+	}
+	cfg, fileLoaded, err := loadFromPath(path)
+	if err != nil {
+		return nil, err
+	}
+	return EffectiveConfig(cfg, fileLoaded, overrides)
+}
+
 // LoadFrom reads the config from a specific path.
 func LoadFrom(path string) (*Config, error) {
+	cfg, _, err := loadFromPath(path)
+	return cfg, err
+}
+
+func loadFromPath(path string) (*Config, bool, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return DefaultConfig(), nil
+			return DefaultConfig(), false, nil
 		}
-		return nil, fmt.Errorf("reading config: %w", err)
+		return nil, false, fmt.Errorf("reading config: %w", err)
 	}
 
 	cfg := DefaultConfig()
 	if err := yaml.Unmarshal(data, cfg); err != nil {
-		return nil, fmt.Errorf("parsing config %s: %w", path, err)
+		return nil, false, fmt.Errorf("parsing config %s: %w", path, err)
 	}
 	if err := Validate(cfg); err != nil {
-		return nil, fmt.Errorf("validating config %s: %w", path, err)
+		return nil, false, fmt.Errorf("validating config %s: %w", path, err)
 	}
-	return cfg, nil
+	return cfg, true, nil
 }
 
 // Validate checks loaded configuration before a plan can silently omit behavior.

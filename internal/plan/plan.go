@@ -149,7 +149,7 @@ func actionsForPlugin(host system.Host, profile string, plugin plugins.Plugin) [
 		}}
 	}
 
-	switch plugin.ID {
+	switch plugin.Behavior {
 	case "ssh-hardening":
 		return []Action{
 			{
@@ -164,7 +164,7 @@ func actionsForPlugin(host system.Host, profile string, plugin plugins.Plugin) [
 				Risky:  true,
 			},
 		}
-	case "firewall-ufw", "firewall-firewalld", "firewall-nftables":
+	case "firewall":
 		return []Action{{
 			Plugin: plugin.ID,
 			Title:  "Configure firewall",
@@ -177,13 +177,13 @@ func actionsForPlugin(host system.Host, profile string, plugin plugins.Plugin) [
 			Title:  "Enable fail2ban",
 			Detail: "Install and enable a conservative SSH jail",
 		}}
-	case "unattended-upgrades", "dnf-automatic", "pacman-upgrade", "zypper-patches", "apk-upgrade":
+	case "security-updates":
 		return []Action{{
 			Plugin: plugin.ID,
 			Title:  "Configure distro-native updates",
 			Detail: "Use the selected distro update mechanism without automatic reboots",
 		}}
-	case "sysctl-baseline":
+	case "sysctl":
 		return []Action{{
 			Plugin: plugin.ID,
 			Title:  "Apply sysctl baseline",

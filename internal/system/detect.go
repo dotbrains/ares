@@ -74,6 +74,7 @@ func Detect() (Host, error) {
 func DetectWithProber(prober Prober) (Host, error) {
 	root := prober.Env("ARES_ROOT")
 	osReleaseOverride := prober.Env("ARES_OS_RELEASE") != ""
+	probes := probeContext{prober: prober, root: root, osReleaseOverride: osReleaseOverride}
 	osReleasePath := prober.Env("ARES_OS_RELEASE")
 	if osReleasePath == "" {
 		osReleasePath = rootPath(root, "/etc/os-release")
@@ -88,7 +89,7 @@ func DetectWithProber(prober Prober) (Host, error) {
 		OSName:         osRelease["PRETTY_NAME"],
 		OSVersion:      osRelease["VERSION_ID"],
 		IDLike:         strings.Fields(osRelease["ID_LIKE"]),
-		Provider:       detectProviderWithProber(prober, root),
+		Provider:       probes.provider(),
 		SSHPort:        detectSSHPortWithProber(prober, rootPath(root, "/etc/ssh/sshd_config")),
 		RunningOverSSH: prober.Env("SSH_CONNECTION") != "" || prober.Env("SSH_CLIENT") != "",
 		Architecture:   prober.GOARCH(),
@@ -99,11 +100,11 @@ func DetectWithProber(prober Prober) (Host, error) {
 			"architecture": {Source: "runtime", Confidence: "high"},
 		},
 	}
-	probeHostCommands := root == "" && !osReleaseOverride
-	host.PackageManager = packageManagerWithProber(prober, host, probeHostCommands)
-	host.InitSystem = initSystemWithProber(prober, host, root)
+	probeHostCommands := probes.probeHostCommands()
+	host.PackageManager = probes.packageManager(host)
+	host.InitSystem = probes.initSystem(host)
 	host.SSHService = sshServiceName(host)
-	host.FirewallBackend = firewallBackendWithProber(prober, host, probeHostCommands)
+	host.FirewallBackend = probes.firewallBackend(host)
 	host.Facts["package_manager"] = factForDetection(probeHostCommands, host.PackageManager)
 	host.Facts["init_system"] = factForValue(host.InitSystem, "filesystem/catalog")
 	host.Facts["ssh_service"] = factForValue(host.SSHService, "catalog")
@@ -161,25 +162,6 @@ func readOSReleaseWithProber(prober Prober, path string) (map[string]string, err
 	return values, nil
 }
 
-func detectProviderWithProber(prober Prober, root string) string {
-	if provider := strings.TrimSpace(prober.Env("ARES_PROVIDER")); provider != "" {
-		return normalizeProvider(provider)
-	}
-	probeFiles := []string{
-		"/sys/class/dmi/id/sys_vendor",
-		"/sys/class/dmi/id/product_name",
-		"/sys/class/dmi/id/board_vendor",
-	}
-	var values []string
-	for _, path := range probeFiles {
-		data, err := prober.ReadFile(rootPath(root, path))
-		if err == nil {
-			values = append(values, string(data))
-		}
-	}
-	return providerFromText(strings.Join(values, "\n"))
-}
-
 func providerFromText(value string) string {
 	normalized := strings.ToLower(value)
 	switch {
@@ -218,15 +200,11 @@ func packageManager(host Host, probeHostCommands bool) string {
 }
 
 func packageManagerWithProber(prober Prober, host Host, probeHostCommands bool) string {
-	if probeHostCommands {
-		if detected := firstCommandWithProber(prober, "apt-get", "dnf", "yum", "pacman", "zypper", "apk"); detected != "unknown" {
-			return detected
-		}
+	ctx := probeContext{prober: prober}
+	if !probeHostCommands {
+		ctx.osReleaseOverride = true
 	}
-	if plugin, ok := distroPlugin(host); ok && plugin.PackageManager != "" {
-		return plugin.PackageManager
-	}
-	return "unknown"
+	return ctx.packageManager(host)
 }
 
 func firewallBackend(host Host, probeHostCommands bool) string {
@@ -234,19 +212,11 @@ func firewallBackend(host Host, probeHostCommands bool) string {
 }
 
 func firewallBackendWithProber(prober Prober, host Host, probeHostCommands bool) string {
-	if probeHostCommands && prober.LookPath("ufw") {
-		return "ufw"
+	ctx := probeContext{prober: prober}
+	if !probeHostCommands {
+		ctx.osReleaseOverride = true
 	}
-	if probeHostCommands && prober.LookPath("firewall-cmd") {
-		return "firewalld"
-	}
-	if probeHostCommands && prober.LookPath("nft") {
-		return "nftables"
-	}
-	if plugin, ok := distroPlugin(host); ok && plugin.FirewallBackend != "" {
-		return plugin.FirewallBackend
-	}
-	return "unknown"
+	return ctx.firewallBackend(host)
 }
 
 func firstCommandWithProber(prober Prober, names ...string) string {
@@ -258,28 +228,12 @@ func firstCommandWithProber(prober Prober, names ...string) string {
 	return "unknown"
 }
 
-func detectInitSystemWithProber(prober Prober, root string) string {
-	if err := prober.Stat(rootPath(root, "/run/systemd/system")); err == nil {
-		return "systemd"
-	}
-	if err := prober.Stat(rootPath(root, "/run/openrc")); err == nil {
-		return "openrc"
-	}
-	return "unknown"
-}
-
 func initSystem(host Host, root string) string {
 	return initSystemWithProber(RealProber{}, host, root)
 }
 
 func initSystemWithProber(prober Prober, host Host, root string) string {
-	if detected := detectInitSystemWithProber(prober, root); detected != "unknown" {
-		return detected
-	}
-	if plugin, ok := distroPlugin(host); ok && plugin.InitSystem != "" {
-		return plugin.InitSystem
-	}
-	return "unknown"
+	return probeContext{prober: prober, root: root}.initSystem(host)
 }
 
 func rootPath(root string, path string) string {

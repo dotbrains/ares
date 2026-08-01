@@ -1,6 +1,8 @@
 id = "provider-hostinger"
 name = "Hostinger advisory"
 kind = "builtin"
+behavior = "provider-advisory"
+verifier = "provider-advisory"
 summary = "Records Hostinger VPS recovery and cloud firewall reminders"
 categories = ["provider", "advisory"]
 capabilities = ["provider-advisory"]

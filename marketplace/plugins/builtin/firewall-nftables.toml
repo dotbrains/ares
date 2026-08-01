@@ -1,6 +1,8 @@
 id = "firewall-nftables"
 name = "nftables firewall"
 kind = "builtin"
+behavior = "firewall"
+verifier = "firewall"
 summary = "Configures nftables with safe VPS defaults"
 categories = ["firewall", "network"]
 capabilities = ["firewall"]

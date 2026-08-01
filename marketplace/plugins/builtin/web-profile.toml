@@ -1,6 +1,8 @@
 id = "web-profile"
 name = "Web profile"
 kind = "builtin"
+behavior = "web-profile"
+verifier = "firewall"
 summary = "Allows HTTP and HTTPS inbound traffic for web VPS workloads"
 categories = ["profile", "firewall", "network"]
 requires = ["firewall"]

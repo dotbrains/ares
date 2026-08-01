@@ -1,6 +1,8 @@
 id = "ssh-hardening"
 name = "SSH hardening"
 kind = "builtin"
+behavior = "ssh-hardening"
+verifier = "path"
 summary = "Writes a managed sshd drop-in after preserving the active SSH port"
 categories = ["ssh", "hardening"]
 requires = ["ssh-service"]

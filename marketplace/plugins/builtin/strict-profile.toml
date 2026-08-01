@@ -1,6 +1,8 @@
 id = "strict-profile"
 name = "Strict profile"
 kind = "builtin"
+behavior = "strict-profile"
+verifier = "path"
 summary = "Applies stricter fail2ban defaults and optional root lockout guidance"
 categories = ["profile", "hardening"]
 requires = ["fail2ban", "ssh-hardening"]
