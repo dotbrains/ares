@@ -19,7 +19,8 @@ type RollbackOptions struct {
 }
 
 type runReport struct {
-	Plugins []struct {
+	Transaction TransactionSummary `json:"transaction"`
+	Plugins     []struct {
 		ID             string `json:"ID"`
 		Kind           string `json:"Kind"`
 		Rollback       string `json:"Rollback"`
@@ -48,15 +49,14 @@ func RollbackLast(opts RollbackOptions) (Result, error) {
 		return finishRollback(result, fmt.Errorf("rollback must run as root"))
 	}
 
-	rollbackManagedFile(&result, opts.Root, "/etc/ssh/sshd_config.d/99-ares.conf")
-	rollbackManagedFile(&result, opts.Root, "/etc/fail2ban/jail.d/ares-sshd.conf")
-	rollbackManagedFile(&result, opts.Root, "/etc/apt/apt.conf.d/20auto-upgrades")
-	rollbackManagedFile(&result, opts.Root, "/etc/sysctl.d/99-ares.conf")
-
-	restoreNewestBackup(&result, opts.Root, "/etc/ssh/sshd_config")
-	restoreNewestBackup(&result, opts.Root, "/etc/nftables.conf")
-	restoreNewestBackup(&result, opts.Root, "/etc/dnf/automatic.conf")
-	rollbackCustomPlugins(&result, opts.Root, base)
+	report, reportErr := readLatestRunReport(filepath.Join(base, "latest.json"))
+	if reportErr != nil {
+		result.Skipped = append(result.Skipped, "latest report unavailable for transaction rollback: "+reportErr.Error())
+		rollbackLegacyManagedFiles(&result, opts.Root)
+	} else {
+		rollbackTransaction(&result, opts.Root, report.Transaction)
+		rollbackCustomPlugins(&result, opts.Root, report)
+	}
 
 	if opts.Root == "" {
 		result.Skipped = append(result.Skipped, "service reloads are not automated during rollback; review SSH and firewall access before reloading services")
@@ -64,12 +64,7 @@ func RollbackLast(opts RollbackOptions) (Result, error) {
 	return finishRollback(result, rollbackError(result))
 }
 
-func rollbackCustomPlugins(result *Result, root string, reportDir string) {
-	report, err := readLatestRunReport(filepath.Join(reportDir, "latest.json"))
-	if err != nil {
-		result.Skipped = append(result.Skipped, "custom rollback skipped: "+err.Error())
-		return
-	}
+func rollbackCustomPlugins(result *Result, root string, report runReport) {
 	for _, plugin := range report.Plugins {
 		if plugin.Kind != "custom" || plugin.Rollback == "" {
 			continue
@@ -89,6 +84,43 @@ func rollbackCustomPlugins(result *Result, root string, reportDir string) {
 		if err != nil {
 			result.Failed = append(result.Failed, custom.ID+": rollback failed: "+err.Error())
 		}
+	}
+}
+
+func rollbackLegacyManagedFiles(result *Result, root string) {
+	for _, path := range []string{
+		"/etc/ssh/sshd_config.d/99-ares.conf",
+		"/etc/fail2ban/jail.d/ares-sshd.conf",
+		"/etc/apt/apt.conf.d/20auto-upgrades",
+		"/etc/sysctl.d/99-ares.conf",
+	} {
+		rollbackManagedFile(result, root, path)
+	}
+	for _, path := range []string{
+		"/etc/ssh/sshd_config",
+		"/etc/nftables.conf",
+		"/etc/dnf/automatic.conf",
+	} {
+		restoreNewestBackup(result, root, path)
+	}
+}
+
+func rollbackTransaction(result *Result, root string, transaction TransactionSummary) {
+	if len(transaction.Files) == 0 && len(transaction.Backups) == 0 {
+		result.Skipped = append(result.Skipped, "latest report has no transaction summary; using legacy rollback targets")
+		rollbackLegacyManagedFiles(result, root)
+		return
+	}
+	backedUp := map[string]bool{}
+	for _, path := range transaction.Backups {
+		backedUp[path] = true
+		restoreNewestBackup(result, root, path)
+	}
+	for _, path := range transaction.Files {
+		if backedUp[path] {
+			continue
+		}
+		rollbackManagedFile(result, root, path)
 	}
 }
 

@@ -1,8 +1,10 @@
 package plugins
 
 import (
+	"bufio"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -181,4 +183,61 @@ func TestMarketplaceFilesMatchPluginIDs(t *testing.T) {
 			t.Fatalf("%s missing source file %s: %v", plugin.ID, path, err)
 		}
 	}
+}
+
+func TestDistroFixturesResolveRequiredCapabilities(t *testing.T) {
+	fixtures, err := filepath.Glob(filepath.Join("..", "..", "tests", "fixtures", "os-release", "*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fixtures) == 0 {
+		t.Fatal("expected distro fixtures")
+	}
+	for _, fixture := range fixtures {
+		t.Run(filepath.Base(fixture), func(t *testing.T) {
+			values := readFixtureOSRelease(t, fixture)
+			host := HostMatcher{
+				OSID:   values["ID"],
+				IDLike: strings.Fields(values["ID_LIKE"]),
+			}
+			distro, ok := DistroAdapter(host)
+			if !ok {
+				t.Fatalf("missing distro adapter for %s", fixture)
+			}
+			host.PackageManager = distro.PackageManager
+			host.FirewallBackend = distro.FirewallBackend
+			if _, ok := FirstByCapability(host, "firewall"); !ok {
+				t.Fatalf("missing firewall capability for %+v", host)
+			}
+			if _, ok := FirstByCapability(host, "security-updates"); !ok {
+				t.Fatalf("missing security-updates capability for %+v", host)
+			}
+		})
+	}
+}
+
+func readFixtureOSRelease(t *testing.T, path string) map[string]string {
+	t.Helper()
+	file, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+
+	values := map[string]string{}
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if ok {
+			values[key] = strings.Trim(strings.TrimSpace(value), `"`)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		t.Fatal(err)
+	}
+	return values
 }

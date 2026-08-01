@@ -95,7 +95,9 @@ output can emit structured lines prefixed with `applied:`, `verified:`,
 rollback last --yes` executes custom `rollback` commands recorded in the latest
 run report. `plan` is surfaced in plugin metadata and reserved for richer
 external plugin orchestration. Custom plugin names must be unique and must not
-reuse built-in plugin IDs or reserved selectors such as `firewall-auto`.
+reuse built-in plugin IDs or reserved selectors such as `firewall-auto`. Custom
+commands must be single-line, non-blank strings. If `verify` or `rollback` is
+declared, `apply` must also be declared.
 
 ## Environment
 

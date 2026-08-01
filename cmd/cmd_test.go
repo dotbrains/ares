@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -94,6 +95,47 @@ func TestPreflightUsesTestRootAndPrintsTransaction(t *testing.T) {
 		if !strings.Contains(output, want) {
 			t.Fatalf("preflight output missing %q:\n%s", want, output)
 		}
+	}
+}
+
+func TestPreflightJSONIncludesChecksAndTransaction(t *testing.T) {
+	rootDir := t.TempDir()
+	sshDir := filepath.Join(rootDir, "etc", "ssh")
+	if err := os.MkdirAll(sshDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sshDir, "sshd_config"), []byte("Port 2222\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("ARES_ROOT", rootDir)
+	t.Setenv("ARES_OS_RELEASE", filepath.Join("..", "tests", "fixtures", "os-release", "ubuntu-24.04"))
+	t.Setenv("HOME", t.TempDir())
+
+	root := newRootCmd("test")
+	buf := &bytes.Buffer{}
+	root.SetOut(buf)
+	root.SetErr(buf)
+	root.SetArgs([]string{"preflight", "--json"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	var report struct {
+		Profile     string           `json:"profile"`
+		Plugins     []string         `json:"plugins"`
+		Checks      []preflightCheck `json:"checks"`
+		Transaction struct {
+			Files []string `json:"files"`
+		} `json:"transaction"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &report); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, buf.String())
+	}
+	if report.Profile != "basic" || len(report.Plugins) == 0 || len(report.Checks) == 0 {
+		t.Fatalf("incomplete preflight JSON: %+v", report)
+	}
+	if len(report.Transaction.Files) == 0 {
+		t.Fatalf("missing transaction files: %+v", report.Transaction)
 	}
 }
 

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	iexec "github.com/dotbrains/ares/internal/exec"
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/plugins"
 )
@@ -17,22 +18,25 @@ import (
 const defaultCustomPluginTimeout = 2 * time.Minute
 
 type Options struct {
-	DryRun bool
-	Yes    bool
-	Root   string
-	Now    time.Time
+	DryRun               bool
+	Yes                  bool
+	Root                 string
+	Now                  time.Time
+	Runner               iexec.CommandExecutor
+	AllowPasswordLockout bool
 }
 
 type Result struct {
-	LogPath      string             `json:"-"`
-	ReportPath   string             `json:"-"`
-	UndoPlanPath string             `json:"-"`
-	Transaction  TransactionSummary `json:"transaction"`
-	Probed       []string           `json:"probed"`
-	Verified     []string           `json:"verified"`
-	Applied      []string           `json:"applied"`
-	Skipped      []string           `json:"skipped"`
-	Failed       []string           `json:"failed"`
+	LogPath          string             `json:"-"`
+	ReportPath       string             `json:"-"`
+	UndoPlanPath     string             `json:"-"`
+	Transaction      TransactionSummary `json:"transaction"`
+	SSHLockoutPolicy string             `json:"ssh_lockout_policy,omitempty"`
+	Probed           []string           `json:"probed"`
+	Verified         []string           `json:"verified"`
+	Applied          []string           `json:"applied"`
+	Skipped          []string           `json:"skipped"`
+	Failed           []string           `json:"failed"`
 }
 
 type Context struct {
@@ -49,6 +53,10 @@ func Run(hardeningPlan plan.Plan, opts Options) (Result, error) {
 		Options: opts,
 		Plan:    hardeningPlan,
 	}
+	if ctx.Options.Runner == nil {
+		ctx.Options.Runner = iexec.NewRealExecutor()
+	}
+	ctx.Result.SSHLockoutPolicy = sshLockoutPolicy(opts)
 	ctx.Result.Transaction = BuildTransaction(hardeningPlan)
 
 	if err := ctx.prepareReportPaths(); err != nil {

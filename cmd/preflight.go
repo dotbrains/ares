@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,13 +15,22 @@ import (
 )
 
 type preflightCheck struct {
-	Name   string
-	Status string
-	Detail string
+	Name   string `json:"name"`
+	Status string `json:"status"`
+	Detail string `json:"detail"`
+}
+
+type preflightReport struct {
+	Profile     string                   `json:"profile"`
+	Host        system.Host              `json:"host"`
+	Plugins     []string                 `json:"plugins"`
+	Checks      []preflightCheck         `json:"checks"`
+	Transaction apply.TransactionSummary `json:"transaction"`
 }
 
 func newPreflightCmd() *cobra.Command {
 	var profile string
+	var jsonOutput bool
 
 	cmd := &cobra.Command{
 		Use:   "preflight",
@@ -40,7 +50,14 @@ func newPreflightCmd() *cobra.Command {
 			}
 			hardeningPlan := plan.Build(host, cfg)
 			checks := buildPreflightChecks(host, hardeningPlan, os.Getenv("ARES_ROOT"))
-			printPreflight(cmd, checks, apply.BuildTransaction(hardeningPlan))
+			report := buildPreflightReport(host, hardeningPlan, checks)
+			if jsonOutput {
+				if err := printPreflightJSON(cmd, report); err != nil {
+					return err
+				}
+			} else {
+				printPreflight(cmd, report)
+			}
 			if hasFailedPreflight(checks) {
 				return fmt.Errorf("preflight failed")
 			}
@@ -48,6 +65,7 @@ func newPreflightCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&profile, "profile", "", "hardening profile: basic, web, strict")
+	cmd.Flags().BoolVar(&jsonOutput, "json", false, "print preflight report as JSON")
 	return cmd
 }
 
@@ -147,16 +165,39 @@ func hasFailedPreflight(checks []preflightCheck) bool {
 	return false
 }
 
-func printPreflight(cmd *cobra.Command, checks []preflightCheck, transaction apply.TransactionSummary) {
+func buildPreflightReport(host system.Host, hardeningPlan plan.Plan, checks []preflightCheck) preflightReport {
+	ids := make([]string, 0, len(hardeningPlan.Plugins))
+	for _, plugin := range hardeningPlan.Plugins {
+		ids = append(ids, plugin.ID)
+	}
+	return preflightReport{
+		Profile:     hardeningPlan.Profile,
+		Host:        host,
+		Plugins:     ids,
+		Checks:      checks,
+		Transaction: apply.BuildTransaction(hardeningPlan),
+	}
+}
+
+func printPreflight(cmd *cobra.Command, report preflightReport) {
 	cmd.Println("preflight:")
-	for _, check := range checks {
+	for _, check := range report.Checks {
 		cmd.Printf("  - %s: %s (%s)\n", check.Name, check.Status, check.Detail)
 	}
-	if len(transaction.Files) > 0 || len(transaction.Commands) > 0 || len(transaction.Backups) > 0 {
+	if len(report.Transaction.Files) > 0 || len(report.Transaction.Commands) > 0 || len(report.Transaction.Backups) > 0 {
 		cmd.Println("transaction:")
-		printNamedList(cmd, "files", transaction.Files)
-		printNamedList(cmd, "commands", transaction.Commands)
-		printNamedList(cmd, "backups", transaction.Backups)
-		printNamedList(cmd, "rollback", transaction.RollbackSteps)
+		printNamedList(cmd, "files", report.Transaction.Files)
+		printNamedList(cmd, "commands", report.Transaction.Commands)
+		printNamedList(cmd, "backups", report.Transaction.Backups)
+		printNamedList(cmd, "rollback", report.Transaction.RollbackSteps)
 	}
+}
+
+func printPreflightJSON(cmd *cobra.Command, report preflightReport) error {
+	data, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return err
+	}
+	cmd.Println(string(data))
+	return nil
 }

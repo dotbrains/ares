@@ -63,6 +63,7 @@ sudo ares preflight
 
 Preflight checks privileges, SSH/session detection, host support, report
 writability, and the transaction summary without applying hardening changes.
+Use `ares preflight --json` when automation needs a machine-readable gate.
 
 Apply only after reviewing that plan:
 

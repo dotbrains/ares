@@ -26,3 +26,33 @@ func TestHasAuthorizedKeysRequiresNonEmptyAuthorizedKeys(t *testing.T) {
 		t.Fatal("non-empty authorized_keys should satisfy SSH hardening guard")
 	}
 }
+
+func TestSSHHardeningGuardFailsActiveSSHWithoutAuthorizedKeys(t *testing.T) {
+	ctx := &Context{
+		Options: Options{},
+		Plan:    testPlan(),
+	}
+	ctx.Plan.Host.RunningOverSSH = true
+	t.Setenv("HOME", t.TempDir())
+
+	err := ctx.ensurePublicKeyAccessBeforeSSHHardening()
+	if err == nil {
+		t.Fatal("expected SSH lockout guard error")
+	}
+}
+
+func TestSSHHardeningGuardCanBeExplicitlyBypassed(t *testing.T) {
+	ctx := &Context{
+		Options: Options{AllowPasswordLockout: true},
+		Plan:    testPlan(),
+	}
+	ctx.Plan.Host.RunningOverSSH = true
+	t.Setenv("HOME", t.TempDir())
+
+	if err := ctx.ensurePublicKeyAccessBeforeSSHHardening(); err != nil {
+		t.Fatal(err)
+	}
+	if !contains(ctx.Result.Skipped, "SSH password lockout guard bypassed by explicit operator flag") {
+		t.Fatalf("missing bypass report item: %+v", ctx.Result)
+	}
+}

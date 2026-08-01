@@ -216,3 +216,39 @@ func TestLoadFrom_RejectsCustomPluginNameCollision(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadFrom_RejectsUnsafeCustomPluginCommands(t *testing.T) {
+	cases := []struct {
+		name string
+		yaml string
+	}{
+		{
+			name: "blank command",
+			yaml: "plugins:\n  custom:\n    - name: tailscale-ssh\n      apply: '   '\n",
+		},
+		{
+			name: "multiline command",
+			yaml: "plugins:\n  custom:\n    - name: tailscale-ssh\n      apply: |\n        echo one\n        echo two\n",
+		},
+		{
+			name: "verify without apply",
+			yaml: "plugins:\n  custom:\n    - name: tailscale-ssh\n      verify: ares-plugin verify\n",
+		},
+		{
+			name: "rollback without apply",
+			yaml: "plugins:\n  custom:\n    - name: tailscale-ssh\n      rollback: ares-plugin rollback\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "bad-custom.yaml")
+			if err := os.WriteFile(path, []byte(tc.yaml), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := LoadFrom(path); err == nil {
+				t.Fatal("expected unsafe custom command error")
+			}
+		})
+	}
+}

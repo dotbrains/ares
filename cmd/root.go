@@ -15,6 +15,7 @@ func newRootCmd(version string) *cobra.Command {
 	var profile string
 	var yes bool
 	var dryRun bool
+	var allowPasswordLockout bool
 
 	root := &cobra.Command{
 		Use:   "ares",
@@ -37,9 +38,10 @@ func newRootCmd(version string) *cobra.Command {
 			printBanner(cmd)
 			printPlan(cmd, hardeningPlan)
 			result, err := apply.Run(hardeningPlan, apply.Options{
-				DryRun: dryRun,
-				Yes:    yes,
-				Root:   os.Getenv("ARES_ROOT"),
+				DryRun:               dryRun,
+				Yes:                  yes,
+				Root:                 os.Getenv("ARES_ROOT"),
+				AllowPasswordLockout: allowPasswordLockout,
 			})
 			printApplyResult(cmd, result)
 			return err
@@ -54,6 +56,7 @@ func newRootCmd(version string) *cobra.Command {
 	root.Flags().StringVar(&profile, "profile", "", "hardening profile: basic, web, strict")
 	root.Flags().BoolVar(&dryRun, "dry-run", false, "show the hardening plan without applying changes")
 	root.Flags().BoolVarP(&yes, "yes", "y", false, "answer yes to confirmation prompts")
+	root.Flags().BoolVar(&allowPasswordLockout, "allow-password-lockout", false, "explicitly allow SSH hardening to disable password auth without detected authorized_keys")
 
 	// Subcommands
 	root.AddCommand(newConfigCmd())

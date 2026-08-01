@@ -1,8 +1,8 @@
 package apply
 
 import (
+	"context"
 	"fmt"
-	"os/exec"
 	"strings"
 )
 
@@ -42,7 +42,7 @@ func (ctx *Context) verifyCommandContains(pluginID string, command []string, wan
 		ctx.Result.Verified = append(ctx.Result.Verified, pluginID+": would verify with "+strings.Join(command, " "))
 		return
 	}
-	output, err := runCommandOutput(command[0], command[1:]...)
+	output, err := ctx.Options.Runner.Run(context.Background(), command[0], command[1:]...)
 	if err != nil {
 		ctx.Result.Failed = append(ctx.Result.Failed, pluginID+": "+err.Error())
 		return
@@ -52,13 +52,4 @@ func (ctx *Context) verifyCommandContains(pluginID string, command []string, wan
 		return
 	}
 	ctx.Result.Verified = append(ctx.Result.Verified, pluginID+": verified "+strings.Join(command, " "))
-}
-
-func runCommandOutput(name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return string(output), fmt.Errorf("%s %s: %w: %s", name, strings.Join(args, " "), err, strings.TrimSpace(string(output)))
-	}
-	return string(output), nil
 }

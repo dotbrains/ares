@@ -26,6 +26,7 @@ func (ctx *Context) writeReport() error {
 		"host":     ctx.Plan.Host,
 		"plugins":  ctx.Plan.Plugins,
 		"warnings": ctx.Plan.Warnings,
+		"ssh_lockout_policy": ctx.Result.SSHLockoutPolicy,
 		"transaction": map[string]any{
 			"files":          ctx.Result.Transaction.Files,
 			"commands":       ctx.Result.Transaction.Commands,

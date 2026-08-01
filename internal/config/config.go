@@ -148,6 +148,31 @@ func Validate(cfg *Config) error {
 		if plugin.TimeoutSeconds < 0 {
 			return fmt.Errorf("custom plugin %q timeout_seconds must be non-negative", name)
 		}
+		if err := validateCustomCommands(name, plugin); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateCustomCommands(name string, plugin CustomPlugin) error {
+	for field, command := range map[string]string{
+		"probe":    plugin.Probe,
+		"plan":     plugin.Plan,
+		"apply":    plugin.Apply,
+		"verify":   plugin.Verify,
+		"rollback": plugin.Rollback,
+	} {
+		trimmed := strings.TrimSpace(command)
+		if command != "" && trimmed == "" {
+			return fmt.Errorf("custom plugin %q %s command must not be blank", name, field)
+		}
+		if strings.ContainsAny(trimmed, "\r\n") {
+			return fmt.Errorf("custom plugin %q %s command must be a single line", name, field)
+		}
+	}
+	if strings.TrimSpace(plugin.Apply) == "" && (strings.TrimSpace(plugin.Verify) != "" || strings.TrimSpace(plugin.Rollback) != "") {
+		return fmt.Errorf("custom plugin %q apply command is required when verify or rollback is declared", name)
 	}
 	return nil
 }

@@ -1,11 +1,29 @@
 package apply
 
 import (
+	"context"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/dotbrains/ares/internal/plugins"
 )
+
+type fakeRunner struct {
+	outputs map[string]string
+	err     error
+}
+
+func (runner fakeRunner) Run(_ context.Context, name string, args ...string) (string, error) {
+	if runner.err != nil {
+		return "", runner.err
+	}
+	return runner.outputs[name+" "+strings.Join(args, " ")], nil
+}
+
+func (runner fakeRunner) RunWithStdin(ctx context.Context, stdin string, name string, args ...string) (string, error) {
+	return runner.Run(ctx, name, args...)
+}
 
 func TestVerifyPluginOrErrorReturnsErrorWhenBuiltinVerificationFails(t *testing.T) {
 	root := t.TempDir()
@@ -51,5 +69,48 @@ func TestWebProfileNftablesVerificationRecordsExpectedCommands(t *testing.T) {
 	joined := strings.Join(ctx.Result.Verified, "\n")
 	if !strings.Contains(joined, "web-profile: would verify with nft list ruleset") {
 		t.Fatalf("missing nftables web verify command: %+v", ctx.Result)
+	}
+}
+
+func TestFirewallVerificationUsesCommandOutput(t *testing.T) {
+	ctx := &Context{
+		Options: Options{Runner: fakeRunner{outputs: map[string]string{
+			"ufw status": "Status: active\n22/tcp ALLOW Anywhere\n",
+		}}},
+		Plan: testPlan(),
+	}
+
+	ctx.verifyUFW("firewall-ufw")
+
+	if !contains(ctx.Result.Verified, "firewall-ufw: verified ufw status") {
+		t.Fatalf("missing verified command: %+v", ctx.Result)
+	}
+}
+
+func TestFirewallVerificationFailsWhenOutputIsMissingRule(t *testing.T) {
+	ctx := &Context{
+		Options: Options{Runner: fakeRunner{outputs: map[string]string{
+			"firewall-cmd --list-all": "public\n  ports:\n",
+		}}},
+		Plan: testPlan(),
+	}
+
+	ctx.verifyFirewalld("firewall-firewalld")
+
+	if !contains(ctx.Result.Failed, "firewall-firewalld: verification output missing 22/tcp") {
+		t.Fatalf("missing verification failure: %+v", ctx.Result)
+	}
+}
+
+func TestFirewallVerificationReportsRunnerError(t *testing.T) {
+	ctx := &Context{
+		Options: Options{Runner: fakeRunner{err: fmt.Errorf("command failed")}},
+		Plan:    testPlan(),
+	}
+
+	ctx.verifyUFW("firewall-ufw")
+
+	if !contains(ctx.Result.Failed, "firewall-ufw: command failed") {
+		t.Fatalf("missing runner failure: %+v", ctx.Result)
 	}
 }

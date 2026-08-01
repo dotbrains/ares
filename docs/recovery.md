@@ -20,7 +20,8 @@ The first release implements these safety behaviors:
 - SSH hardening writes a drop-in at `/etc/ssh/sshd_config.d/99-ares.conf`
 - SSH hardening validates `sshd -t` before reloading the detected SSH service
 - real SSH hardening refuses to disable password auth during an active SSH
-  session unless an authorized key file is present for a likely login account
+  session unless an authorized key file is present for a likely login account,
+  or the operator explicitly passes `--allow-password-lockout`
 - firewall plans preserve the detected active SSH port
 - generated nftables configs are validated with `nft -c -f` before loading
 - nftables and dnf automatic configs are backed up before replacement when
@@ -44,9 +45,10 @@ also records a transaction summary with planned files, commands, backups, and
 rollback steps. `undo-plan.txt` records recovery guidance.
 
 `ares rollback last --yes` performs the conservative automated subset of that
-guidance: it removes `ares` managed files and restores the newest matching
-`*.ares.*.bak` backup for files that `ares` backed up. It does not blindly reload
-SSH or firewall services on a live host; review provider console access first.
+guidance: it uses the latest transaction summary when available, removes
+recorded managed files, and restores the newest matching `*.ares.*.bak` backup
+for files that `ares` backed up. It does not blindly reload SSH or firewall
+services on a live host; review provider console access first.
 For custom plugins, rollback executes the `rollback` commands recorded in the
 latest run report. If any rollback step fails, the command exits nonzero after
 writing `rollback-latest.json`.

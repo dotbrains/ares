@@ -40,10 +40,21 @@ func (ctx *Context) ensurePublicKeyAccessBeforeSSHHardening() error {
 	if ctx.Options.Root != "" || !ctx.Plan.Host.RunningOverSSH {
 		return nil
 	}
+	if ctx.Options.AllowPasswordLockout {
+		ctx.Result.Skipped = append(ctx.Result.Skipped, "SSH password lockout guard bypassed by explicit operator flag")
+		return nil
+	}
 	if hasAuthorizedKeys(ctx.Options.Root, authorizedKeyCandidates()) {
 		return nil
 	}
 	return fmt.Errorf("SSH hardening would disable password auth, but no authorized_keys file was found for the current or root account")
+}
+
+func sshLockoutPolicy(opts Options) string {
+	if opts.AllowPasswordLockout {
+		return "password lockout explicitly allowed"
+	}
+	return "refuse active SSH password lockout without authorized_keys"
 }
 
 func authorizedKeyCandidates() []string {
