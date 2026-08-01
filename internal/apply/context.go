@@ -89,6 +89,15 @@ func (ctx *Context) probePlugin(plugin plugins.Plugin) bool {
 		ctx.Result.Probed = append(ctx.Result.Probed, plugin.ID+": would probe with "+plugin.Probe)
 		return true
 	}
+	if plugin.Kind == "custom" {
+		output, err := runCustomCommand(plugin, plugin.Probe)
+		if err != nil {
+			ctx.Result.Skipped = append(ctx.Result.Skipped, plugin.ID+": probe did not pass before apply: "+probeFailureMessage(output, err))
+			return false
+		}
+		ctx.Result.Probed = append(ctx.Result.Probed, plugin.ID+": probe passed")
+		return true
+	}
 	cmd := exec.Command("sh", "-lc", plugin.Probe)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		ctx.Result.Skipped = append(ctx.Result.Skipped, plugin.ID+": probe did not pass before apply: "+strings.TrimSpace(string(output)))
@@ -97,6 +106,14 @@ func (ctx *Context) probePlugin(plugin plugins.Plugin) bool {
 		ctx.Result.Probed = append(ctx.Result.Probed, plugin.ID+": probe passed")
 	}
 	return true
+}
+
+func probeFailureMessage(output string, err error) string {
+	message := strings.TrimSpace(output)
+	if message != "" {
+		return message
+	}
+	return err.Error()
 }
 
 func (ctx *Context) verifyPlugin(plugin plugins.Plugin) {
