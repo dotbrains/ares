@@ -61,7 +61,7 @@ func RollbackLast(opts RollbackOptions) (Result, error) {
 	if opts.Root == "" {
 		result.Skipped = append(result.Skipped, "service reloads are not automated during rollback; review SSH and firewall access before reloading services")
 	}
-	return finishRollback(result, nil)
+	return finishRollback(result, rollbackError(result))
 }
 
 func rollbackCustomPlugins(result *Result, root string, reportDir string) {
@@ -166,6 +166,13 @@ func finishRollback(result Result, runErr error) (Result, error) {
 		runErr = err
 	}
 	return result, runErr
+}
+
+func rollbackError(result Result) error {
+	if len(result.Failed) == 0 {
+		return nil
+	}
+	return fmt.Errorf("rollback failed: %s", strings.Join(result.Failed, "; "))
 }
 
 func writeRollbackReport(result Result) error {

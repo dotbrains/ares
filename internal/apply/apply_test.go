@@ -424,6 +424,29 @@ func TestRollbackLastRunsCustomRollbackFromLatestReport(t *testing.T) {
 	}
 }
 
+func TestRollbackLastReturnsErrorWhenManagedFileRemovalFails(t *testing.T) {
+	root := t.TempDir()
+	managedPath := filepath.Join(root, "etc", "ssh", "sshd_config.d", "99-ares.conf")
+	if err := os.MkdirAll(filepath.Join(managedPath, "child"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := RollbackLast(RollbackOptions{
+		Yes:  true,
+		Root: root,
+		Now:  time.Date(2026, 7, 25, 18, 0, 0, 0, time.UTC),
+	})
+	if err == nil {
+		t.Fatal("expected rollback error")
+	}
+	if len(result.Failed) == 0 {
+		t.Fatalf("expected rollback failure result: %+v", result)
+	}
+	if _, statErr := os.Stat(result.ReportPath); statErr != nil {
+		t.Fatalf("expected rollback report despite failure: %v", statErr)
+	}
+}
+
 func testPlan() plan.Plan {
 	return plan.Build(testHost(), config.DefaultConfig())
 }

@@ -41,7 +41,7 @@ mode requires root privileges and `--yes`.
 
 | Command | Description |
 | --- | --- |
-| `ares rollback last --yes` | Remove `ares` managed files and restore the newest available `*.ares.*.bak` backups. |
+| `ares rollback last --yes` | Remove `ares` managed files and restore the newest available `*.ares.*.bak` backups. Exits nonzero if any rollback step fails. |
 
 Examples:
 
