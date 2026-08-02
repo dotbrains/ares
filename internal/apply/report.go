@@ -2,8 +2,6 @@ package apply
 
 import (
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/dotbrains/ares/internal/reports"
 )
@@ -22,8 +20,7 @@ func (ctx *Context) finish(runErr error) (Result, error) {
 }
 
 func (ctx *Context) writeReport() error {
-	return reports.WriteJSON(ctx.Result.ReportPath, reports.RunReport{
-		SchemaVersion:    reports.ReportSchemaVersion,
+	return ctx.artifacts().WriteRunReport(reports.RunReport{
 		Profile:          ctx.Plan.Profile,
 		Host:             ctx.Plan.Host,
 		Plugins:          ctx.Plan.Plugins,
@@ -55,7 +52,7 @@ func (ctx *Context) writeLog() error {
 	lines = appendList(lines, ctx.Result.Skipped)
 	lines = append(lines, "failed:")
 	lines = appendList(lines, ctx.Result.Failed)
-	return os.WriteFile(ctx.Result.LogPath, []byte(strings.Join(lines, "\n")+"\n"), 0o644)
+	return ctx.artifacts().WriteRunLog(lines)
 }
 
 func (ctx *Context) writeUndoPlan() error {
@@ -85,7 +82,15 @@ func (ctx *Context) writeUndoPlan() error {
 		"sysctl:",
 		"- Remove /etc/sysctl.d/99-ares.conf and run sysctl --system.",
 	}
-	return os.WriteFile(ctx.Result.UndoPlanPath, []byte(strings.Join(lines, "\n")+"\n"), 0o644)
+	return ctx.artifacts().WriteUndoPlan(lines)
+}
+
+func (ctx *Context) artifacts() reports.Artifacts {
+	return reports.Artifacts{
+		RunReportPath: ctx.Result.ReportPath,
+		RunLogPath:    ctx.Result.LogPath,
+		UndoPlanPath:  ctx.Result.UndoPlanPath,
+	}
 }
 
 func appendList(lines []string, values []string) []string {

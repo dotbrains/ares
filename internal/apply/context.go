@@ -1,23 +1,21 @@
 package apply
 
 import (
-	stdctx "context"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
-	"github.com/dotbrains/ares/internal/customoutput"
+	"github.com/dotbrains/ares/internal/customcommand"
 	iexec "github.com/dotbrains/ares/internal/exec"
 	"github.com/dotbrains/ares/internal/hostfs"
+	"github.com/dotbrains/ares/internal/intent"
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/plugins"
 	"github.com/dotbrains/ares/internal/reports"
 	"github.com/dotbrains/ares/internal/safety"
 )
-
-const defaultCustomPluginTimeout = 2 * time.Minute
 
 type Options struct {
 	DryRun                     bool
@@ -162,26 +160,12 @@ func (ctx *Context) verifyCustomPlugin(plugin plugins.Plugin) {
 }
 
 func runCustomCommand(plugin plugins.Plugin, command string) (string, error) {
-	timeout := defaultCustomPluginTimeout
-	if plugin.TimeoutSeconds > 0 {
-		timeout = time.Duration(plugin.TimeoutSeconds) * time.Second
-	}
-	commandContext, cancel := stdctx.WithTimeout(stdctx.Background(), timeout)
-	defer cancel()
-
-	cmd := exec.CommandContext(commandContext, "sh", "-lc", command)
-	output, err := cmd.CombinedOutput()
-	if commandContext.Err() == stdctx.DeadlineExceeded {
-		return string(output), fmt.Errorf("command timed out after %s", timeout)
-	}
-	if err != nil {
-		return string(output), fmt.Errorf("%s: %w: %s", command, err, strings.TrimSpace(string(output)))
-	}
-	return string(output), nil
+	result := customcommand.New(plugin, "", command).Run()
+	return result.Output, result.Err
 }
 
 func (ctx *Context) appendCustomOutput(pluginID string, output string) {
-	parsed := customoutput.Parse(pluginID, output)
+	parsed := customcommand.ParseOutput(pluginID, output)
 	ctx.Result.Applied = append(ctx.Result.Applied, parsed.Applied...)
 	ctx.Result.Verified = append(ctx.Result.Verified, parsed.Verified...)
 	ctx.Result.Skipped = append(ctx.Result.Skipped, parsed.Skipped...)
@@ -224,25 +208,7 @@ func (ctx *Context) installPackages(packages ...string) error {
 }
 
 func installCommand(packageManager string, packages ...string) (string, []string, error) {
-	switch packageManager {
-	case "apt-get":
-		args := append([]string{"install", "-y"}, packages...)
-		return packageManager, args, nil
-	case "dnf", "yum":
-		args := append([]string{"install", "-y"}, packages...)
-		return packageManager, args, nil
-	case "pacman":
-		args := append([]string{"-S", "--needed", "--noconfirm"}, packages...)
-		return packageManager, args, nil
-	case "zypper":
-		args := append([]string{"--non-interactive", "install"}, packages...)
-		return packageManager, args, nil
-	case "apk":
-		args := append([]string{"add"}, packages...)
-		return packageManager, args, nil
-	default:
-		return "", nil, fmt.Errorf("unsupported package manager %q", packageManager)
-	}
+	return intent.InstallCommand(packageManager, packages...)
 }
 
 func (ctx *Context) backup(path string) error {

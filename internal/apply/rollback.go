@@ -231,19 +231,11 @@ func rollbackError(result Result) error {
 }
 
 func writeRollbackReport(result Result) error {
-	return reports.WriteJSON(result.ReportPath, reports.RollbackReport{
-		SchemaVersion: reports.RollbackSchemaVersion,
-		Applied:       nonNilStrings(result.Applied),
-		Skipped:       nonNilStrings(result.Skipped),
-		Failed:        nonNilStrings(result.Failed),
+	return rollbackArtifacts(result).WriteRollbackReport(reports.RollbackReport{
+		Applied: result.Applied,
+		Skipped: result.Skipped,
+		Failed:  result.Failed,
 	})
-}
-
-func nonNilStrings(values []string) []string {
-	if values == nil {
-		return []string{}
-	}
-	return values
 }
 
 func writeRollbackLog(result Result) error {
@@ -256,5 +248,12 @@ func writeRollbackLog(result Result) error {
 	lines = appendList(lines, result.Skipped)
 	lines = append(lines, "failed:")
 	lines = appendList(lines, result.Failed)
-	return os.WriteFile(result.LogPath, []byte(strings.Join(lines, "\n")+"\n"), 0o644)
+	return rollbackArtifacts(result).WriteRollbackLog(lines)
+}
+
+func rollbackArtifacts(result Result) reports.Artifacts {
+	return reports.Artifacts{
+		RollbackReportPath: result.ReportPath,
+		RollbackLogPath:    result.LogPath,
+	}
 }

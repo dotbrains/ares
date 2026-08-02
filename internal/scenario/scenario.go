@@ -16,6 +16,23 @@ type Scenario struct {
 	ExpectedRollback []string
 }
 
+func Matrix() []Scenario {
+	return []Scenario{
+		UbuntuBasic(),
+		ArchWeb(),
+		RHELBasic(),
+	}
+}
+
+func (scenario Scenario) HasExpectedPlugin(id string) bool {
+	for _, pluginID := range scenario.ExpectedPlugins {
+		if pluginID == id {
+			return true
+		}
+	}
+	return false
+}
+
 func UbuntuBasic() Scenario {
 	return Scenario{
 		Name:   "ubuntu-basic",
@@ -47,6 +64,36 @@ func UbuntuBasic() Scenario {
 		ExpectedRollback: []string{
 			"would restore newest backup for /etc/ssh/sshd_config",
 			"would remove /etc/ssh/sshd_config.d/99-ares.conf",
+		},
+	}
+}
+
+func RHELBasic() Scenario {
+	return Scenario{
+		Name:   "rhel-basic",
+		Host:   DistroHost("rocky", "dnf", "firewalld"),
+		Config: config.DefaultConfig(),
+		ExpectedPlugins: []string{
+			"distro-rhel",
+			"ssh-hardening",
+			"firewall-firewalld",
+			"fail2ban",
+			"dnf-automatic",
+			"sysctl-baseline",
+		},
+		ExpectedCommands: []string{
+			"dnf install -y dnf-automatic",
+			"systemctl enable --now dnf-automatic.timer",
+			"firewall-cmd --permanent --add-port=22/tcp",
+		},
+		ExpectedFiles: []string{
+			"/etc/ssh/sshd_config.d/99-ares.conf",
+			"/etc/fail2ban/jail.d/ares-sshd.conf",
+			"/etc/dnf/automatic.conf",
+			"/etc/sysctl.d/99-ares.conf",
+		},
+		ExpectedBackups: []string{
+			"/etc/ssh/sshd_config",
 		},
 	}
 }

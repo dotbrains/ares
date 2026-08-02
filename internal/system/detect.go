@@ -35,6 +35,62 @@ type Fact struct {
 	Confidence string `json:"confidence"`
 }
 
+type ObservedValue struct {
+	Name       string
+	Value      string
+	Source     string
+	Confidence string
+}
+
+func (host Host) Observed(name string) ObservedValue {
+	value := host.valueForObservation(name)
+	fact := host.Facts[name]
+	source := fact.Source
+	if source == "" {
+		source = "unknown"
+	}
+	confidence := fact.Confidence
+	if confidence == "" {
+		confidence = confidenceForObservedValue(value)
+	}
+	return ObservedValue{
+		Name:       name,
+		Value:      value,
+		Source:     source,
+		Confidence: confidence,
+	}
+}
+
+func (host Host) valueForObservation(name string) string {
+	switch name {
+	case "os":
+		return strings.TrimSpace(host.OSID + " " + host.OSVersion)
+	case "package_manager":
+		return host.PackageManager
+	case "init_system":
+		return host.InitSystem
+	case "firewall_backend":
+		return host.FirewallBackend
+	case "ssh_service":
+		return host.SSHService
+	case "ssh_port":
+		return host.SSHPort
+	case "provider":
+		return host.Provider
+	case "architecture":
+		return host.Architecture
+	default:
+		return ""
+	}
+}
+
+func confidenceForObservedValue(value string) string {
+	if strings.TrimSpace(value) == "" || value == "unknown" {
+		return "low"
+	}
+	return "high"
+}
+
 type Prober interface {
 	Env(string) string
 	ReadFile(string) ([]byte, error)

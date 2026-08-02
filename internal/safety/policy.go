@@ -3,11 +3,11 @@ package safety
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/dotbrains/ares/internal/config"
+	"github.com/dotbrains/ares/internal/customcommand"
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/reports"
 	"github.com/dotbrains/ares/internal/system"
@@ -76,12 +76,15 @@ func EvidenceFor(host system.Host, root string, allowPasswordLockout bool, allow
 }
 
 func hostEvidence(host system.Host, name string, value string) reports.Evidence {
-	fact := host.Facts[name]
+	observed := host.Observed(name)
+	if value != "" {
+		observed.Value = value
+	}
 	return reports.Evidence{
-		Name:       name,
-		Value:      value,
-		Source:     sourceOrDefault(fact.Source, "unknown"),
-		Confidence: sourceOrDefault(fact.Confidence, confidenceForValue(value)),
+		Name:       observed.Name,
+		Value:      observed.Value,
+		Source:     sourceOrDefault(observed.Source, "unknown"),
+		Confidence: sourceOrDefault(observed.Confidence, confidenceForValue(observed.Value)),
 	}
 }
 
@@ -218,29 +221,12 @@ func customPluginCommandDecisions(cfg *config.Config) []Decision {
 }
 
 func customCommandDecision(pluginName string, phase string, command string) Decision {
-	executable := firstCommandWord(command)
 	name := "custom " + pluginName + " " + phase
-	if executable == "" {
-		return Decision{Name: name, Status: "fail", Detail: "missing executable"}
+	path, err := customcommand.CheckExecutable(command)
+	if err != nil {
+		return Decision{Name: name, Status: "fail", Detail: err.Error()}
 	}
-	if strings.Contains(executable, "/") {
-		if _, err := os.Stat(executable); err != nil {
-			return Decision{Name: name, Status: "fail", Detail: executable + " not found"}
-		}
-		return Decision{Name: name, Status: "pass", Detail: executable}
-	}
-	if path, err := exec.LookPath(executable); err == nil {
-		return Decision{Name: name, Status: "pass", Detail: path}
-	}
-	return Decision{Name: name, Status: "fail", Detail: executable + " not found on PATH"}
-}
-
-func firstCommandWord(command string) string {
-	fields := strings.Fields(command)
-	if len(fields) == 0 {
-		return ""
-	}
-	return fields[0]
+	return Decision{Name: name, Status: "pass", Detail: path}
 }
 
 func rootedPath(root string, path string) string {

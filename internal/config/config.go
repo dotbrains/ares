@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/dotbrains/ares/internal/customcommand"
 	"github.com/dotbrains/ares/internal/plugins"
 	"gopkg.in/yaml.v3"
 )
@@ -185,18 +186,11 @@ func validateCustomCommands(name string, plugin CustomPlugin) error {
 		"verify":   plugin.Verify,
 		"rollback": plugin.Rollback,
 	} {
-		trimmed := strings.TrimSpace(command)
-		if command != "" && trimmed == "" {
-			return fmt.Errorf("custom plugin %q %s command must not be blank", name, field)
-		}
-		if strings.ContainsAny(trimmed, "\r\n") {
-			return fmt.Errorf("custom plugin %q %s command must be a single line", name, field)
+		if err := customcommand.ValidateLine(name, field, command); err != nil {
+			return err
 		}
 	}
-	if strings.TrimSpace(plugin.Apply) == "" && (strings.TrimSpace(plugin.Verify) != "" || strings.TrimSpace(plugin.Rollback) != "") {
-		return fmt.Errorf("custom plugin %q apply command is required when verify or rollback is declared", name)
-	}
-	return nil
+	return customcommand.ValidateLifecycle(name, plugin.Apply, plugin.Verify, plugin.Rollback)
 }
 
 // Save writes the config to disk, creating directories as needed.

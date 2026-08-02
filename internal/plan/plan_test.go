@@ -9,7 +9,8 @@ import (
 )
 
 func TestBuildAddsDistroPlugin(t *testing.T) {
-	result := Build(scenario.UbuntuHost(), config.DefaultConfig())
+	fixture := scenario.UbuntuBasic()
+	result := Build(fixture.Host, fixture.Config)
 	if len(result.Plugins) == 0 {
 		t.Fatal("expected selected plugins")
 	}
@@ -24,18 +25,25 @@ func TestBuildAddsDistroPlugin(t *testing.T) {
 	}
 }
 
+func TestBuildMatchesScenarioMatrix(t *testing.T) {
+	for _, fixture := range scenario.Matrix() {
+		t.Run(fixture.Name, func(t *testing.T) {
+			result := Build(fixture.Host, fixture.Config)
+			for _, id := range fixture.ExpectedPlugins {
+				if !hasPlugin(result, id) {
+					t.Fatalf("expected %s in %+v", id, result.Plugins)
+				}
+			}
+			if len(result.Warnings) != 0 {
+				t.Fatalf("unexpected warnings: %v", result.Warnings)
+			}
+		})
+	}
+}
+
 func TestBuildResolvesRHELDefaults(t *testing.T) {
-	result := Build(system.Host{
-		OSID:            "rocky",
-		OSName:          "Rocky Linux 9.4",
-		OSVersion:       "9.4",
-		PackageManager:  "dnf",
-		InitSystem:      "systemd",
-		FirewallBackend: "firewalld",
-		SSHService:      "sshd",
-		SSHPort:         "22",
-		RunningOverSSH:  true,
-	}, config.DefaultConfig())
+	fixture := scenario.RHELBasic()
+	result := Build(fixture.Host, fixture.Config)
 
 	for _, id := range []string{"distro-rhel", "firewall-firewalld", "dnf-automatic"} {
 		if !hasPlugin(result, id) {
