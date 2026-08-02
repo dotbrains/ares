@@ -152,10 +152,10 @@ func appendMutationResult(result *Result, mutationResult mutation.Result) {
 }
 
 func finishRollback(result Result, runErr error) (Result, error) {
-	if err := writeRollbackReport(result); err != nil && runErr == nil {
-		runErr = err
-	}
-	if err := writeRollbackLog(result); err != nil && runErr == nil {
+	if err := rollbackArtifacts(result).FinishRollback(reports.RollbackArtifactInput{
+		Report: rollbackReport(result),
+		Log:    rollbackLogLines(result),
+	}); err != nil && runErr == nil {
 		runErr = err
 	}
 	return result, runErr
@@ -168,15 +168,15 @@ func rollbackError(result Result) error {
 	return fmt.Errorf("rollback failed: %s", strings.Join(result.Failed, "; "))
 }
 
-func writeRollbackReport(result Result) error {
-	return rollbackArtifacts(result).WriteRollbackReport(reports.RollbackReport{
+func rollbackReport(result Result) reports.RollbackReport {
+	return reports.RollbackReport{
 		Applied: result.Applied,
 		Skipped: result.Skipped,
 		Failed:  result.Failed,
-	})
+	}
 }
 
-func writeRollbackLog(result Result) error {
+func rollbackLogLines(result Result) []string {
 	var lines []string
 	lines = append(lines, "ares rollback")
 	lines = append(lines, "")
@@ -186,7 +186,7 @@ func writeRollbackLog(result Result) error {
 	lines = appendList(lines, result.Skipped)
 	lines = append(lines, "failed:")
 	lines = appendList(lines, result.Failed)
-	return rollbackArtifacts(result).WriteRollbackLog(lines)
+	return lines
 }
 
 func rollbackArtifacts(result Result) reports.Artifacts {

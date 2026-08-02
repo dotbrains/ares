@@ -13,6 +13,34 @@ type Artifacts struct {
 	RollbackLogPath    string
 }
 
+type RunArtifactInput struct {
+	Report RunReport
+	Log    []string
+	Undo   []string
+}
+
+type RollbackArtifactInput struct {
+	Report RollbackReport
+	Log    []string
+}
+
+func (artifacts Artifacts) FinishRun(input RunArtifactInput) error {
+	if err := artifacts.WriteUndoPlan(input.Undo); err != nil {
+		return err
+	}
+	if err := artifacts.WriteRunReport(input.Report); err != nil {
+		return err
+	}
+	return artifacts.WriteRunLog(input.Log)
+}
+
+func (artifacts Artifacts) FinishRollback(input RollbackArtifactInput) error {
+	if err := artifacts.WriteRollbackReport(input.Report); err != nil {
+		return err
+	}
+	return artifacts.WriteRollbackLog(input.Log)
+}
+
 func (artifacts Artifacts) WriteRunReport(report RunReport) error {
 	report.SchemaVersion = ReportSchemaVersion
 	report.Probed = NonNilStrings(report.Probed)

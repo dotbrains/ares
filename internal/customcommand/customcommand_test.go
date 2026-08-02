@@ -17,6 +17,13 @@ func TestValidateLineRejectsBlankAndMultiline(t *testing.T) {
 	}
 }
 
+func TestValidatePolicyRejectsUnsafeLifecycle(t *testing.T) {
+	err := ValidatePolicy(PluginPolicy{Name: "tailscale", Verify: "tailscale status"}, nil)
+	if err == nil {
+		t.Fatal("expected policy error")
+	}
+}
+
 func TestCheckExecutableSupportsAbsoluteAndPathCommands(t *testing.T) {
 	root := t.TempDir()
 	script := filepath.Join(root, "plugin.sh")

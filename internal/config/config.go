@@ -161,36 +161,23 @@ func Validate(cfg *Config) error {
 			return fmt.Errorf("duplicate custom plugin name %q", name)
 		}
 		customNames[name] = true
-		switch name {
-		case "firewall-auto", "security-updates":
-			return fmt.Errorf("custom plugin name %q conflicts with a reserved plugin selector", name)
-		}
+		reserved := func(value string) bool { return value == "firewall-auto" || value == "security-updates" }
 		if _, ok := plugins.Find(name); ok {
 			return fmt.Errorf("custom plugin name %q conflicts with a built-in plugin", name)
 		}
-		if plugin.TimeoutSeconds < 0 {
-			return fmt.Errorf("custom plugin %q timeout_seconds must be non-negative", name)
-		}
-		if err := validateCustomCommands(name, plugin); err != nil {
+		if err := customcommand.ValidatePolicy(customcommand.PluginPolicy{
+			Name:           plugin.Name,
+			Probe:          plugin.Probe,
+			Plan:           plugin.Plan,
+			Apply:          plugin.Apply,
+			Verify:         plugin.Verify,
+			Rollback:       plugin.Rollback,
+			TimeoutSeconds: plugin.TimeoutSeconds,
+		}, reserved); err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func validateCustomCommands(name string, plugin CustomPlugin) error {
-	for field, command := range map[string]string{
-		"probe":    plugin.Probe,
-		"plan":     plugin.Plan,
-		"apply":    plugin.Apply,
-		"verify":   plugin.Verify,
-		"rollback": plugin.Rollback,
-	} {
-		if err := customcommand.ValidateLine(name, field, command); err != nil {
-			return err
-		}
-	}
-	return customcommand.ValidateLifecycle(name, plugin.Apply, plugin.Verify, plugin.Rollback)
 }
 
 // Save writes the config to disk, creating directories as needed.

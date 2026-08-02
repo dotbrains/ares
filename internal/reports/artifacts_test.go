@@ -30,3 +30,24 @@ func TestArtifactsWriteRollbackReportUsesStableArrays(t *testing.T) {
 		}
 	}
 }
+
+func TestArtifactsFinishRunWritesAllArtifactsInOrder(t *testing.T) {
+	dir := t.TempDir()
+	artifacts := Artifacts{
+		RunReportPath: filepath.Join(dir, "latest.json"),
+		RunLogPath:    filepath.Join(dir, "ares.log"),
+		UndoPlanPath:  filepath.Join(dir, "undo.txt"),
+	}
+	if err := artifacts.FinishRun(RunArtifactInput{
+		Report: RunReport{Profile: "basic"},
+		Log:    []string{"log"},
+		Undo:   []string{"undo"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{artifacts.RunReportPath, artifacts.RunLogPath, artifacts.UndoPlanPath} {
+		if _, err := os.Stat(path); err != nil {
+			t.Fatalf("missing artifact %s: %v", path, err)
+		}
+	}
+}

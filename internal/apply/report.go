@@ -7,20 +7,18 @@ import (
 )
 
 func (ctx *Context) finish(runErr error) (Result, error) {
-	if err := ctx.writeUndoPlan(); err != nil && runErr == nil {
-		runErr = err
-	}
-	if err := ctx.writeReport(); err != nil && runErr == nil {
-		runErr = err
-	}
-	if err := ctx.writeLog(); err != nil && runErr == nil {
+	if err := ctx.artifacts().FinishRun(reports.RunArtifactInput{
+		Report: ctx.runReport(),
+		Log:    ctx.logLines(),
+		Undo:   ctx.undoPlanLines(),
+	}); err != nil && runErr == nil {
 		runErr = err
 	}
 	return ctx.Result, runErr
 }
 
-func (ctx *Context) writeReport() error {
-	return ctx.artifacts().WriteRunReport(reports.RunReport{
+func (ctx *Context) runReport() reports.RunReport {
+	return reports.RunReport{
 		Profile:          ctx.Plan.Profile,
 		Host:             ctx.Plan.Host,
 		Plugins:          ctx.Plan.Plugins,
@@ -33,10 +31,10 @@ func (ctx *Context) writeReport() error {
 		Applied:          ctx.Result.Applied,
 		Skipped:          ctx.Result.Skipped,
 		Failed:           ctx.Result.Failed,
-	})
+	}
 }
 
-func (ctx *Context) writeLog() error {
+func (ctx *Context) logLines() []string {
 	var lines []string
 	lines = append(lines, "ares run "+ctx.Options.Now.Format("2006-01-02 15:04:05"))
 	lines = append(lines, "profile: "+ctx.Plan.Profile)
@@ -52,11 +50,11 @@ func (ctx *Context) writeLog() error {
 	lines = appendList(lines, ctx.Result.Skipped)
 	lines = append(lines, "failed:")
 	lines = appendList(lines, ctx.Result.Failed)
-	return ctx.artifacts().WriteRunLog(lines)
+	return lines
 }
 
-func (ctx *Context) writeUndoPlan() error {
-	lines := []string{
+func (ctx *Context) undoPlanLines() []string {
+	return []string{
 		"ares undo plan",
 		"",
 		"This file records manual recovery hints. Review each command before running it.",
@@ -82,7 +80,6 @@ func (ctx *Context) writeUndoPlan() error {
 		"sysctl:",
 		"- Remove /etc/sysctl.d/99-ares.conf and run sysctl --system.",
 	}
-	return ctx.artifacts().WriteUndoPlan(lines)
 }
 
 func (ctx *Context) artifacts() reports.Artifacts {

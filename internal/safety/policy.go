@@ -209,31 +209,18 @@ func customPluginCommandDecisions(cfg *config.Config) []Decision {
 	}
 	var decisions []Decision
 	for _, plugin := range cfg.Plugins.Custom {
-		for _, command := range []struct {
-			name  string
-			value string
-		}{
-			{name: "probe", value: plugin.Probe},
-			{name: "apply", value: plugin.Apply},
-			{name: "verify", value: plugin.Verify},
-			{name: "rollback", value: plugin.Rollback},
-		} {
-			if strings.TrimSpace(command.value) == "" {
-				continue
-			}
-			decisions = append(decisions, customCommandDecision(plugin.Name, command.name, command.value))
-		}
+		customcommand.ExecutableDecisions(plugin.Name, map[string]string{
+			"probe":    plugin.Probe,
+			"apply":    plugin.Apply,
+			"verify":   plugin.Verify,
+			"rollback": plugin.Rollback,
+		}, func(phase string, path string) {
+			decisions = append(decisions, Decision{Name: "custom " + plugin.Name + " " + phase, Status: "pass", Detail: path})
+		}, func(phase string, detail string) {
+			decisions = append(decisions, Decision{Name: "custom " + plugin.Name + " " + phase, Status: "fail", Detail: detail})
+		})
 	}
 	return decisions
-}
-
-func customCommandDecision(pluginName string, phase string, command string) Decision {
-	name := "custom " + pluginName + " " + phase
-	path, err := customcommand.CheckExecutable(command)
-	if err != nil {
-		return Decision{Name: name, Status: "fail", Detail: err.Error()}
-	}
-	return Decision{Name: name, Status: "pass", Detail: path}
 }
 
 func rootedPath(root string, path string) string {

@@ -2,9 +2,9 @@ package apply
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 
+	"github.com/dotbrains/ares/internal/customcommand"
 	"github.com/dotbrains/ares/internal/plugins"
 )
 
@@ -43,9 +43,9 @@ func (executor PluginExecutor) Probe(plugin plugins.Plugin) bool {
 		ctx.Result.Probed = append(ctx.Result.Probed, plugin.ID+": probe passed")
 		return true
 	}
-	cmd := exec.Command("sh", "-lc", plugin.Probe)
-	if output, err := cmd.CombinedOutput(); err != nil {
-		ctx.Result.Skipped = append(ctx.Result.Skipped, plugin.ID+": probe did not pass before apply: "+strings.TrimSpace(string(output)))
+	probe := customcommand.Command{PluginID: plugin.ID, Phase: "probe", Line: plugin.Probe}.Run()
+	if probe.Err != nil {
+		ctx.Result.Skipped = append(ctx.Result.Skipped, plugin.ID+": probe did not pass before apply: "+strings.TrimSpace(probe.Output))
 		return plugin.Kind != "custom"
 	}
 	ctx.Result.Probed = append(ctx.Result.Probed, plugin.ID+": probe passed")
