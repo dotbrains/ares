@@ -5,6 +5,12 @@ import (
 	"strings"
 )
 
+var webProfileAppliers = map[string]func(*Context) error{
+	"firewalld": (*Context).applyFirewalldWebProfile,
+	"nftables":  (*Context).applyNftablesWebProfile,
+	"ufw":       (*Context).applyUFWWebProfile,
+}
+
 func (ctx *Context) applyUFW() error {
 	if err := ctx.run(ctx.Plan.Host.PackageManager, "update"); err != nil {
 		return err
@@ -69,44 +75,50 @@ func (ctx *Context) applyNftables() error {
 }
 
 func (ctx *Context) applyWebProfile() error {
-	switch ctx.Plan.Host.FirewallBackend {
-	case "firewalld":
-		for _, service := range []string{"http", "https"} {
-			if err := ctx.run("firewall-cmd", "--permanent", "--add-service="+service); err != nil {
-				return err
-			}
-		}
-		if err := ctx.run("firewall-cmd", "--reload"); err != nil {
-			return err
-		}
-		ctx.Result.Applied = append(ctx.Result.Applied, "allowed HTTP and HTTPS")
-		return nil
-	case "nftables":
-		if err := ctx.backup("/etc/nftables.conf"); err != nil {
-			return fmt.Errorf("backup nftables.conf: %w", err)
-		}
-		if err := ctx.writeNftablesRules(ctx.Plan.Host.SSHPort, "80", "443"); err != nil {
-			return err
-		}
-		if err := ctx.run("nft", "-c", "-f", "/etc/nftables.conf"); err != nil {
-			return err
-		}
-		if err := ctx.run("nft", "-f", "/etc/nftables.conf"); err != nil {
-			return err
-		}
-		ctx.Result.Applied = append(ctx.Result.Applied, "allowed HTTP and HTTPS")
-		return nil
-	case "ufw":
-		for _, port := range []string{"80/tcp", "443/tcp"} {
-			if err := ctx.run("ufw", "allow", port); err != nil {
-				return err
-			}
-		}
-		ctx.Result.Applied = append(ctx.Result.Applied, "allowed HTTP and HTTPS")
-		return nil
-	default:
-		return fmt.Errorf("unsupported firewall backend %q for web profile", ctx.Plan.Host.FirewallBackend)
+	if apply, ok := webProfileAppliers[ctx.Plan.Host.FirewallBackend]; ok {
+		return apply(ctx)
 	}
+	return fmt.Errorf("unsupported firewall backend %q for web profile", ctx.Plan.Host.FirewallBackend)
+}
+
+func (ctx *Context) applyFirewalldWebProfile() error {
+	for _, service := range []string{"http", "https"} {
+		if err := ctx.run("firewall-cmd", "--permanent", "--add-service="+service); err != nil {
+			return err
+		}
+	}
+	if err := ctx.run("firewall-cmd", "--reload"); err != nil {
+		return err
+	}
+	ctx.Result.Applied = append(ctx.Result.Applied, "allowed HTTP and HTTPS")
+	return nil
+}
+
+func (ctx *Context) applyNftablesWebProfile() error {
+	if err := ctx.backup("/etc/nftables.conf"); err != nil {
+		return fmt.Errorf("backup nftables.conf: %w", err)
+	}
+	if err := ctx.writeNftablesRules(ctx.Plan.Host.SSHPort, "80", "443"); err != nil {
+		return err
+	}
+	if err := ctx.run("nft", "-c", "-f", "/etc/nftables.conf"); err != nil {
+		return err
+	}
+	if err := ctx.run("nft", "-f", "/etc/nftables.conf"); err != nil {
+		return err
+	}
+	ctx.Result.Applied = append(ctx.Result.Applied, "allowed HTTP and HTTPS")
+	return nil
+}
+
+func (ctx *Context) applyUFWWebProfile() error {
+	for _, port := range []string{"80/tcp", "443/tcp"} {
+		if err := ctx.run("ufw", "allow", port); err != nil {
+			return err
+		}
+	}
+	ctx.Result.Applied = append(ctx.Result.Applied, "allowed HTTP and HTTPS")
+	return nil
 }
 
 func (ctx *Context) writeNftablesRules(ports ...string) error {

@@ -2,6 +2,12 @@ package apply
 
 import "fmt"
 
+var packageUpgradeAppliers = map[string]func(*Context) error{
+	"pacman": (*Context).applyPacmanUpgrade,
+	"zypper": (*Context).applyZypperPatch,
+	"apk":    (*Context).applyAPKUpgrade,
+}
+
 const sshDropIn = `# Managed by ares.
 PermitRootLogin no
 PasswordAuthentication no
@@ -79,17 +85,23 @@ net.ipv4.conf.default.send_redirects=0
 `
 
 func (ctx *Context) applyPackageUpgrade() error {
-	switch ctx.Plan.Host.PackageManager {
-	case "pacman":
-		return ctx.run("pacman", "-Syu", "--noconfirm")
-	case "zypper":
-		return ctx.run("zypper", "--non-interactive", "patch")
-	case "apk":
-		if err := ctx.run("apk", "update"); err != nil {
-			return err
-		}
-		return ctx.run("apk", "upgrade")
-	default:
-		return fmt.Errorf("unsupported package manager %q for package upgrade", ctx.Plan.Host.PackageManager)
+	if apply, ok := packageUpgradeAppliers[ctx.Plan.Host.PackageManager]; ok {
+		return apply(ctx)
 	}
+	return fmt.Errorf("unsupported package manager %q for package upgrade", ctx.Plan.Host.PackageManager)
+}
+
+func (ctx *Context) applyPacmanUpgrade() error {
+	return ctx.run("pacman", "-Syu", "--noconfirm")
+}
+
+func (ctx *Context) applyZypperPatch() error {
+	return ctx.run("zypper", "--non-interactive", "patch")
+}
+
+func (ctx *Context) applyAPKUpgrade() error {
+	if err := ctx.run("apk", "update"); err != nil {
+		return err
+	}
+	return ctx.run("apk", "upgrade")
 }

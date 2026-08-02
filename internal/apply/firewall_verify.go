@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+var webProfileVerifiers = map[string]func(*Context, string){
+	"firewalld": (*Context).verifyFirewalldWebProfile,
+	"nftables":  (*Context).verifyNftablesWebProfile,
+	"ufw":       (*Context).verifyUFWWebProfile,
+}
+
 func (ctx *Context) verifyUFW(pluginID string) {
 	ctx.verifyCommandContains(pluginID, []string{"ufw", "status"}, ctx.Plan.Host.SSHPort+"/tcp")
 }
@@ -20,21 +26,28 @@ func (ctx *Context) verifyNftables(pluginID string) {
 }
 
 func (ctx *Context) verifyWebProfile(pluginID string) {
-	switch ctx.Plan.Host.FirewallBackend {
-	case "firewalld":
-		ctx.verifyCommandContains(pluginID, []string{"firewall-cmd", "--list-all"}, "services:")
-		ctx.verifyCommandContains(pluginID, []string{"firewall-cmd", "--list-all"}, "http")
-		ctx.verifyCommandContains(pluginID, []string{"firewall-cmd", "--list-all"}, "https")
-	case "nftables":
-		ctx.verifyPath(pluginID, "/etc/nftables.conf")
-		ctx.verifyCommandContains(pluginID, []string{"nft", "list", "ruleset"}, "dport 80")
-		ctx.verifyCommandContains(pluginID, []string{"nft", "list", "ruleset"}, "dport 443")
-	case "ufw":
-		ctx.verifyCommandContains(pluginID, []string{"ufw", "status"}, "80/tcp")
-		ctx.verifyCommandContains(pluginID, []string{"ufw", "status"}, "443/tcp")
-	default:
-		ctx.Result.Failed = append(ctx.Result.Failed, fmt.Sprintf("%s: unsupported firewall backend %q for verification", pluginID, ctx.Plan.Host.FirewallBackend))
+	if verify, ok := webProfileVerifiers[ctx.Plan.Host.FirewallBackend]; ok {
+		verify(ctx, pluginID)
+		return
 	}
+	ctx.Result.Failed = append(ctx.Result.Failed, fmt.Sprintf("%s: unsupported firewall backend %q for verification", pluginID, ctx.Plan.Host.FirewallBackend))
+}
+
+func (ctx *Context) verifyFirewalldWebProfile(pluginID string) {
+	ctx.verifyCommandContains(pluginID, []string{"firewall-cmd", "--list-all"}, "services:")
+	ctx.verifyCommandContains(pluginID, []string{"firewall-cmd", "--list-all"}, "http")
+	ctx.verifyCommandContains(pluginID, []string{"firewall-cmd", "--list-all"}, "https")
+}
+
+func (ctx *Context) verifyNftablesWebProfile(pluginID string) {
+	ctx.verifyPath(pluginID, "/etc/nftables.conf")
+	ctx.verifyCommandContains(pluginID, []string{"nft", "list", "ruleset"}, "dport 80")
+	ctx.verifyCommandContains(pluginID, []string{"nft", "list", "ruleset"}, "dport 443")
+}
+
+func (ctx *Context) verifyUFWWebProfile(pluginID string) {
+	ctx.verifyCommandContains(pluginID, []string{"ufw", "status"}, "80/tcp")
+	ctx.verifyCommandContains(pluginID, []string{"ufw", "status"}, "443/tcp")
 }
 
 func (ctx *Context) verifyCommandContains(pluginID string, command []string, want string) {
