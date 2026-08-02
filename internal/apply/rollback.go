@@ -10,6 +10,7 @@ import (
 	"github.com/dotbrains/ares/internal/hostfs"
 	"github.com/dotbrains/ares/internal/mutation"
 	"github.com/dotbrains/ares/internal/plugins"
+	"github.com/dotbrains/ares/internal/readiness"
 	"github.com/dotbrains/ares/internal/recovery"
 	"github.com/dotbrains/ares/internal/reports"
 )
@@ -48,11 +49,12 @@ func RollbackLast(opts RollbackOptions) (Result, error) {
 		return finishRollback(result, nil)
 	}
 
-	if !opts.Yes {
-		return finishRollback(result, fmt.Errorf("rollback requires --yes after reviewing the undo plan"))
-	}
-	if os.Geteuid() != 0 && opts.Root == "" {
-		return finishRollback(result, fmt.Errorf("rollback must run as root"))
+	if err := readiness.Refusal(readiness.Request{
+		Mode: readiness.Rollback,
+		Yes:  opts.Yes,
+		Root: opts.Root,
+	}); err != nil {
+		return finishRollback(result, err)
 	}
 
 	report, reportErr := readLatestRunReport(filepath.Join(base, "latest.json"))
@@ -93,67 +95,23 @@ func rollbackCustomPlugins(result *Result, root string, report reports.LatestRun
 }
 
 func executeRecoveryPlan(result *Result, root string, plan recovery.Plan) {
-	if plan.Legacy {
+	mutationResult, legacy := recovery.Execute(plan, mutation.Operator{Root: root})
+	if legacy {
 		result.Skipped = append(result.Skipped, "latest report has no transaction summary; using legacy rollback targets")
-		rollbackLegacyManagedFiles(result, root)
-		rollbackCustomPlugins(result, root, reports.LatestRunReport{Plugins: plan.Custom})
-		return
 	}
-	rollbackTransaction(result, root, plan.Transaction)
+	appendMutationResult(result, mutationResult)
 	rollbackCustomPlugins(result, root, reports.LatestRunReport{Plugins: plan.Custom})
 }
 
 func rollbackLegacyManagedFiles(result *Result, root string) {
-	for _, path := range []string{
-		"/etc/ssh/sshd_config.d/99-ares.conf",
-		"/etc/fail2ban/jail.d/ares-sshd.conf",
-		"/etc/apt/apt.conf.d/20auto-upgrades",
-		"/etc/sysctl.d/99-ares.conf",
-	} {
-		rollbackManagedFile(result, root, path)
-	}
-	for _, path := range []string{
-		"/etc/ssh/sshd_config",
-		"/etc/nftables.conf",
-		"/etc/dnf/automatic.conf",
-	} {
-		restoreNewestBackup(result, root, path)
-	}
-}
-
-func rollbackTransaction(result *Result, root string, transaction TransactionSummary) {
-	if len(transaction.Files) == 0 && len(transaction.Backups) == 0 {
-		result.Skipped = append(result.Skipped, "latest report has no transaction summary; using legacy rollback targets")
-		rollbackLegacyManagedFiles(result, root)
-		return
-	}
-	backedUp := map[string]bool{}
-	for _, path := range transaction.Backups {
-		backedUp[path] = true
-		restoreNewestBackup(result, root, path)
-	}
-	for _, path := range transaction.Files {
-		if backedUp[path] {
-			continue
-		}
-		rollbackManagedFile(result, root, path)
-	}
+	appendMutationResult(result, recovery.ExecuteLegacy(mutation.Operator{Root: root}))
 }
 
 func previewLegacyManagedFiles(result *Result) {
-	for _, path := range []string{
-		"/etc/ssh/sshd_config.d/99-ares.conf",
-		"/etc/fail2ban/jail.d/ares-sshd.conf",
-		"/etc/apt/apt.conf.d/20auto-upgrades",
-		"/etc/sysctl.d/99-ares.conf",
-	} {
+	for _, path := range recovery.LegacyManagedFiles() {
 		result.Applied = append(result.Applied, "would remove "+path)
 	}
-	for _, path := range []string{
-		"/etc/ssh/sshd_config",
-		"/etc/nftables.conf",
-		"/etc/dnf/automatic.conf",
-	} {
+	for _, path := range recovery.LegacyBackupTargets() {
 		result.Applied = append(result.Applied, "would restore newest backup for "+path)
 	}
 }
@@ -185,14 +143,6 @@ func appendCustomRollbackOutput(result *Result, pluginID string, output string) 
 	result.Verified = append(result.Verified, ctx.Result.Verified...)
 	result.Skipped = append(result.Skipped, ctx.Result.Skipped...)
 	result.Failed = append(result.Failed, ctx.Result.Failed...)
-}
-
-func rollbackManagedFile(result *Result, root string, path string) {
-	appendMutationResult(result, mutation.Operator{Root: root}.Remove(path))
-}
-
-func restoreNewestBackup(result *Result, root string, path string) {
-	appendMutationResult(result, mutation.Operator{Root: root}.RestoreNewestBackup(path))
 }
 
 func appendMutationResult(result *Result, mutationResult mutation.Result) {

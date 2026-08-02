@@ -13,6 +13,7 @@ import (
 	"github.com/dotbrains/ares/internal/mutation"
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/plugins"
+	"github.com/dotbrains/ares/internal/readiness"
 	"github.com/dotbrains/ares/internal/reports"
 	"github.com/dotbrains/ares/internal/safety"
 )
@@ -84,11 +85,13 @@ func Run(hardeningPlan plan.Plan, opts Options) (Result, error) {
 		ctx.Result.Skipped = append(ctx.Result.Skipped, "dry-run requested; no changes applied")
 		return ctx.finish(nil)
 	}
-	if os.Geteuid() != 0 && opts.Root == "" {
-		return ctx.finish(fmt.Errorf("apply mode must run as root"))
-	}
-	if !opts.Yes {
-		return ctx.finish(fmt.Errorf("apply mode requires --yes after reviewing the plan"))
+	if err := readiness.Refusal(readiness.Request{
+		Mode:   readiness.Apply,
+		Yes:    opts.Yes,
+		Root:   opts.Root,
+		DryRun: opts.DryRun,
+	}); err != nil {
+		return ctx.finish(err)
 	}
 
 	executor := PluginExecutor{Context: ctx}
