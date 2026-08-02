@@ -119,6 +119,28 @@ func TestDistroAdapterUsesIDLikeForFamilies(t *testing.T) {
 	}
 }
 
+func TestDistroDefaultsProjectHostDefaults(t *testing.T) {
+	defaults, ok := DistroDefaults(HostMatcher{
+		OSID:   "ubuntu",
+		IDLike: []string{"debian"},
+	})
+	if !ok {
+		t.Fatal("expected distro defaults")
+	}
+	if defaults.PackageManager != "apt-get" {
+		t.Fatalf("PackageManager = %q, want apt-get", defaults.PackageManager)
+	}
+	if defaults.InitSystem != "systemd" {
+		t.Fatalf("InitSystem = %q, want systemd", defaults.InitSystem)
+	}
+	if defaults.FirewallBackend != "ufw" {
+		t.Fatalf("FirewallBackend = %q, want ufw", defaults.FirewallBackend)
+	}
+	if defaults.SSHService != "ssh" {
+		t.Fatalf("SSHService = %q, want ssh", defaults.SSHService)
+	}
+}
+
 func TestFirstByCapabilityMatchesRequirementsAndDistro(t *testing.T) {
 	plugin, ok := FirstByCapability(HostMatcher{
 		OSID:           "rocky",

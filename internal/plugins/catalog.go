@@ -20,6 +20,13 @@ type HostMatcher struct {
 	FirewallBackend string
 }
 
+type HostDefaults struct {
+	PackageManager  string
+	InitSystem      string
+	FirewallBackend string
+	SSHService      string
+}
+
 var catalogCache = struct {
 	once    sync.Once
 	catalog Catalog
@@ -82,6 +89,19 @@ func DistroAdapter(host HostMatcher) (Plugin, bool) {
 	return bestHostMatch(host, func(plugin Plugin) bool {
 		return hasCategory(plugin, "distro")
 	})
+}
+
+func DistroDefaults(host HostMatcher) (HostDefaults, bool) {
+	plugin, ok := DistroAdapter(host)
+	if !ok {
+		return HostDefaults{}, false
+	}
+	return HostDefaults{
+		PackageManager:  plugin.PackageManager,
+		InitSystem:      plugin.InitSystem,
+		FirewallBackend: plugin.FirewallBackend,
+		SSHService:      plugin.SSHService,
+	}, true
 }
 
 func FirstByCapability(host HostMatcher, capability string) (Plugin, bool) {

@@ -13,7 +13,6 @@ import (
 	"github.com/dotbrains/ares/internal/mutation"
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/plugins"
-	"github.com/dotbrains/ares/internal/readiness"
 	"github.com/dotbrains/ares/internal/reports"
 	"github.com/dotbrains/ares/internal/safety"
 )
@@ -73,8 +72,16 @@ func Run(hardeningPlan plan.Plan, opts Options) (Result, error) {
 	if ctx.Options.Runner == nil {
 		ctx.Options.Runner = iexec.NewRealExecutor()
 	}
-	ctx.Result.SSHLockoutPolicy = safety.SSHLockoutPolicy(opts.Root, opts.AllowPasswordLockout)
-	ctx.Result.SafetyEvidence = safety.EvidenceFor(hardeningPlan.Host, opts.Root, opts.AllowPasswordLockout, opts.AllowPasswordLockoutSource)
+	readiness := safety.EvaluateApply(safety.ApplyReadinessInput{
+		Host:                       hardeningPlan.Host,
+		Root:                       opts.Root,
+		DryRun:                     opts.DryRun,
+		Yes:                        opts.Yes,
+		AllowPasswordLockout:       opts.AllowPasswordLockout,
+		AllowPasswordLockoutSource: opts.AllowPasswordLockoutSource,
+	})
+	ctx.Result.SSHLockoutPolicy = readiness.SSHLockoutPolicy
+	ctx.Result.SafetyEvidence = readiness.SafetyEvidence
 	ctx.Result.Transaction = BuildTransaction(hardeningPlan)
 
 	if err := ctx.prepareReportPaths(); err != nil {
@@ -85,12 +92,7 @@ func Run(hardeningPlan plan.Plan, opts Options) (Result, error) {
 		ctx.Result.Skipped = append(ctx.Result.Skipped, "dry-run requested; no changes applied")
 		return ctx.finish(nil)
 	}
-	if err := readiness.Refusal(readiness.Request{
-		Mode:   readiness.Apply,
-		Yes:    opts.Yes,
-		Root:   opts.Root,
-		DryRun: opts.DryRun,
-	}); err != nil {
+	if err := readiness.Refusal; err != nil {
 		return ctx.finish(err)
 	}
 

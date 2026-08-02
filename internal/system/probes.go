@@ -35,8 +35,8 @@ func (ctx probeContext) packageManager(host Host) string {
 			return detected
 		}
 	}
-	if plugin, ok := distroPlugin(host); ok && plugin.PackageManager != "" {
-		return plugin.PackageManager
+	if defaults, ok := distroDefaults(host); ok && defaults.PackageManager != "" {
+		return defaults.PackageManager
 	}
 	return "unknown"
 }
@@ -51,8 +51,8 @@ func (ctx probeContext) firewallBackend(host Host) string {
 	if ctx.probeHostCommands() && ctx.prober.LookPath("nft") {
 		return "nftables"
 	}
-	if plugin, ok := distroPlugin(host); ok && plugin.FirewallBackend != "" {
-		return plugin.FirewallBackend
+	if defaults, ok := distroDefaults(host); ok && defaults.FirewallBackend != "" {
+		return defaults.FirewallBackend
 	}
 	return "unknown"
 }
@@ -64,8 +64,8 @@ func (ctx probeContext) initSystem(host Host) string {
 	if err := ctx.prober.Stat(rootPath(ctx.root, "/run/openrc")); err == nil {
 		return "openrc"
 	}
-	if plugin, ok := distroPlugin(host); ok && plugin.InitSystem != "" {
-		return plugin.InitSystem
+	if defaults, ok := distroDefaults(host); ok && defaults.InitSystem != "" {
+		return defaults.InitSystem
 	}
 	return "unknown"
 }

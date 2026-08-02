@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/dotbrains/ares/internal/apply"
 	"github.com/dotbrains/ares/internal/config"
@@ -35,13 +34,7 @@ func newRootCmd(version string) *cobra.Command {
 				printBanner(cmd)
 				printPlan(cmd, runtime.Plan)
 			}
-			result, err := apply.Run(runtime.Plan, apply.Options{
-				DryRun:                     dryRun,
-				Yes:                        yes,
-				Root:                       os.Getenv("ARES_ROOT"),
-				AllowPasswordLockout:       runtime.Config.SSH.AllowPasswordLockout,
-				AllowPasswordLockoutSource: string(runtime.Effective.Sources["ssh.allow_password_lockout"]),
-			})
+			result, err := apply.Run(runtime.Plan, runtime.ApplyOptions(dryRun, yes))
 			if jsonOutput {
 				return printRunJSON(cmd, runtime.Plan, result, err)
 			}

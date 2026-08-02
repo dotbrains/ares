@@ -5,6 +5,7 @@ import (
 
 	"github.com/dotbrains/ares/internal/config"
 	"github.com/dotbrains/ares/internal/plan"
+	"github.com/dotbrains/ares/internal/reports"
 	"github.com/dotbrains/ares/internal/scenario"
 	"github.com/dotbrains/ares/internal/system"
 )
@@ -63,6 +64,29 @@ func TestSSHLockoutPolicyRequiresExplicitBypass(t *testing.T) {
 	}
 }
 
+func TestEvaluateApplyUsesHostSSHAndConfigEvidence(t *testing.T) {
+	host := scenario.UbuntuHost()
+	host.RunningOverSSH = true
+
+	readiness := EvaluateApply(ApplyReadinessInput{
+		Host:                       host,
+		DryRun:                     true,
+		Yes:                        true,
+		AllowPasswordLockout:       true,
+		AllowPasswordLockoutSource: "cli",
+	})
+
+	if readiness.Refusal != nil {
+		t.Fatalf("unexpected refusal: %v", readiness.Refusal)
+	}
+	if readiness.SSHLockoutPolicy != "password lockout explicitly allowed by config or CLI" {
+		t.Fatalf("SSHLockoutPolicy = %q", readiness.SSHLockoutPolicy)
+	}
+	if !hasEvidence(readiness.SafetyEvidence, "ssh.allow_password_lockout", "true", "cli") {
+		t.Fatalf("missing allow-password evidence: %#v", readiness.SafetyEvidence)
+	}
+}
+
 func TestEvaluateIncludesStructuredHostEvidence(t *testing.T) {
 	host := scenario.UbuntuHost()
 	decisions := Evaluate(Facts{
@@ -107,6 +131,15 @@ func TestEvaluateUsesReportDirectoryAdapter(t *testing.T) {
 func hasDecision(decisions []Decision, name string, status string) bool {
 	for _, decision := range decisions {
 		if decision.Name == name && decision.Status == status {
+			return true
+		}
+	}
+	return false
+}
+
+func hasEvidence(evidence []reports.Evidence, name string, value string, source string) bool {
+	for _, item := range evidence {
+		if item.Name == name && item.Value == value && item.Source == source {
 			return true
 		}
 	}

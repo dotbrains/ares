@@ -217,14 +217,14 @@ func validPort(value string) bool {
 }
 
 func sshServiceName(host Host) string {
-	if plugin, ok := distroPlugin(host); ok && plugin.SSHService != "" {
-		return plugin.SSHService
+	if defaults, ok := distroDefaults(host); ok && defaults.SSHService != "" {
+		return defaults.SSHService
 	}
 	return "sshd"
 }
 
-func distroPlugin(host Host) (plugins.Plugin, bool) {
-	return plugins.DistroAdapter(plugins.HostMatcher{
+func distroDefaults(host Host) (plugins.HostDefaults, bool) {
+	return plugins.DistroDefaults(plugins.HostMatcher{
 		OSID:            host.OSID,
 		IDLike:          host.IDLike,
 		Provider:        host.Provider,

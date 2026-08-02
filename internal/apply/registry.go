@@ -11,6 +11,48 @@ type pluginBehavior struct {
 	Verify func(*Context, plugins.Plugin)
 }
 
+var builtinBehaviors = map[string]pluginBehavior{
+	"distro":            {Apply: applyDistro, Verify: verifyNone},
+	"provider-advisory": {Apply: applyProvider, Verify: verifyProvider},
+	"ssh-hardening":     {Apply: applySSH, Verify: verifyDeclared},
+	"firewall":          {Apply: applyFirewall, Verify: verifyDeclared},
+	"fail2ban":          {Apply: applyFail2banBehavior, Verify: verifyDeclared},
+	"security-updates":  {Apply: applySecurityUpdates, Verify: verifyDeclared},
+	"sysctl":            {Apply: applySysctl, Verify: verifyDeclared},
+	"web-profile":       {Apply: applyWeb, Verify: verifyDeclared},
+	"strict-profile":    {Apply: applyStrict, Verify: verifyDeclared},
+}
+
+var verifierHandlers = map[string]func(*Context, plugins.Plugin){
+	"path":              verifyManagedPath,
+	"firewall":          verifyFirewall,
+	"provider-advisory": verifyProvider,
+	"command":           verifyCommand,
+	"none":              verifyNone,
+	"":                  verifyNone,
+}
+
+var firewallAppliers = map[string]func(*Context) error{
+	"ufw":       (*Context).applyUFW,
+	"firewalld": (*Context).applyFirewalld,
+	"nftables":  (*Context).applyNftables,
+}
+
+var securityUpdateAppliers = map[string]func(*Context) error{
+	"apt":           (*Context).applyUnattendedUpgrades,
+	"dnf-automatic": (*Context).applyDNFAutomatic,
+	"pacman":        (*Context).applyPackageUpgrade,
+	"zypper":        (*Context).applyPackageUpgrade,
+	"apk":           (*Context).applyPackageUpgrade,
+}
+
+var firewallVerifiers = map[string]func(*Context, string){
+	"ufw":       (*Context).verifyUFW,
+	"firewalld": (*Context).verifyFirewalld,
+	"nftables":  (*Context).verifyNftables,
+	"web":       (*Context).verifyWebProfile,
+}
+
 func behaviorFor(plugin plugins.Plugin) pluginBehavior {
 	plugin = pluginWithCatalogMetadata(plugin)
 	behavior := plugins.Behavior(plugin)
@@ -21,28 +63,10 @@ func behaviorFor(plugin plugins.Plugin) pluginBehavior {
 		}
 	}
 
-	switch behavior.Name {
-	case "distro":
-		return pluginBehavior{Apply: applyDistro, Verify: verifyNone}
-	case "provider-advisory":
-		return pluginBehavior{Apply: applyProvider, Verify: verifyProvider}
-	case "ssh-hardening":
-		return pluginBehavior{Apply: applySSH, Verify: verifyDeclared}
-	case "firewall":
-		return pluginBehavior{Apply: applyFirewall, Verify: verifyDeclared}
-	case "fail2ban":
-		return pluginBehavior{Apply: applyFail2banBehavior, Verify: verifyDeclared}
-	case "security-updates":
-		return pluginBehavior{Apply: applySecurityUpdates, Verify: verifyDeclared}
-	case "sysctl":
-		return pluginBehavior{Apply: applySysctl, Verify: verifyDeclared}
-	case "web-profile":
-		return pluginBehavior{Apply: applyWeb, Verify: verifyDeclared}
-	case "strict-profile":
-		return pluginBehavior{Apply: applyStrict, Verify: verifyDeclared}
-	default:
-		return pluginBehavior{Apply: applyUnsupported, Verify: verifyNone}
+	if behavior, ok := builtinBehaviors[behavior.Name]; ok {
+		return behavior
 	}
+	return pluginBehavior{Apply: applyUnsupported, Verify: verifyNone}
 }
 
 func pluginWithCatalogMetadata(plugin plugins.Plugin) plugins.Plugin {
@@ -82,17 +106,11 @@ func applySSH(ctx *Context, _ plugins.Plugin) error {
 }
 
 func applyFirewall(ctx *Context, plugin plugins.Plugin) error {
-	switch plugins.Behavior(plugin).Variant {
-	case "ufw":
-		return ctx.applyUFW()
-	case "firewalld":
-		return ctx.applyFirewalld()
-	case "nftables":
-		return ctx.applyNftables()
-	default:
-		ctx.Result.Skipped = append(ctx.Result.Skipped, plugin.ID+": firewall backend not implemented")
-		return nil
+	if apply, ok := firewallAppliers[plugins.Behavior(plugin).Variant]; ok {
+		return apply(ctx)
 	}
+	ctx.Result.Skipped = append(ctx.Result.Skipped, plugin.ID+": firewall backend not implemented")
+	return nil
 }
 
 func applyFail2banBehavior(ctx *Context, _ plugins.Plugin) error {
@@ -100,17 +118,11 @@ func applyFail2banBehavior(ctx *Context, _ plugins.Plugin) error {
 }
 
 func applySecurityUpdates(ctx *Context, plugin plugins.Plugin) error {
-	switch plugins.Behavior(plugin).Variant {
-	case "apt":
-		return ctx.applyUnattendedUpgrades()
-	case "dnf-automatic":
-		return ctx.applyDNFAutomatic()
-	case "pacman", "zypper", "apk":
-		return ctx.applyPackageUpgrade()
-	default:
-		ctx.Result.Skipped = append(ctx.Result.Skipped, plugin.ID+": security update backend not implemented")
-		return nil
+	if apply, ok := securityUpdateAppliers[plugins.Behavior(plugin).Variant]; ok {
+		return apply(ctx)
 	}
+	ctx.Result.Skipped = append(ctx.Result.Skipped, plugin.ID+": security update backend not implemented")
+	return nil
 }
 
 func applySysctl(ctx *Context, _ plugins.Plugin) error {
@@ -131,18 +143,11 @@ func applyUnsupported(ctx *Context, plugin plugins.Plugin) error {
 }
 
 func verifyDeclared(ctx *Context, plugin plugins.Plugin) {
-	switch plugins.Behavior(plugin).Verifier {
-	case "path":
-		verifyManagedPath(ctx, plugin)
-	case "firewall":
-		verifyFirewall(ctx, plugin)
-	case "provider-advisory":
-		verifyProvider(ctx, plugin)
-	case "command":
-		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": command completed")
-	case "none", "":
-		verifyNone(ctx, plugin)
-	default:
+	if verify, ok := verifierHandlers[plugins.Behavior(plugin).Verifier]; ok {
+		verify(ctx, plugin)
+		return
+	}
+	if plugin.Verifier != "" {
 		ctx.Result.Failed = append(ctx.Result.Failed, plugin.ID+": unknown verifier "+plugin.Verifier)
 	}
 }
@@ -156,22 +161,19 @@ func verifyManagedPath(ctx *Context, plugin plugins.Plugin) {
 }
 
 func verifyFirewall(ctx *Context, plugin plugins.Plugin) {
-	switch plugins.Behavior(plugin).Variant {
-	case "ufw":
-		ctx.verifyUFW(plugin.ID)
-	case "firewalld":
-		ctx.verifyFirewalld(plugin.ID)
-	case "nftables":
-		ctx.verifyNftables(plugin.ID)
-	case "web":
-		ctx.verifyWebProfile(plugin.ID)
-	default:
-		ctx.Result.Failed = append(ctx.Result.Failed, plugin.ID+": firewall verifier not implemented")
+	if verify, ok := firewallVerifiers[plugins.Behavior(plugin).Variant]; ok {
+		verify(ctx, plugin.ID)
+		return
 	}
+	ctx.Result.Failed = append(ctx.Result.Failed, plugin.ID+": firewall verifier not implemented")
 }
 
 func verifyProvider(ctx *Context, plugin plugins.Plugin) {
 	ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": advisory recorded")
+}
+
+func verifyCommand(ctx *Context, plugin plugins.Plugin) {
+	ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": command completed")
 }
 
 func verifyNone(ctx *Context, plugin plugins.Plugin) {

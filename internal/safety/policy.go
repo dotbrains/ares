@@ -9,6 +9,7 @@ import (
 	"github.com/dotbrains/ares/internal/config"
 	"github.com/dotbrains/ares/internal/customcommand"
 	"github.com/dotbrains/ares/internal/plan"
+	"github.com/dotbrains/ares/internal/readiness"
 	"github.com/dotbrains/ares/internal/reports"
 	"github.com/dotbrains/ares/internal/sshguard"
 	"github.com/dotbrains/ares/internal/system"
@@ -31,6 +32,22 @@ type ReportDirectoryChecker interface {
 
 type WritableReportDirectory struct{}
 
+type ApplyReadinessInput struct {
+	Host                       system.Host
+	Root                       string
+	DryRun                     bool
+	Yes                        bool
+	EffectiveUID               int
+	AllowPasswordLockout       bool
+	AllowPasswordLockoutSource string
+}
+
+type ApplyReadiness struct {
+	Refusal          error
+	SSHLockoutPolicy string
+	SafetyEvidence   []reports.Evidence
+}
+
 func Evaluate(facts Facts) []Decision {
 	euid := facts.EffectiveUID
 	if euid == 0 {
@@ -50,6 +67,30 @@ func Evaluate(facts Facts) []Decision {
 	}
 	decisions = append(decisions, customPluginCommandDecisions(facts.Config)...)
 	return decisions
+}
+
+func EvaluateApply(input ApplyReadinessInput) ApplyReadiness {
+	sshDecision := sshguard.Evaluate(sshguard.Facts{
+		Root:                 input.Root,
+		RunningOverSSH:       input.Host.RunningOverSSH,
+		AllowPasswordLockout: input.AllowPasswordLockout,
+	})
+	return ApplyReadiness{
+		Refusal: readiness.Refusal(readiness.Request{
+			Mode:         readiness.Apply,
+			DryRun:       input.DryRun,
+			Yes:          input.Yes,
+			Root:         input.Root,
+			EffectiveUID: input.EffectiveUID,
+		}),
+		SSHLockoutPolicy: sshDecision.Detail,
+		SafetyEvidence: EvidenceFor(
+			input.Host,
+			input.Root,
+			input.AllowPasswordLockout,
+			input.AllowPasswordLockoutSource,
+		),
+	}
 }
 
 func reportDirectoryChecker(facts Facts) ReportDirectoryChecker {

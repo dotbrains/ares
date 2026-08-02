@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/dotbrains/ares/internal/apply"
 	"github.com/dotbrains/ares/internal/config"
@@ -29,12 +28,7 @@ func newPreflightCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			checks := safety.Evaluate(safety.Facts{
-				Host:   runtime.Host,
-				Plan:   runtime.Plan,
-				Config: runtime.Config,
-				Root:   os.Getenv("ARES_ROOT"),
-			})
+			checks := safety.Evaluate(runtime.SafetyFacts())
 			report := buildPreflightReport(runtime.Host, runtime.Plan, checks)
 			if jsonOutput {
 				if err := printPreflightJSON(cmd, report); err != nil {
