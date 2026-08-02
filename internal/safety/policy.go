@@ -31,17 +31,72 @@ func Evaluate(facts Facts) []Decision {
 	decisions := []Decision{
 		rootDecision(facts.Root, euid),
 		sshSessionDecision(facts.Host),
-		knownValueDecision("package manager", facts.Host.PackageManager),
-		knownValueDecision("firewall backend", facts.Host.FirewallBackend),
-		knownValueDecision("ssh service", facts.Host.SSHService),
+		withEvidence(knownValueDecision("package manager", facts.Host.PackageManager), hostEvidence(facts.Host, "package_manager", facts.Host.PackageManager)),
+		withEvidence(knownValueDecision("firewall backend", facts.Host.FirewallBackend), hostEvidence(facts.Host, "firewall_backend", facts.Host.FirewallBackend)),
+		withEvidence(knownValueDecision("ssh service", facts.Host.SSHService), hostEvidence(facts.Host, "ssh_service", facts.Host.SSHService)),
 		providerDecision(facts.Host),
 		providerAdvisoryDecision(facts.Plan),
-		sshPortDecision(facts.Host),
+		withEvidence(sshPortDecision(facts.Host), hostEvidence(facts.Host, "ssh_port", facts.Host.SSHPort)),
 		planWarningsDecision(facts.Plan),
 		reportDirectoryDecision(facts.Root),
 	}
 	decisions = append(decisions, customPluginCommandDecisions(facts.Config)...)
 	return decisions
+}
+
+func withEvidence(decision Decision, evidence ...reports.Evidence) Decision {
+	decision.Evidence = append(decision.Evidence, evidence...)
+	return decision
+}
+
+func EvidenceFor(host system.Host, root string, allowPasswordLockout bool, allowPasswordLockoutSource string) []reports.Evidence {
+	evidence := []reports.Evidence{
+		hostEvidence(host, "os", host.OSID+" "+host.OSVersion),
+		hostEvidence(host, "package_manager", host.PackageManager),
+		hostEvidence(host, "init_system", host.InitSystem),
+		hostEvidence(host, "firewall_backend", host.FirewallBackend),
+		hostEvidence(host, "ssh_service", host.SSHService),
+		hostEvidence(host, "ssh_port", host.SSHPort),
+		hostEvidence(host, "provider", host.Provider),
+		hostEvidence(host, "architecture", host.Architecture),
+		{
+			Name:       "ares_root",
+			Value:      root,
+			Source:     "env",
+			Confidence: confidenceForValue(root),
+		},
+		{
+			Name:       "ssh.allow_password_lockout",
+			Value:      fmt.Sprintf("%t", allowPasswordLockout),
+			Source:     sourceOrDefault(allowPasswordLockoutSource, "default"),
+			Confidence: "high",
+		},
+	}
+	return evidence
+}
+
+func hostEvidence(host system.Host, name string, value string) reports.Evidence {
+	fact := host.Facts[name]
+	return reports.Evidence{
+		Name:       name,
+		Value:      value,
+		Source:     sourceOrDefault(fact.Source, "unknown"),
+		Confidence: sourceOrDefault(fact.Confidence, confidenceForValue(value)),
+	}
+}
+
+func sourceOrDefault(value string, fallback string) string {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	return value
+}
+
+func confidenceForValue(value string) string {
+	if strings.TrimSpace(value) == "" || value == "unknown" {
+		return "low"
+	}
+	return "high"
 }
 
 func HasFailures(decisions []Decision) bool {

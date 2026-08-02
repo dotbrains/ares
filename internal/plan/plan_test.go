@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	"github.com/dotbrains/ares/internal/config"
+	"github.com/dotbrains/ares/internal/scenario"
 	"github.com/dotbrains/ares/internal/system"
 )
 
 func TestBuildAddsDistroPlugin(t *testing.T) {
-	result := Build(ubuntuHost(), config.DefaultConfig())
+	result := Build(scenario.UbuntuHost(), config.DefaultConfig())
 	if len(result.Plugins) == 0 {
 		t.Fatal("expected selected plugins")
 	}
@@ -54,7 +55,7 @@ func TestBuildResolvesNewDistroDefaults(t *testing.T) {
 	}{
 		{
 			name: "arch",
-			host: hostForDistro("arch", "pacman", "nftables"),
+			host: scenario.DistroHost("arch", "pacman", "nftables"),
 			expectedPlugins: []string{
 				"distro-arch",
 				"firewall-nftables",
@@ -63,7 +64,7 @@ func TestBuildResolvesNewDistroDefaults(t *testing.T) {
 		},
 		{
 			name: "opensuse",
-			host: hostForDistro("opensuse-leap", "zypper", "firewalld"),
+			host: scenario.DistroHost("opensuse-leap", "zypper", "firewalld"),
 			expectedPlugins: []string{
 				"distro-opensuse",
 				"firewall-firewalld",
@@ -72,7 +73,7 @@ func TestBuildResolvesNewDistroDefaults(t *testing.T) {
 		},
 		{
 			name: "alpine",
-			host: hostForDistro("alpine", "apk", "nftables"),
+			host: scenario.DistroHost("alpine", "apk", "nftables"),
 			expectedPlugins: []string{
 				"distro-alpine",
 				"firewall-nftables",
@@ -81,7 +82,7 @@ func TestBuildResolvesNewDistroDefaults(t *testing.T) {
 		},
 		{
 			name: "oracle",
-			host: hostForDistro("ol", "dnf", "firewalld"),
+			host: scenario.DistroHost("ol", "dnf", "firewalld"),
 			expectedPlugins: []string{
 				"distro-oracle",
 				"firewall-firewalld",
@@ -90,7 +91,7 @@ func TestBuildResolvesNewDistroDefaults(t *testing.T) {
 		},
 		{
 			name: "amazon",
-			host: hostForDistro("amzn", "dnf", "firewalld"),
+			host: scenario.DistroHost("amzn", "dnf", "firewalld"),
 			expectedPlugins: []string{
 				"distro-amazon",
 				"firewall-firewalld",
@@ -138,7 +139,7 @@ func TestBuildAddsWebProfile(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.Profile = "web"
 
-	result := Build(ubuntuHost(), cfg)
+	result := Build(scenario.UbuntuHost(), cfg)
 	if !hasPlugin(result, "web-profile") {
 		t.Fatalf("expected web-profile in %+v", result.Plugins)
 	}
@@ -153,7 +154,7 @@ func TestBuildAddsCustomPlugins(t *testing.T) {
 		Apply: "ares-plugin-tailscale-ssh apply",
 	}}
 
-	result := Build(ubuntuHost(), cfg)
+	result := Build(scenario.UbuntuHost(), cfg)
 	if !hasPlugin(result, "tailscale-ssh") {
 		t.Fatalf("expected custom plugin in %+v", result.Plugins)
 	}
@@ -163,46 +164,19 @@ func TestBuildAddsStrictProfile(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.Profile = "strict"
 
-	result := Build(ubuntuHost(), cfg)
+	result := Build(scenario.UbuntuHost(), cfg)
 	if !hasPlugin(result, "strict-profile") {
 		t.Fatalf("expected strict-profile in %+v", result.Plugins)
 	}
 }
 
 func TestBuildAddsProviderPlugin(t *testing.T) {
-	host := ubuntuHost()
+	host := scenario.UbuntuHost()
 	host.Provider = "digitalocean"
 
 	result := Build(host, config.DefaultConfig())
 	if !hasPlugin(result, "provider-digitalocean") {
 		t.Fatalf("expected provider plugin in %+v", result.Plugins)
-	}
-}
-
-func ubuntuHost() system.Host {
-	return system.Host{
-		OSID:            "ubuntu",
-		OSName:          "Ubuntu 24.04 LTS",
-		OSVersion:       "24.04",
-		PackageManager:  "apt-get",
-		InitSystem:      "systemd",
-		FirewallBackend: "ufw",
-		SSHService:      "ssh",
-		SSHPort:         "22",
-		RunningOverSSH:  true,
-	}
-}
-
-func hostForDistro(osID string, packageManager string, firewallBackend string) system.Host {
-	return system.Host{
-		OSID:            osID,
-		OSName:          osID,
-		PackageManager:  packageManager,
-		InitSystem:      "systemd",
-		FirewallBackend: firewallBackend,
-		SSHService:      "sshd",
-		SSHPort:         "22",
-		RunningOverSSH:  true,
 	}
 }
 

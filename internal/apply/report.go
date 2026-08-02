@@ -29,6 +29,7 @@ func (ctx *Context) writeReport() error {
 		Plugins:          ctx.Plan.Plugins,
 		Warnings:         ctx.Plan.Warnings,
 		SSHLockoutPolicy: ctx.Result.SSHLockoutPolicy,
+		SafetyEvidence:   ctx.Result.SafetyEvidence,
 		Transaction:      ctx.Result.Transaction,
 		Probed:           ctx.Result.Probed,
 		Verified:         ctx.Result.Verified,

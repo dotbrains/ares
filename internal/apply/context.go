@@ -13,18 +13,20 @@ import (
 	"github.com/dotbrains/ares/internal/hostfs"
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/plugins"
+	"github.com/dotbrains/ares/internal/reports"
 	"github.com/dotbrains/ares/internal/safety"
 )
 
 const defaultCustomPluginTimeout = 2 * time.Minute
 
 type Options struct {
-	DryRun               bool
-	Yes                  bool
-	Root                 string
-	Now                  time.Time
-	Runner               iexec.CommandExecutor
-	AllowPasswordLockout bool
+	DryRun                     bool
+	Yes                        bool
+	Root                       string
+	Now                        time.Time
+	Runner                     iexec.CommandExecutor
+	AllowPasswordLockout       bool
+	AllowPasswordLockoutSource string
 }
 
 type Result struct {
@@ -33,6 +35,7 @@ type Result struct {
 	UndoPlanPath     string             `json:"-"`
 	Transaction      TransactionSummary `json:"transaction"`
 	SSHLockoutPolicy string             `json:"ssh_lockout_policy,omitempty"`
+	SafetyEvidence   []reports.Evidence `json:"safety_evidence,omitempty"`
 	Probed           []string           `json:"probed"`
 	Verified         []string           `json:"verified"`
 	Applied          []string           `json:"applied"`
@@ -62,6 +65,7 @@ func Run(hardeningPlan plan.Plan, opts Options) (Result, error) {
 		ctx.Options.Runner = iexec.NewRealExecutor()
 	}
 	ctx.Result.SSHLockoutPolicy = safety.SSHLockoutPolicy(opts.Root, opts.AllowPasswordLockout)
+	ctx.Result.SafetyEvidence = safety.EvidenceFor(hardeningPlan.Host, opts.Root, opts.AllowPasswordLockout, opts.AllowPasswordLockoutSource)
 	ctx.Result.Transaction = BuildTransaction(hardeningPlan)
 
 	if err := ctx.prepareReportPaths(); err != nil {
@@ -99,42 +103,6 @@ func probeFailureMessage(output string, err error) string {
 		return message
 	}
 	return err.Error()
-}
-
-func (ctx *Context) verifyPlugin(plugin plugins.Plugin) {
-	if plugin.Kind == "custom" {
-		ctx.verifyCustomPlugin(plugin)
-		return
-	}
-
-	switch plugin.ID {
-	case "ssh-hardening":
-		ctx.verifyPath(plugin.ID, "/etc/ssh/sshd_config.d/99-ares.conf")
-	case "fail2ban", "strict-profile":
-		ctx.verifyPath(plugin.ID, "/etc/fail2ban/jail.d/ares-sshd.conf")
-	case "unattended-upgrades":
-		ctx.verifyPath(plugin.ID, "/etc/apt/apt.conf.d/20auto-upgrades")
-	case "dnf-automatic":
-		ctx.verifyPath(plugin.ID, "/etc/dnf/automatic.conf")
-	case "pacman-upgrade", "zypper-patches", "apk-upgrade":
-		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": package upgrade command completed")
-	case "sysctl-baseline":
-		ctx.verifyPath(plugin.ID, "/etc/sysctl.d/99-ares.conf")
-	case "firewall-ufw":
-		ctx.verifyUFW(plugin.ID)
-	case "firewall-firewalld":
-		ctx.verifyFirewalld(plugin.ID)
-	case "firewall-nftables":
-		ctx.verifyNftables(plugin.ID)
-	case "web-profile":
-		ctx.verifyWebProfile(plugin.ID)
-	default:
-		if strings.HasPrefix(plugin.ID, "provider-") {
-			ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": advisory recorded")
-			return
-		}
-		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": no verifier declared")
-	}
 }
 
 func (ctx *Context) verifyPluginOrError(plugin plugins.Plugin) error {

@@ -3,7 +3,6 @@ package apply
 import (
 	"fmt"
 	"os/exec"
-	"slices"
 	"strings"
 
 	"github.com/dotbrains/ares/internal/plugins"
@@ -55,50 +54,15 @@ func (executor PluginExecutor) Probe(plugin plugins.Plugin) bool {
 
 func (executor PluginExecutor) Apply(plugin plugins.Plugin) error {
 	ctx := executor.Context
-	if slices.Contains(plugin.Categories, "distro") {
-		ctx.Result.Applied = append(ctx.Result.Applied, plugin.ID+": selected "+ctx.Plan.Host.PackageManager+"/"+ctx.Plan.Host.InitSystem+" distro adapter")
-		return nil
-	}
-
-	switch plugin.ID {
-	case "ssh-hardening":
-		return ctx.applySSHHardening()
-	case "firewall-ufw":
-		return ctx.applyUFW()
-	case "firewall-firewalld":
-		return ctx.applyFirewalld()
-	case "firewall-nftables":
-		return ctx.applyNftables()
-	case "fail2ban":
-		return ctx.applyFail2ban()
-	case "unattended-upgrades":
-		return ctx.applyUnattendedUpgrades()
-	case "dnf-automatic":
-		return ctx.applyDNFAutomatic()
-	case "pacman-upgrade", "zypper-patches", "apk-upgrade":
-		return ctx.applyPackageUpgrade()
-	case "sysctl-baseline":
-		return ctx.applySysctlBaseline()
-	case "web-profile":
-		return ctx.applyWebProfile()
-	case "strict-profile":
-		return ctx.applyStrictProfile()
-	default:
-		if strings.HasPrefix(plugin.ID, "provider-") {
-			return ctx.applyProviderAdvisory(plugin)
-		}
-		if plugin.Kind == "custom" {
-			return ctx.applyCustomPlugin(plugin)
-		}
-		ctx.Result.Skipped = append(ctx.Result.Skipped, plugin.ID+": apply not implemented for this plugin")
-	}
-	return nil
+	plugin = pluginWithCatalogMetadata(plugin)
+	return behaviorFor(plugin).Apply(ctx, plugin)
 }
 
 func (executor PluginExecutor) Verify(plugin plugins.Plugin) error {
 	ctx := executor.Context
+	plugin = pluginWithCatalogMetadata(plugin)
 	failuresBeforeVerify := len(ctx.Result.Failed)
-	ctx.verifyPlugin(plugin)
+	behaviorFor(plugin).Verify(ctx, plugin)
 	if len(ctx.Result.Failed) > failuresBeforeVerify {
 		return fmt.Errorf("%s verification failed", plugin.ID)
 	}

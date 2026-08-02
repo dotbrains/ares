@@ -37,10 +37,11 @@ func newRootCmd(version string) *cobra.Command {
 				printPlan(cmd, runtime.Plan)
 			}
 			result, err := apply.Run(runtime.Plan, apply.Options{
-				DryRun:               dryRun,
-				Yes:                  yes,
-				Root:                 os.Getenv("ARES_ROOT"),
-				AllowPasswordLockout: runtime.Config.SSH.AllowPasswordLockout,
+				DryRun:                     dryRun,
+				Yes:                        yes,
+				Root:                       os.Getenv("ARES_ROOT"),
+				AllowPasswordLockout:       runtime.Config.SSH.AllowPasswordLockout,
+				AllowPasswordLockoutSource: string(runtime.Effective.Sources["ssh.allow_password_lockout"]),
 			})
 			if jsonOutput {
 				return printRunJSON(cmd, runtime.Plan, result, err)

@@ -30,11 +30,17 @@ test -x "$installed"
 mkdir -p "$apply_root/etc/ssh"
 printf 'Port 2222\n' > "$apply_root/etc/ssh/sshd_config"
 ARES_ROOT="$apply_root" ARES_OS_RELEASE=tests/fixtures/os-release/ubuntu-24.04 "$installed" preflight --json >"$apply_root/preflight.json" 2>&1
-grep -q '"profile": "basic"' "$apply_root/preflight.json"
-grep -q '"transaction": {' "$apply_root/preflight.json"
+go run tests/schema-check.go preflight "$apply_root/preflight.json"
+
+ARES_ROOT="$apply_root" ARES_OS_RELEASE=tests/fixtures/os-release/ubuntu-24.04 "$installed" --dry-run --json >"$apply_root/dry-run.json" 2>&1
+go run tests/schema-check.go run "$apply_root/dry-run.json"
 
 ARES_ROOT="$apply_root" ARES_OS_RELEASE=tests/fixtures/os-release/ubuntu-24.04 "$installed" --yes >"$apply_root/apply.txt" 2>&1
 test -f "$apply_root/etc/ssh/sshd_config.d/99-ares.conf"
 test -f "$apply_root/var/log/ares/latest.json"
+go run tests/schema-check.go report "$apply_root/var/log/ares/latest.json"
+
+ARES_ROOT="$apply_root" "$installed" rollback last --dry-run >"$apply_root/rollback.txt" 2>&1
+go run tests/schema-check.go rollback "$apply_root/var/log/ares/rollback-latest.json"
 
 printf 'ok release-artifact-smoke\n'

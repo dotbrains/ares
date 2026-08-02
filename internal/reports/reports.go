@@ -22,10 +22,18 @@ type TransactionSummary struct {
 	RollbackSteps []string `json:"rollback_steps"`
 }
 
+type Evidence struct {
+	Name       string `json:"name"`
+	Value      string `json:"value"`
+	Source     string `json:"source"`
+	Confidence string `json:"confidence"`
+}
+
 type Decision struct {
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	Detail string `json:"detail"`
+	Name     string     `json:"name"`
+	Status   string     `json:"status"`
+	Detail   string     `json:"detail"`
+	Evidence []Evidence `json:"evidence,omitempty"`
 }
 
 type RunReport struct {
@@ -35,6 +43,7 @@ type RunReport struct {
 	Plugins          []plugins.Plugin   `json:"plugins"`
 	Warnings         []string           `json:"warnings"`
 	SSHLockoutPolicy string             `json:"ssh_lockout_policy"`
+	SafetyEvidence   []Evidence         `json:"safety_evidence,omitempty"`
 	Transaction      TransactionSummary `json:"transaction"`
 	Probed           []string           `json:"probed"`
 	Verified         []string           `json:"verified"`
