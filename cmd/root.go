@@ -75,24 +75,12 @@ func newRootCmd(version string) *cobra.Command {
 }
 
 func printRunJSON(cmd *cobra.Command, hardeningPlan plan.Plan, result apply.Result, runErr error) error {
-	data, err := json.MarshalIndent(reports.RunOutput{
-		SchemaVersion: reports.RunSchemaVersion,
-		Plan:          hardeningPlan,
-		Result:        result,
-		Error:         errorString(runErr),
-	}, "", "  ")
+	data, err := json.MarshalIndent(reports.NewRunOutput(hardeningPlan, result, runErr), "", "  ")
 	if err != nil {
 		return err
 	}
 	cmd.Println(string(data))
 	return runErr
-}
-
-func errorString(err error) string {
-	if err == nil {
-		return ""
-	}
-	return err.Error()
 }
 
 // Execute runs the root command.

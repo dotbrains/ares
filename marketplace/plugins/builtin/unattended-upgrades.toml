@@ -3,6 +3,7 @@ aliases = ["security-updates"]
 name = "unattended-upgrades"
 kind = "builtin"
 behavior = "security-updates"
+behavior_variant = "apt"
 verifier = "command"
 summary = "Enables apt automatic security updates without automatic reboots"
 categories = ["updates", "hardening"]

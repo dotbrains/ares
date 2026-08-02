@@ -129,7 +129,7 @@ func ArchWeb() Scenario {
 }
 
 func UbuntuHost() system.Host {
-	return system.Host{
+	host := system.Host{
 		OSID:            "ubuntu",
 		OSName:          "Ubuntu 24.04 LTS",
 		OSVersion:       "24.04",
@@ -148,10 +148,12 @@ func UbuntuHost() system.Host {
 			"ssh_port":         {Source: "fixture", Confidence: "high"},
 		},
 	}
+	host.RefreshObservations()
+	return host
 }
 
 func DistroHost(osID string, packageManager string, firewallBackend string) system.Host {
-	return system.Host{
+	host := system.Host{
 		OSID:            osID,
 		OSName:          osID,
 		PackageManager:  packageManager,
@@ -169,4 +171,6 @@ func DistroHost(osID string, packageManager string, firewallBackend string) syst
 			"ssh_port":         {Source: "fixture", Confidence: "high"},
 		},
 	}
+	host.RefreshObservations()
+	return host
 }

@@ -4,11 +4,12 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/dotbrains/ares/internal/sshguard"
 )
 
 func TestHasAuthorizedKeysRequiresNonEmptyAuthorizedKeys(t *testing.T) {
 	root := t.TempDir()
-	path := "/home/ares/.ssh/authorized_keys"
 	fullPath := filepath.Join(root, "home", "ares", ".ssh")
 	if err := os.MkdirAll(fullPath, 0o700); err != nil {
 		t.Fatal(err)
@@ -16,13 +17,14 @@ func TestHasAuthorizedKeysRequiresNonEmptyAuthorizedKeys(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(fullPath, "authorized_keys"), []byte("\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if hasAuthorizedKeys(root, []string{path}) {
+	t.Setenv("HOME", "/home/ares")
+	if sshguard.AuthorizedKeyAvailable(root) {
 		t.Fatal("empty authorized_keys should not satisfy SSH hardening guard")
 	}
 	if err := os.WriteFile(filepath.Join(fullPath, "authorized_keys"), []byte("ssh-ed25519 AAAA test\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if !hasAuthorizedKeys(root, []string{path}) {
+	if !sshguard.AuthorizedKeyAvailable(root) {
 		t.Fatal("non-empty authorized_keys should satisfy SSH hardening guard")
 	}
 }

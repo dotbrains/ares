@@ -10,6 +10,7 @@ import (
 	"github.com/dotbrains/ares/internal/customcommand"
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/reports"
+	"github.com/dotbrains/ares/internal/sshguard"
 	"github.com/dotbrains/ares/internal/system"
 )
 
@@ -112,19 +113,11 @@ func HasFailures(decisions []Decision) bool {
 }
 
 func SSHLockoutPolicy(root string, allowPasswordLockout bool) string {
-	if root != "" {
-		return "test root active; SSH lockout guard simulated"
-	}
-	if allowPasswordLockout {
-		return "password lockout explicitly allowed by config or CLI"
-	}
-	if os.Getenv("SSH_CONNECTION") == "" && os.Getenv("SSH_CLIENT") == "" {
-		return "no active SSH session detected"
-	}
-	if authorizedKeyAvailable() {
-		return "authorized key found for a likely login account"
-	}
-	return "refusing to disable password authentication without a detected authorized key; configure ssh.allow_password_lockout or pass --allow-password-lockout to override"
+	return sshguard.Evaluate(sshguard.Facts{
+		Root:                 root,
+		RunningOverSSH:       os.Getenv("SSH_CONNECTION") != "" || os.Getenv("SSH_CLIENT") != "",
+		AllowPasswordLockout: allowPasswordLockout,
+	}).Detail
 }
 
 func rootDecision(root string, euid int) Decision {
@@ -234,29 +227,4 @@ func rootedPath(root string, path string) string {
 		return path
 	}
 	return filepath.Join(root, strings.TrimPrefix(path, "/"))
-}
-
-func authorizedKeyAvailable() bool {
-	for _, dir := range likelyHomeDirs() {
-		path := filepath.Join(dir, ".ssh", "authorized_keys")
-		data, err := os.ReadFile(path)
-		if err == nil && strings.TrimSpace(string(data)) != "" {
-			return true
-		}
-	}
-	return false
-}
-
-func likelyHomeDirs() []string {
-	dirs := []string{}
-	for _, name := range []string{"SUDO_USER", "USER", "LOGNAME"} {
-		if value := strings.TrimSpace(os.Getenv(name)); value != "" {
-			if value == "root" {
-				dirs = append(dirs, "/root")
-			} else {
-				dirs = append(dirs, filepath.Join("/home", value))
-			}
-		}
-	}
-	return append(dirs, "/root")
 }

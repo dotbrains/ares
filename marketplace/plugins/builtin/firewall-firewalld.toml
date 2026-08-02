@@ -2,6 +2,7 @@ id = "firewall-firewalld"
 name = "firewalld firewall"
 kind = "builtin"
 behavior = "firewall"
+behavior_variant = "firewalld"
 verifier = "firewall"
 summary = "Configures firewalld with safe VPS defaults"
 categories = ["firewall", "network"]

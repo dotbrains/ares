@@ -13,6 +13,7 @@ type pluginBehavior struct {
 
 func behaviorFor(plugin plugins.Plugin) pluginBehavior {
 	plugin = pluginWithCatalogMetadata(plugin)
+	behavior := plugins.Behavior(plugin)
 	if plugin.Kind == "custom" {
 		return pluginBehavior{
 			Apply:  func(ctx *Context, plugin plugins.Plugin) error { return ctx.applyCustomPlugin(plugin) },
@@ -20,7 +21,7 @@ func behaviorFor(plugin plugins.Plugin) pluginBehavior {
 		}
 	}
 
-	switch plugin.Behavior {
+	switch behavior.Name {
 	case "distro":
 		return pluginBehavior{Apply: applyDistro, Verify: verifyNone}
 	case "provider-advisory":
@@ -55,6 +56,9 @@ func pluginWithCatalogMetadata(plugin plugins.Plugin) plugins.Plugin {
 	if plugin.Behavior == "" {
 		plugin.Behavior = catalogPlugin.Behavior
 	}
+	if plugin.BehaviorVariant == "" {
+		plugin.BehaviorVariant = catalogPlugin.BehaviorVariant
+	}
 	if plugin.Verifier == "" {
 		plugin.Verifier = catalogPlugin.Verifier
 	}
@@ -78,12 +82,12 @@ func applySSH(ctx *Context, _ plugins.Plugin) error {
 }
 
 func applyFirewall(ctx *Context, plugin plugins.Plugin) error {
-	switch plugin.ID {
-	case "firewall-ufw":
+	switch plugins.Behavior(plugin).Variant {
+	case "ufw":
 		return ctx.applyUFW()
-	case "firewall-firewalld":
+	case "firewalld":
 		return ctx.applyFirewalld()
-	case "firewall-nftables":
+	case "nftables":
 		return ctx.applyNftables()
 	default:
 		ctx.Result.Skipped = append(ctx.Result.Skipped, plugin.ID+": firewall backend not implemented")
@@ -96,12 +100,12 @@ func applyFail2banBehavior(ctx *Context, _ plugins.Plugin) error {
 }
 
 func applySecurityUpdates(ctx *Context, plugin plugins.Plugin) error {
-	switch plugin.ID {
-	case "unattended-upgrades":
+	switch plugins.Behavior(plugin).Variant {
+	case "apt":
 		return ctx.applyUnattendedUpgrades()
 	case "dnf-automatic":
 		return ctx.applyDNFAutomatic()
-	case "pacman-upgrade", "zypper-patches", "apk-upgrade":
+	case "pacman", "zypper", "apk":
 		return ctx.applyPackageUpgrade()
 	default:
 		ctx.Result.Skipped = append(ctx.Result.Skipped, plugin.ID+": security update backend not implemented")
@@ -127,7 +131,7 @@ func applyUnsupported(ctx *Context, plugin plugins.Plugin) error {
 }
 
 func verifyDeclared(ctx *Context, plugin plugins.Plugin) {
-	switch plugin.Verifier {
+	switch plugins.Behavior(plugin).Verifier {
 	case "path":
 		verifyManagedPath(ctx, plugin)
 	case "firewall":
@@ -152,14 +156,14 @@ func verifyManagedPath(ctx *Context, plugin plugins.Plugin) {
 }
 
 func verifyFirewall(ctx *Context, plugin plugins.Plugin) {
-	switch plugin.ID {
-	case "firewall-ufw":
+	switch plugins.Behavior(plugin).Variant {
+	case "ufw":
 		ctx.verifyUFW(plugin.ID)
-	case "firewall-firewalld":
+	case "firewalld":
 		ctx.verifyFirewalld(plugin.ID)
-	case "firewall-nftables":
+	case "nftables":
 		ctx.verifyNftables(plugin.ID)
-	case "web-profile":
+	case "web":
 		ctx.verifyWebProfile(plugin.ID)
 	default:
 		ctx.Result.Failed = append(ctx.Result.Failed, plugin.ID+": firewall verifier not implemented")

@@ -170,6 +170,19 @@ func TestDetectWithProberUsesInjectedHostFacts(t *testing.T) {
 	}
 }
 
+func TestHostObservedUsesObservationStorage(t *testing.T) {
+	host := Host{}
+	host.Observe("package_manager", "apt-get", Fact{Source: "fixture", Confidence: "high"})
+
+	observed := host.Observed("package_manager")
+	if observed.Value != "apt-get" || observed.Source != "fixture" || observed.Confidence != "high" {
+		t.Fatalf("observed = %+v", observed)
+	}
+	if host.Facts["package_manager"].Source != "fixture" {
+		t.Fatalf("compat fact not populated: %+v", host.Facts)
+	}
+}
+
 type fakeProber struct {
 	env   map[string]string
 	files map[string]string

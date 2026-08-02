@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dotbrains/ares/internal/hostfs"
+	"github.com/dotbrains/ares/internal/mutation"
 	"github.com/dotbrains/ares/internal/plugins"
 	"github.com/dotbrains/ares/internal/recovery"
 	"github.com/dotbrains/ares/internal/reports"
@@ -187,30 +188,17 @@ func appendCustomRollbackOutput(result *Result, pluginID string, output string) 
 }
 
 func rollbackManagedFile(result *Result, root string, path string) {
-	fs := hostfs.FS{Root: root}
-	if err := fs.Remove(path); err != nil {
-		if os.IsNotExist(err) {
-			result.Skipped = append(result.Skipped, path+": already absent")
-			return
-		}
-		result.Failed = append(result.Failed, path+": "+err.Error())
-		return
-	}
-	result.Applied = append(result.Applied, "removed "+path)
+	appendMutationResult(result, mutation.Operator{Root: root}.Remove(path))
 }
 
 func restoreNewestBackup(result *Result, root string, path string) {
-	fs := hostfs.FS{Root: root}
-	backup, restored, err := fs.RestoreNewestBackup(path)
-	if err != nil {
-		result.Failed = append(result.Failed, path+": restore backup: "+err.Error())
-		return
-	}
-	if !restored {
-		result.Skipped = append(result.Skipped, path+": no ares backup found")
-		return
-	}
-	result.Applied = append(result.Applied, "restored "+path+" from "+backup)
+	appendMutationResult(result, mutation.Operator{Root: root}.RestoreNewestBackup(path))
+}
+
+func appendMutationResult(result *Result, mutationResult mutation.Result) {
+	result.Applied = append(result.Applied, mutationResult.Applied...)
+	result.Skipped = append(result.Skipped, mutationResult.Skipped...)
+	result.Failed = append(result.Failed, mutationResult.Failed...)
 }
 
 func finishRollback(result Result, runErr error) (Result, error) {

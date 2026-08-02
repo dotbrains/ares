@@ -3,9 +3,9 @@ package apply
 import (
 	"fmt"
 	"os"
-	"os/user"
 	"path/filepath"
-	"strings"
+
+	"github.com/dotbrains/ares/internal/sshguard"
 )
 
 func (ctx *Context) applySSHHardening() error {
@@ -37,43 +37,17 @@ func (ctx *Context) applySSHHardening() error {
 }
 
 func (ctx *Context) ensurePublicKeyAccessBeforeSSHHardening() error {
-	if ctx.Options.Root != "" || !ctx.Plan.Host.RunningOverSSH {
+	decision := sshguard.Evaluate(sshguard.Facts{
+		Root:                 ctx.Options.Root,
+		RunningOverSSH:       ctx.Plan.Host.RunningOverSSH,
+		AllowPasswordLockout: ctx.Options.AllowPasswordLockout,
+	})
+	if decision.Allowed && !decision.Bypassed {
 		return nil
 	}
-	if ctx.Options.AllowPasswordLockout {
+	if decision.Bypassed {
 		ctx.Result.Skipped = append(ctx.Result.Skipped, "SSH password lockout guard bypassed by explicit operator flag")
 		return nil
 	}
-	if hasAuthorizedKeys(ctx.Options.Root, authorizedKeyCandidates()) {
-		return nil
-	}
 	return fmt.Errorf("SSH hardening would disable password auth, but no authorized_keys file was found for the current or root account")
-}
-
-func authorizedKeyCandidates() []string {
-	candidates := []string{"/root/.ssh/authorized_keys"}
-	if home := strings.TrimSpace(os.Getenv("HOME")); home != "" {
-		candidates = append(candidates, filepath.Join(home, ".ssh", "authorized_keys"))
-	}
-	if current, err := user.Current(); err == nil && current.HomeDir != "" {
-		candidates = append(candidates, filepath.Join(current.HomeDir, ".ssh", "authorized_keys"))
-	}
-	return candidates
-}
-
-func hasAuthorizedKeys(root string, candidates []string) bool {
-	for _, path := range candidates {
-		data, err := os.ReadFile(rootedApplyPath(root, path))
-		if err == nil && strings.TrimSpace(string(data)) != "" {
-			return true
-		}
-	}
-	return false
-}
-
-func rootedApplyPath(root string, path string) string {
-	if root == "" {
-		return path
-	}
-	return filepath.Join(root, strings.TrimPrefix(path, "/"))
 }

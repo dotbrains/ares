@@ -2,6 +2,7 @@ id = "dnf-automatic"
 name = "dnf-automatic"
 kind = "builtin"
 behavior = "security-updates"
+behavior_variant = "dnf-automatic"
 verifier = "command"
 summary = "Enables dnf automatic security updates without automatic reboots"
 categories = ["updates", "hardening"]

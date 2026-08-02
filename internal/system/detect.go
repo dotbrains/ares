@@ -27,7 +27,8 @@ type Host struct {
 	SSHPort         string
 	RunningOverSSH  bool
 	Architecture    string
-	Facts           map[string]Fact `json:"facts,omitempty"`
+	Observations    map[string]ObservedValue `json:"observations,omitempty"`
+	Facts           map[string]Fact          `json:"facts,omitempty"`
 }
 
 type Fact struct {
@@ -43,6 +44,9 @@ type ObservedValue struct {
 }
 
 func (host Host) Observed(name string) ObservedValue {
+	if observed, ok := host.Observations[name]; ok {
+		return observed
+	}
 	value := host.valueForObservation(name)
 	fact := host.Facts[name]
 	source := fact.Source
@@ -58,6 +62,30 @@ func (host Host) Observed(name string) ObservedValue {
 		Value:      value,
 		Source:     source,
 		Confidence: confidence,
+	}
+}
+
+func (host *Host) Observe(name string, value string, fact Fact) {
+	if host.Observations == nil {
+		host.Observations = map[string]ObservedValue{}
+	}
+	if host.Facts == nil {
+		host.Facts = map[string]Fact{}
+	}
+	if fact.Source == "" {
+		fact.Source = "unknown"
+	}
+	if fact.Confidence == "" {
+		fact.Confidence = confidenceForObservedValue(value)
+	}
+	host.Observations[name] = ObservedValue{Name: name, Value: value, Source: fact.Source, Confidence: fact.Confidence}
+	host.Facts[name] = fact
+}
+
+func (host *Host) RefreshObservations() {
+	for _, name := range []string{"os", "package_manager", "init_system", "firewall_backend", "ssh_service", "ssh_port", "provider", "architecture"} {
+		fact := host.Facts[name]
+		host.Observe(name, host.valueForObservation(name), fact)
 	}
 }
 
@@ -165,6 +193,7 @@ func DetectWithProber(prober Prober) (Host, error) {
 	host.Facts["init_system"] = factForValue(host.InitSystem, "filesystem/catalog")
 	host.Facts["ssh_service"] = factForValue(host.SSHService, "catalog")
 	host.Facts["firewall_backend"] = factForDetection(probeHostCommands, host.FirewallBackend)
+	host.RefreshObservations()
 
 	return host, nil
 }

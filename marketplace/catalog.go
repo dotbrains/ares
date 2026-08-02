@@ -26,6 +26,7 @@ type Plugin struct {
 	Distros         []string
 	Providers       []string
 	Behavior        string
+	BehaviorVariant string `toml:"behavior_variant"`
 	Verifier        string
 	ManagedFiles    []string `toml:"managed_files"`
 	BackupFiles     []string `toml:"backup_files"`
@@ -163,6 +164,15 @@ func validateKnownValues(plugin Plugin, ids map[string]string, capabilities map[
 	case "distro", "provider-advisory", "ssh-hardening", "firewall", "fail2ban", "security-updates", "sysctl", "web-profile", "strict-profile":
 	default:
 		return fmt.Errorf("plugin %s has unknown behavior %q", plugin.ID, plugin.Behavior)
+	}
+	if plugin.BehaviorVariant != "" {
+		switch plugin.Behavior + ":" + plugin.BehaviorVariant {
+		case "firewall:ufw", "firewall:firewalld", "firewall:nftables",
+			"security-updates:apt", "security-updates:dnf-automatic", "security-updates:pacman", "security-updates:zypper", "security-updates:apk",
+			"web-profile:web":
+		default:
+			return fmt.Errorf("plugin %s has unknown behavior variant %q for behavior %q", plugin.ID, plugin.BehaviorVariant, plugin.Behavior)
+		}
 	}
 	if plugin.Verifier != "" {
 		switch plugin.Verifier {

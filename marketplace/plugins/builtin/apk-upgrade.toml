@@ -2,6 +2,7 @@ id = "apk-upgrade"
 name = "apk upgrade"
 kind = "builtin"
 behavior = "security-updates"
+behavior_variant = "apk"
 verifier = "command"
 summary = "Applies Alpine package upgrades through apk"
 categories = ["updates", "hardening"]

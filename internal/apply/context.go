@@ -3,7 +3,6 @@ package apply
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	iexec "github.com/dotbrains/ares/internal/exec"
 	"github.com/dotbrains/ares/internal/hostfs"
 	"github.com/dotbrains/ares/internal/intent"
+	"github.com/dotbrains/ares/internal/mutation"
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/plugins"
 	"github.com/dotbrains/ares/internal/reports"
@@ -49,6 +49,16 @@ type Context struct {
 
 func (ctx *Context) fs() hostfs.FS {
 	return hostfs.FS{Root: ctx.Options.Root, Now: ctx.Options.Now}
+}
+
+func (ctx *Context) mutation() mutation.Operator {
+	return mutation.Operator{Root: ctx.Options.Root, Now: ctx.Options.Now}
+}
+
+func (ctx *Context) appendMutation(result mutation.Result) {
+	ctx.Result.Applied = append(ctx.Result.Applied, result.Applied...)
+	ctx.Result.Skipped = append(ctx.Result.Skipped, result.Skipped...)
+	ctx.Result.Failed = append(ctx.Result.Failed, result.Failed...)
 }
 
 func Run(hardeningPlan plan.Plan, opts Options) (Result, error) {
@@ -184,17 +194,10 @@ func (ctx *Context) path(path string) string {
 }
 
 func (ctx *Context) run(name string, args ...string) error {
-	if ctx.Options.Root != "" {
-		ctx.Result.Applied = append(ctx.Result.Applied, "would run: "+name+" "+strings.Join(args, " "))
-		return nil
-	}
-	cmd := exec.Command(name, args...)
-	output, err := cmd.CombinedOutput()
+	result, err := ctx.mutation().Run(name, args...)
+	ctx.appendMutation(result)
 	if err != nil {
-		return fmt.Errorf("%s %s: %w: %s", name, strings.Join(args, " "), err, strings.TrimSpace(string(output)))
-	}
-	if len(output) > 0 {
-		ctx.Result.Applied = append(ctx.Result.Applied, strings.TrimSpace(string(output)))
+		return err
 	}
 	return nil
 }
@@ -212,18 +215,10 @@ func installCommand(packageManager string, packages ...string) (string, []string
 }
 
 func (ctx *Context) backup(path string) error {
-	backupPath, created, err := ctx.fs().Backup(path)
+	result, err := ctx.mutation().Backup(path)
+	ctx.appendMutation(result)
 	if err != nil {
 		return err
 	}
-	if backupPath == "" {
-		ctx.Result.Skipped = append(ctx.Result.Skipped, "backup skipped; missing "+path)
-		return nil
-	}
-	if !created {
-		ctx.Result.Skipped = append(ctx.Result.Skipped, "backup skipped; existing "+backupPath)
-		return nil
-	}
-	ctx.Result.Applied = append(ctx.Result.Applied, "backed up "+path+" to "+backupPath)
 	return nil
 }

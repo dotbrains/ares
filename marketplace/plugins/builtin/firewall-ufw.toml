@@ -2,6 +2,7 @@ id = "firewall-ufw"
 name = "UFW firewall"
 kind = "builtin"
 behavior = "firewall"
+behavior_variant = "ufw"
 verifier = "firewall"
 summary = "Configures UFW with safe VPS defaults"
 categories = ["firewall", "network"]

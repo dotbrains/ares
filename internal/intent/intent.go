@@ -47,8 +47,9 @@ func ForPlugin(host system.Host, profile string, plugin plugins.Plugin) Intent {
 
 func (intent Intent) Actions() []Action {
 	plugin := intent.Plugin
+	behavior := plugins.Behavior(plugin)
 	host := intent.Host
-	if plugin.Behavior == "distro" || hasCategory(plugin, "distro") {
+	if behavior.Name == "distro" || hasCategory(plugin, "distro") {
 		return []Action{{
 			Plugin: plugin.ID,
 			Title:  "Use distro adapter",
@@ -56,7 +57,7 @@ func (intent Intent) Actions() []Action {
 		}}
 	}
 
-	switch plugin.Behavior {
+	switch behavior.Name {
 	case "ssh-hardening":
 		return []Action{
 			{
@@ -135,7 +136,8 @@ func (intent Intent) Actions() []Action {
 
 func (intent Intent) Operations() []Operation {
 	plugin := intent.Plugin
-	if plugin.Behavior == "distro" || plugin.Behavior == "provider-advisory" || hasCategory(plugin, "distro") {
+	behavior := plugins.Behavior(plugin)
+	if behavior.Name == "distro" || behavior.Name == "provider-advisory" || hasCategory(plugin, "distro") {
 		return nil
 	}
 	var ops []Operation
@@ -148,7 +150,7 @@ func (intent Intent) Operations() []Operation {
 	for _, step := range plugin.RollbackSteps {
 		ops = append(ops, Operation{Kind: RollbackNote, Plugin: plugin.ID, Note: step})
 	}
-	switch plugin.Behavior {
+	switch behavior.Name {
 	case "ssh-hardening":
 		ops = append(ops,
 			Operation{Kind: RunCommand, Plugin: plugin.ID, Command: "sshd", Args: []string{"-t"}},
@@ -160,7 +162,7 @@ func (intent Intent) Operations() []Operation {
 		ops = append(ops, installOperation(plugin.ID, intent.Host.PackageManager, "fail2ban"))
 		ops = append(ops, Operation{Kind: RunCommand, Plugin: plugin.ID, Command: "systemctl", Args: []string{"enable", "--now", "fail2ban"}})
 	case "security-updates":
-		ops = append(ops, securityUpdateOperations(plugin.ID, intent.Host.PackageManager)...)
+		ops = append(ops, securityUpdateOperations(plugin, intent.Host.PackageManager)...)
 	case "sysctl":
 		ops = append(ops, Operation{Kind: RunCommand, Plugin: plugin.ID, Command: "sysctl", Args: []string{"--system"}})
 	case "web-profile":
@@ -175,8 +177,8 @@ func (intent Intent) Operations() []Operation {
 
 func (intent Intent) firewallOperations() []Operation {
 	pluginID := intent.Plugin.ID
-	switch pluginID {
-	case "firewall-ufw":
+	switch plugins.Behavior(intent.Plugin).Variant {
+	case "ufw":
 		ops := []Operation{
 			{Kind: RunCommand, Plugin: pluginID, Command: intent.Host.PackageManager, Args: []string{"update"}},
 			installOperation(pluginID, intent.Host.PackageManager, "ufw"),
@@ -187,7 +189,7 @@ func (intent Intent) firewallOperations() []Operation {
 			{Kind: RunCommand, Plugin: pluginID, Command: "ufw", Args: []string{"status"}},
 		}
 		return append(ops, Operation{Kind: RollbackNote, Plugin: pluginID, Note: "review firewall rules and run ufw disable if needed"})
-	case "firewall-firewalld":
+	case "firewalld":
 		ops := []Operation{
 			installOperation(pluginID, intent.Host.PackageManager, "firewalld"),
 			{Kind: RunCommand, Plugin: pluginID, Command: "systemctl", Args: []string{"enable", "--now", "firewalld"}},
@@ -197,7 +199,7 @@ func (intent Intent) firewallOperations() []Operation {
 			{Kind: RunCommand, Plugin: pluginID, Command: "firewall-cmd", Args: []string{"--list-all"}},
 		}
 		return append(ops, Operation{Kind: RollbackNote, Plugin: pluginID, Note: "review firewalld ports/services and reload after manual rollback"})
-	case "firewall-nftables":
+	case "nftables":
 		return []Operation{
 			installOperation(pluginID, intent.Host.PackageManager, "nftables"),
 			{Kind: RunCommand, Plugin: pluginID, Command: "nft", Args: []string{"-c", "-f", "/etc/nftables.conf"}},
@@ -236,9 +238,10 @@ func (intent Intent) webOperations() []Operation {
 	return nil
 }
 
-func securityUpdateOperations(pluginID string, packageManager string) []Operation {
-	switch pluginID {
-	case "unattended-upgrades":
+func securityUpdateOperations(plugin plugins.Plugin, packageManager string) []Operation {
+	pluginID := plugin.ID
+	switch plugins.Behavior(plugin).Variant {
+	case "apt":
 		return []Operation{
 			{Kind: RunCommand, Plugin: pluginID, Command: packageManager, Args: []string{"update"}},
 			installOperation(pluginID, packageManager, "unattended-upgrades"),
@@ -248,11 +251,11 @@ func securityUpdateOperations(pluginID string, packageManager string) []Operatio
 			installOperation(pluginID, packageManager, "dnf-automatic"),
 			{Kind: RunCommand, Plugin: pluginID, Command: "systemctl", Args: []string{"enable", "--now", "dnf-automatic.timer"}},
 		}
-	case "pacman-upgrade":
+	case "pacman":
 		return []Operation{{Kind: RunCommand, Plugin: pluginID, Command: "pacman", Args: []string{"-Syu", "--noconfirm"}}}
-	case "zypper-patches":
+	case "zypper":
 		return []Operation{{Kind: RunCommand, Plugin: pluginID, Command: "zypper", Args: []string{"--non-interactive", "patch"}}}
-	case "apk-upgrade":
+	case "apk":
 		return []Operation{
 			{Kind: RunCommand, Plugin: pluginID, Command: "apk", Args: []string{"update"}},
 			{Kind: RunCommand, Plugin: pluginID, Command: "apk", Args: []string{"upgrade"}},
