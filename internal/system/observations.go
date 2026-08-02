@@ -71,9 +71,20 @@ func (host *Host) Observe(name string, value string, fact Fact) {
 }
 
 func (host *Host) RefreshObservations() {
-	for _, name := range []string{"os", "package_manager", "init_system", "firewall_backend", "ssh_service", "ssh_port", "provider", "architecture"} {
+	for _, name := range ObservationNames() {
 		fact := host.Facts[name]
 		host.Observe(name, host.valueForObservation(name), fact)
+	}
+}
+
+func ObservationNames() []string {
+	return []string{"os", "package_manager", "init_system", "firewall_backend", "ssh_service", "ssh_port", "provider", "architecture"}
+}
+
+func (host *Host) ProjectObservedFields() {
+	for _, name := range ObservationNames() {
+		observed := host.Observed(name)
+		host.setObservationField(name, observed.Value)
 	}
 }
 
@@ -97,6 +108,33 @@ func (host Host) valueForObservation(name string) string {
 		return host.Architecture
 	default:
 		return ""
+	}
+}
+
+func (host *Host) setObservationField(name string, value string) {
+	switch name {
+	case "os":
+		parts := strings.Fields(value)
+		if len(parts) > 0 {
+			host.OSID = parts[0]
+		}
+		if len(parts) > 1 {
+			host.OSVersion = strings.Join(parts[1:], " ")
+		}
+	case "package_manager":
+		host.PackageManager = value
+	case "init_system":
+		host.InitSystem = value
+	case "firewall_backend":
+		host.FirewallBackend = value
+	case "ssh_service":
+		host.SSHService = value
+	case "ssh_port":
+		host.SSHPort = value
+	case "provider":
+		host.Provider = value
+	case "architecture":
+		host.Architecture = value
 	}
 }
 

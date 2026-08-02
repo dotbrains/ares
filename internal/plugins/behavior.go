@@ -28,6 +28,18 @@ func (behavior BehaviorSpec) IsVerifier(name string) bool {
 	return behavior.Verifier == name
 }
 
+func (behavior BehaviorSpec) IsDistro() bool {
+	return behavior.Is("distro")
+}
+
+func (behavior BehaviorSpec) IsProviderAdvisory() bool {
+	return behavior.Is("provider-advisory")
+}
+
+func (behavior BehaviorSpec) IsPlanningOnly() bool {
+	return behavior.IsDistro() || behavior.IsProviderAdvisory()
+}
+
 func KnownBehavior(name string) bool {
 	return marketplace.KnownBehavior(name)
 }

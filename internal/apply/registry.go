@@ -175,7 +175,7 @@ func verifyProvider(ctx *Context, plugin plugins.Plugin) {
 }
 
 func verifyNone(ctx *Context, plugin plugins.Plugin) {
-	if strings.TrimSpace(plugin.Verifier) == "" || plugin.Verifier == "none" {
+	if strings.TrimSpace(plugin.Verifier) == "" || plugins.Behavior(plugin).IsVerifier("none") {
 		ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": no verifier declared")
 	}
 }

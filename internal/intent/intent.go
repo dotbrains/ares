@@ -48,7 +48,7 @@ func (intent Intent) Actions() []Action {
 	plugin := intent.Plugin
 	behavior := plugins.Behavior(plugin)
 	host := intent.Host
-	if behavior.Name == "distro" || hasCategory(plugin, "distro") {
+	if behavior.IsDistro() || hasCategory(plugin, "distro") {
 		return []Action{{
 			Plugin: plugin.ID,
 			Title:  "Use distro adapter",
@@ -136,7 +136,7 @@ func (intent Intent) Actions() []Action {
 func (intent Intent) Operations() []Operation {
 	plugin := intent.Plugin
 	behavior := plugins.Behavior(plugin)
-	if behavior.Name == "distro" || behavior.Name == "provider-advisory" || hasCategory(plugin, "distro") {
+	if behavior.IsPlanningOnly() || hasCategory(plugin, "distro") {
 		return nil
 	}
 	var ops []Operation
