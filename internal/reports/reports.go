@@ -89,7 +89,7 @@ type LatestRunReport struct {
 }
 
 func WriteJSON(path string, value any) error {
-	data, err := json.MarshalIndent(value, "", "  ")
+	data, err := MarshalJSON(value)
 	if err != nil {
 		return err
 	}

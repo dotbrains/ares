@@ -27,3 +27,18 @@ func TestOperatorDryRunCommandAndFileMutation(t *testing.T) {
 		t.Fatalf("remove result = %+v", removeResult)
 	}
 }
+
+func TestOperatorWriteFileCreatesParentDirectory(t *testing.T) {
+	root := t.TempDir()
+	operator := Operator{Root: root}
+	result, err := operator.WriteFile("/etc/ares/example.conf", []byte("ok\n"), 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Applied) != 1 || result.Applied[0] != "wrote /etc/ares/example.conf" {
+		t.Fatalf("write result = %+v", result)
+	}
+	if _, err := os.Stat(filepath.Join(root, "etc", "ares", "example.conf")); err != nil {
+		t.Fatalf("missing written file: %v", err)
+	}
+}

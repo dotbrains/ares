@@ -225,3 +225,12 @@ func (ctx *Context) backup(path string) error {
 	}
 	return nil
 }
+
+func (ctx *Context) writeFile(path string, data []byte, perm os.FileMode) error {
+	result, err := ctx.mutation().WriteFile(path, data, perm)
+	ctx.appendMutation(result)
+	if err != nil {
+		return err
+	}
+	return nil
+}

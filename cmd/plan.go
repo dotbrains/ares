@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"encoding/json"
-
 	"github.com/dotbrains/ares/internal/config"
+	"github.com/dotbrains/ares/internal/reports"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +19,7 @@ func newPlanCmd() *cobra.Command {
 				return err
 			}
 			if jsonOutput {
-				data, err := json.MarshalIndent(runtime.Plan, "", "  ")
+				data, err := reports.MarshalJSON(runtime.Plan)
 				if err != nil {
 					return err
 				}

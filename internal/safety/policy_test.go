@@ -9,6 +9,14 @@ import (
 	"github.com/dotbrains/ares/internal/system"
 )
 
+type fakeReportDirectoryChecker struct {
+	decision Decision
+}
+
+func (checker fakeReportDirectoryChecker) Check(string) Decision {
+	return checker.decision
+}
+
 func TestEvaluateReportsCustomExecutableFailures(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.Plugins.Custom = []config.CustomPlugin{{
@@ -77,6 +85,23 @@ func TestEvaluateIncludesStructuredHostEvidence(t *testing.T) {
 		return
 	}
 	t.Fatalf("missing package manager decision: %+v", decisions)
+}
+
+func TestEvaluateUsesReportDirectoryAdapter(t *testing.T) {
+	host := scenario.UbuntuHost()
+	decisions := Evaluate(Facts{
+		Host: host,
+		Plan: plan.Build(host, config.DefaultConfig()),
+		ReportDirectories: fakeReportDirectoryChecker{decision: Decision{
+			Name:   "reports",
+			Status: "warn",
+			Detail: "adapter used",
+		}},
+	})
+
+	if !hasDecision(decisions, "reports", "warn") {
+		t.Fatalf("missing adapter report decision: %+v", decisions)
+	}
 }
 
 func hasDecision(decisions []Decision, name string, status string) bool {

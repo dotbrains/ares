@@ -28,3 +28,13 @@ func TestCatalogValidationAcceptsLoadedMarketplace(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestValidateBehaviorRejectsUnknownVariant(t *testing.T) {
+	err := ValidateBehavior(Plugin{ID: "bad", Behavior: "firewall", BehaviorVariant: "iptables"})
+	if err == nil {
+		t.Fatal("expected validation error")
+	}
+	if !strings.Contains(err.Error(), `unknown behavior variant "iptables"`) {
+		t.Fatalf("error = %v", err)
+	}
+}

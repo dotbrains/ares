@@ -58,6 +58,13 @@ func (operator Operator) Backup(path string) (Result, error) {
 	return Result{Applied: []string{"backed up " + path + " to " + backupPath}}, nil
 }
 
+func (operator Operator) WriteFile(path string, data []byte, perm os.FileMode) (Result, error) {
+	if err := operator.FS().WriteFile(path, data, perm); err != nil {
+		return Result{}, err
+	}
+	return Result{Applied: []string{"wrote " + path}}, nil
+}
+
 func (operator Operator) Remove(path string) Result {
 	if err := operator.FS().Remove(path); err != nil {
 		if os.IsNotExist(err) {

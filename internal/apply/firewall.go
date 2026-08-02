@@ -2,7 +2,6 @@ package apply
 
 import (
 	"fmt"
-	"os"
 	"strings"
 )
 
@@ -116,5 +115,5 @@ func (ctx *Context) writeNftablesRules(ports ...string) error {
 		lines = append(lines, fmt.Sprintf("    tcp dport %s accept", port))
 	}
 	rules := fmt.Sprintf(nftablesRules, strings.Join(lines, "\n"))
-	return os.WriteFile(ctx.path("/etc/nftables.conf"), []byte(rules), 0o644)
+	return ctx.writeFile("/etc/nftables.conf", []byte(rules), 0o644)
 }

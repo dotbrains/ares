@@ -17,12 +17,19 @@ import (
 type Decision = reports.Decision
 
 type Facts struct {
-	Host         system.Host
-	Plan         plan.Plan
-	Config       *config.Config
-	Root         string
-	EffectiveUID int
+	Host              system.Host
+	Plan              plan.Plan
+	Config            *config.Config
+	Root              string
+	EffectiveUID      int
+	ReportDirectories ReportDirectoryChecker
 }
+
+type ReportDirectoryChecker interface {
+	Check(root string) Decision
+}
+
+type WritableReportDirectory struct{}
 
 func Evaluate(facts Facts) []Decision {
 	euid := facts.EffectiveUID
@@ -39,10 +46,17 @@ func Evaluate(facts Facts) []Decision {
 		providerAdvisoryDecision(facts.Plan),
 		withEvidence(sshPortDecision(facts.Host), hostEvidence(facts.Host, "ssh_port", facts.Host.SSHPort)),
 		planWarningsDecision(facts.Plan),
-		reportDirectoryDecision(facts.Root),
+		reportDirectoryChecker(facts).Check(facts.Root),
 	}
 	decisions = append(decisions, customPluginCommandDecisions(facts.Config)...)
 	return decisions
+}
+
+func reportDirectoryChecker(facts Facts) ReportDirectoryChecker {
+	if facts.ReportDirectories != nil {
+		return facts.ReportDirectories
+	}
+	return WritableReportDirectory{}
 }
 
 func withEvidence(decision Decision, evidence ...reports.Evidence) Decision {
@@ -174,7 +188,7 @@ func planWarningsDecision(hardeningPlan plan.Plan) Decision {
 	return Decision{Name: "plan warnings", Status: "warn", Detail: fmt.Sprintf("%d warning(s)", len(hardeningPlan.Warnings))}
 }
 
-func reportDirectoryDecision(root string) Decision {
+func (WritableReportDirectory) Check(root string) Decision {
 	dir := rootedPath(root, "/var/log/ares")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return Decision{Name: "reports", Status: "fail", Detail: err.Error()}

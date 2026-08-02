@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -60,14 +59,13 @@ func buildPreflightReport(host system.Host, hardeningPlan plan.Plan, checks []pr
 	for _, plugin := range hardeningPlan.Plugins {
 		ids = append(ids, plugin.ID)
 	}
-	return preflightReport{
-		SchemaVersion: reports.PreflightSchemaVersion,
-		Profile:       hardeningPlan.Profile,
-		Host:          host,
-		Plugins:       ids,
-		Checks:        checks,
-		Transaction:   apply.BuildTransaction(hardeningPlan),
-	}
+	return reports.NewPreflightReport(reports.PreflightInput{
+		Profile:     hardeningPlan.Profile,
+		Host:        host,
+		Plugins:     ids,
+		Checks:      checks,
+		Transaction: apply.BuildTransaction(hardeningPlan),
+	})
 }
 
 func printPreflight(cmd *cobra.Command, report preflightReport) {
@@ -85,7 +83,7 @@ func printPreflight(cmd *cobra.Command, report preflightReport) {
 }
 
 func printPreflightJSON(cmd *cobra.Command, report preflightReport) error {
-	data, err := json.MarshalIndent(report, "", "  ")
+	data, err := reports.MarshalJSON(report)
 	if err != nil {
 		return err
 	}

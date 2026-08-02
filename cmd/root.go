@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -75,7 +74,7 @@ func newRootCmd(version string) *cobra.Command {
 }
 
 func printRunJSON(cmd *cobra.Command, hardeningPlan plan.Plan, result apply.Result, runErr error) error {
-	data, err := json.MarshalIndent(reports.NewRunOutput(hardeningPlan, result, runErr), "", "  ")
+	data, err := reports.MarshalJSON(reports.NewRunOutput(hardeningPlan, result, runErr))
 	if err != nil {
 		return err
 	}

@@ -160,26 +160,8 @@ func validateKnownValues(plugin Plugin, ids map[string]string, capabilities map[
 			return fmt.Errorf("plugin %s has unknown capability %q", plugin.ID, capability)
 		}
 	}
-	switch plugin.Behavior {
-	case "distro", "provider-advisory", "ssh-hardening", "firewall", "fail2ban", "security-updates", "sysctl", "web-profile", "strict-profile":
-	default:
-		return fmt.Errorf("plugin %s has unknown behavior %q", plugin.ID, plugin.Behavior)
-	}
-	if plugin.BehaviorVariant != "" {
-		switch plugin.Behavior + ":" + plugin.BehaviorVariant {
-		case "firewall:ufw", "firewall:firewalld", "firewall:nftables",
-			"security-updates:apt", "security-updates:dnf-automatic", "security-updates:pacman", "security-updates:zypper", "security-updates:apk",
-			"web-profile:web":
-		default:
-			return fmt.Errorf("plugin %s has unknown behavior variant %q for behavior %q", plugin.ID, plugin.BehaviorVariant, plugin.Behavior)
-		}
-	}
-	if plugin.Verifier != "" {
-		switch plugin.Verifier {
-		case "path", "command", "firewall", "provider-advisory", "custom", "none":
-		default:
-			return fmt.Errorf("plugin %s has unknown verifier %q", plugin.ID, plugin.Verifier)
-		}
+	if err := ValidateBehavior(plugin); err != nil {
+		return err
 	}
 	for _, requirement := range plugin.Requires {
 		for _, alternative := range strings.Split(requirement, "|") {
