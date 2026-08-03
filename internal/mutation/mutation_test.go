@@ -3,7 +3,9 @@ package mutation
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestOperatorDryRunCommandAndFileMutation(t *testing.T) {
@@ -40,5 +42,16 @@ func TestOperatorWriteFileCreatesParentDirectory(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, "etc", "ares", "example.conf")); err != nil {
 		t.Fatalf("missing written file: %v", err)
+	}
+}
+
+func TestOperatorRunTimesOut(t *testing.T) {
+	operator := Operator{CommandTimeout: 10 * time.Millisecond}
+	_, err := operator.Run("sh", "-c", "sleep 1")
+	if err == nil {
+		t.Fatal("expected timeout error")
+	}
+	if !strings.Contains(err.Error(), "command timed out after") {
+		t.Fatalf("err = %v, want timeout", err)
 	}
 }

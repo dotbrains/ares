@@ -1,6 +1,7 @@
 package mutation
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,6 +11,8 @@ import (
 	"github.com/dotbrains/ares/internal/hostfs"
 )
 
+const DefaultCommandTimeout = 5 * time.Minute
+
 type Result struct {
 	Applied []string
 	Skipped []string
@@ -17,8 +20,9 @@ type Result struct {
 }
 
 type Operator struct {
-	Root string
-	Now  time.Time
+	Root           string
+	Now            time.Time
+	CommandTimeout time.Duration
 }
 
 func (operator Operator) FS() hostfs.FS {
@@ -33,9 +37,18 @@ func (operator Operator) Run(name string, args ...string) (Result, error) {
 	if operator.Root != "" {
 		return Result{Applied: []string{"would run: " + name + " " + strings.Join(args, " ")}}, nil
 	}
-	cmd := exec.Command(name, args...)
+	timeout := operator.CommandTimeout
+	if timeout == 0 {
+		timeout = DefaultCommandTimeout
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, name, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return Result{}, fmt.Errorf("%s %s: command timed out after %s: %s", name, strings.Join(args, " "), timeout, strings.TrimSpace(string(output)))
+		}
 		return Result{}, fmt.Errorf("%s %s: %w: %s", name, strings.Join(args, " "), err, strings.TrimSpace(string(output)))
 	}
 	if len(output) > 0 {
