@@ -1,6 +1,7 @@
 package atomicfile
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -36,5 +37,19 @@ func TestWriteReplacesFileAndCleansTemporaryFile(t *testing.T) {
 	}
 	if len(matches) != 0 {
 		t.Fatalf("temporary files left behind: %v", matches)
+	}
+}
+
+func TestWriteReturnsErrorForMissingParentDirectory(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "missing", "managed.conf")
+	err := Write(path, []byte("new\n"), 0o644)
+	if err == nil {
+		t.Fatal("expected missing parent directory error")
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return
+	}
+	if !os.IsNotExist(err) {
+		t.Fatalf("err = %v, want missing parent directory", err)
 	}
 }
