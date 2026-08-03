@@ -34,11 +34,16 @@ make integration
 make vet
 ```
 
-`make ci` also enforces source-size budgets. Source files are capped at 500
-lines by default, generated lockfiles and fixtures are excluded, and flat source
-directories are capped at 30 direct files by default. The same budget target
-also verifies that every provider advisory plugin has a matching page under
-`docs/providers/`.
+`make pre-commit` runs the checks used by the local commit hook: Markdown lint,
+source budgets, race-enabled Go tests, vet, golangci-lint, actionlint, and a
+build. `make ci` extends that with security scans, smoke tests, container
+integration, release artifact smoke tests, and release preflight checks.
+
+`make ci` and `make pre-commit` both enforce source-size budgets. Source files
+are capped at 500 lines by default, generated lockfiles and fixtures are
+excluded, and flat source directories are capped at 30 direct files by default.
+The same budget target also verifies that every provider advisory plugin has a
+matching page under `docs/providers/`.
 
 Security checks run as part of `make ci`:
 

@@ -3,7 +3,7 @@ repos:
     hooks:
       - id: ares-ci
         name: ares local CI
-        entry: flox activate -c "make ci"
+        entry: scripts/pre-commit.sh
         language: system
         pass_filenames: false
         stages: [pre-commit]

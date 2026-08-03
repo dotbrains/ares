@@ -201,9 +201,9 @@ make ci
 ```
 
 `make ci` runs Markdown lint, Go tests, vet, golangci-lint, build, smoke,
-GitHub Actions lint, container integration, and release config checks. The
-repository also includes a pre-commit hook that runs the same target before
-commits.
+GitHub Actions lint, container integration, security scans, and release config
+checks. The repository also includes a pre-commit hook that runs the faster
+`make pre-commit` target before commits.
 
 With [Flox](https://flox.dev) installed, activate the repo toolchain:
 

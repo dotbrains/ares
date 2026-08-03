@@ -221,7 +221,7 @@ func validateTailscale(tailscale TailscaleConfig, enabled []string) error {
 			return fmt.Errorf("tailscale.tags must contain non-blank single-line values")
 		}
 		if !strings.HasPrefix(tag, "tag:") {
-			return fmt.Errorf("tailscale.tags values must start with tag:")
+			return fmt.Errorf("tailscale.tags values must start with tag prefix")
 		}
 	}
 	for _, arg := range tailscale.ExtraArgs {
