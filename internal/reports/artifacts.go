@@ -1,7 +1,6 @@
 package reports
 
 import (
-	"os"
 	"strings"
 )
 
@@ -79,5 +78,5 @@ func NonNilStrings(values []string) []string {
 }
 
 func writeTextArtifact(path string, lines []string) error {
-	return os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644)
+	return writeFileAtomic(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644)
 }
