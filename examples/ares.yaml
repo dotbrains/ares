@@ -12,4 +12,6 @@ tailscale:
   auth_key_env: TAILSCALE_AUTHKEY
   hostname: web-01
   accept_routes: false
+  login_server: ""
+  tags: []
   extra_args: []

@@ -49,6 +49,15 @@ func (ctx *Context) tailscaleUpArgs() ([]string, []string) {
 		args = append(args, "--accept-routes")
 		redacted = append(redacted, "--accept-routes")
 	}
+	if ctx.Options.Tailscale.LoginServer != "" {
+		args = append(args, "--login-server", ctx.Options.Tailscale.LoginServer)
+		redacted = append(redacted, "--login-server", ctx.Options.Tailscale.LoginServer)
+	}
+	if len(ctx.Options.Tailscale.Tags) > 0 {
+		tags := strings.Join(ctx.Options.Tailscale.Tags, ",")
+		args = append(args, "--advertise-tags", tags)
+		redacted = append(redacted, "--advertise-tags", tags)
+	}
 	args = append(args, ctx.Options.Tailscale.ExtraArgs...)
 	redacted = append(redacted, ctx.Options.Tailscale.ExtraArgs...)
 	return args, redacted

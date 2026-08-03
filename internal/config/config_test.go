@@ -267,12 +267,28 @@ func TestLoadFrom_RejectsUnsafeTailscaleConfig(t *testing.T) {
 			yaml: "tailscale:\n  ssh_enabled: true\n  auth_key_env: TAILSCALE_AUTHKEY\n",
 		},
 		{
+			name: "up option without ssh enabled",
+			yaml: "plugins:\n  enabled:\n    - tailscale-ssh\ntailscale:\n  hostname: web-01\n",
+		},
+		{
 			name: "invalid auth env",
 			yaml: "plugins:\n  enabled:\n    - tailscale-ssh\ntailscale:\n  ssh_enabled: true\n  auth_key_env: 'TAILSCALE AUTHKEY'\n",
 		},
 		{
 			name: "auth key in extra args",
 			yaml: "plugins:\n  enabled:\n    - tailscale-ssh\ntailscale:\n  ssh_enabled: true\n  auth_key_env: TAILSCALE_AUTHKEY\n  extra_args:\n    - --auth-key=secret\n",
+		},
+		{
+			name: "login server in extra args",
+			yaml: "plugins:\n  enabled:\n    - tailscale-ssh\ntailscale:\n  ssh_enabled: true\n  auth_key_env: TAILSCALE_AUTHKEY\n  extra_args:\n    - --login-server=https://headscale.example.com\n",
+		},
+		{
+			name: "advertise tags in extra args",
+			yaml: "plugins:\n  enabled:\n    - tailscale-ssh\ntailscale:\n  ssh_enabled: true\n  auth_key_env: TAILSCALE_AUTHKEY\n  extra_args:\n    - --advertise-tags=tag:web\n",
+		},
+		{
+			name: "tag without prefix",
+			yaml: "plugins:\n  enabled:\n    - tailscale-ssh\ntailscale:\n  ssh_enabled: true\n  auth_key_env: TAILSCALE_AUTHKEY\n  tags:\n    - web\n",
 		},
 	}
 

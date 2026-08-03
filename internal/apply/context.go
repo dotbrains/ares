@@ -34,6 +34,8 @@ type TailscaleOptions struct {
 	AuthKey          string
 	Hostname         string
 	AcceptRoutes     bool
+	LoginServer      string
+	Tags             []string
 	ExtraArgs        []string
 	SSHEnabledSource string
 }

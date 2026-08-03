@@ -89,6 +89,8 @@ tailscale:
   auth_key_env: TAILSCALE_AUTHKEY
   hostname: web-01
   accept_routes: false
+  login_server: ""
+  tags: []
   extra_args: []
 ```
 
@@ -101,6 +103,11 @@ Do not put auth keys in config files. `ares` reads the auth key from the named
 environment variable at apply time and redacts it from simulated command output
 and errors. Preflight fails before host mutation when `tailscale.ssh_enabled`
 is true and the configured environment variable is missing.
+
+Use `tailscale.login_server` for Headscale or custom control-plane URLs and
+`tailscale.tags` for advertised tags. `tailscale.extra_args` rejects auth key,
+login server, and advertised tag flags so those policy-sensitive values stay
+visible in structured config.
 
 ## Custom Plugins
 

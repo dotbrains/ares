@@ -50,6 +50,8 @@ func (runtime commandRuntime) ApplyOptions(dryRun bool, yes bool) apply.Options 
 			AuthKey:          os.Getenv(tailscale.AuthKeyEnv),
 			Hostname:         tailscale.Hostname,
 			AcceptRoutes:     tailscale.AcceptRoutes,
+			LoginServer:      tailscale.LoginServer,
+			Tags:             tailscale.Tags,
 			ExtraArgs:        tailscale.ExtraArgs,
 			SSHEnabledSource: string(runtime.Effective.Sources["tailscale.ssh_enabled"]),
 		},

@@ -192,6 +192,8 @@ plugins:
 tailscale:
   ssh_enabled: true
   auth_key_env: TAILSCALE_AUTHKEY
+  tags:
+    - tag:web
 ```
 
 The plugin installs the local `tailscale` package and enables `tailscaled` on
@@ -200,6 +202,8 @@ systemd hosts. It runs `tailscale up --ssh` only when
 environment variable is present. Auth keys are never read from config files and
 are redacted from simulated command output and errors. Preflight fails before
 host mutation when the configured auth key environment variable is missing.
+Use `tailscale.login_server` and `tailscale.tags` instead of passing those
+flags through `tailscale.extra_args`.
 
 ## Custom Plugins
 

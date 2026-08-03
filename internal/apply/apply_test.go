@@ -296,6 +296,8 @@ func TestRunApplyTailscaleSSHUsesRedactedAuthKey(t *testing.T) {
 	cfg.Tailscale.AuthKeyEnv = "TAILSCALE_AUTHKEY"
 	cfg.Tailscale.Hostname = "ares-test"
 	cfg.Tailscale.AcceptRoutes = true
+	cfg.Tailscale.LoginServer = "https://headscale.example.com"
+	cfg.Tailscale.Tags = []string{"tag:web", "tag:prod"}
 	cfg.Tailscale.ExtraArgs = []string{"--operator=admin"}
 
 	result, err := Run(plan.Build(testHost(), cfg), Options{
@@ -307,6 +309,8 @@ func TestRunApplyTailscaleSSHUsesRedactedAuthKey(t *testing.T) {
 			AuthKey:          "tskey-secret",
 			Hostname:         "ares-test",
 			AcceptRoutes:     true,
+			LoginServer:      "https://headscale.example.com",
+			Tags:             []string{"tag:web", "tag:prod"},
 			ExtraArgs:        []string{"--operator=admin"},
 			SSHEnabledSource: "file",
 		},
@@ -318,7 +322,7 @@ func TestRunApplyTailscaleSSHUsesRedactedAuthKey(t *testing.T) {
 	if strings.Contains(joinedApplied, "tskey-secret") {
 		t.Fatalf("auth key leaked in applied output: %s", joinedApplied)
 	}
-	if !contains(result.Applied, "would run: tailscale up --ssh --auth-key REDACTED --hostname ares-test --accept-routes --operator=admin") {
+	if !contains(result.Applied, "would run: tailscale up --ssh --auth-key REDACTED --hostname ares-test --accept-routes --login-server https://headscale.example.com --advertise-tags tag:web,tag:prod --operator=admin") {
 		t.Fatalf("missing redacted tailscale up: %+v", result.Applied)
 	}
 	if !contains(result.Applied, "enabled Tailscale SSH using auth key from TAILSCALE_AUTHKEY") {

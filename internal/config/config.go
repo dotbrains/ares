@@ -29,6 +29,8 @@ type TailscaleConfig struct {
 	AuthKeyEnv   string   `yaml:"auth_key_env,omitempty"`
 	Hostname     string   `yaml:"hostname,omitempty"`
 	AcceptRoutes bool     `yaml:"accept_routes,omitempty"`
+	LoginServer  string   `yaml:"login_server,omitempty"`
+	Tags         []string `yaml:"tags,omitempty"`
 	ExtraArgs    []string `yaml:"extra_args,omitempty"`
 }
 
@@ -194,6 +196,9 @@ func Validate(cfg *Config) error {
 
 func validateTailscale(tailscale TailscaleConfig, enabled []string) error {
 	if !tailscale.SSHEnabled {
+		if tailscale.AuthKeyEnv != "" || tailscale.Hostname != "" || tailscale.AcceptRoutes || tailscale.LoginServer != "" || len(tailscale.Tags) > 0 || len(tailscale.ExtraArgs) > 0 {
+			return fmt.Errorf("tailscale.ssh_enabled must be true when tailscale up options are configured")
+		}
 		return nil
 	}
 	if !slices.Contains(enabled, "tailscale-ssh") {
@@ -208,12 +213,29 @@ func validateTailscale(tailscale TailscaleConfig, enabled []string) error {
 	if strings.ContainsAny(tailscale.Hostname, "\r\n") {
 		return fmt.Errorf("tailscale.hostname must be a single-line value")
 	}
+	if strings.ContainsAny(tailscale.LoginServer, "\r\n") {
+		return fmt.Errorf("tailscale.login_server must be a single-line value")
+	}
+	for _, tag := range tailscale.Tags {
+		if strings.TrimSpace(tag) == "" || strings.ContainsAny(tag, "\r\n") {
+			return fmt.Errorf("tailscale.tags must contain non-blank single-line values")
+		}
+		if !strings.HasPrefix(tag, "tag:") {
+			return fmt.Errorf("tailscale.tags values must start with tag:")
+		}
+	}
 	for _, arg := range tailscale.ExtraArgs {
 		if strings.TrimSpace(arg) == "" || strings.ContainsAny(arg, "\r\n") {
 			return fmt.Errorf("tailscale.extra_args must contain non-blank single-line values")
 		}
 		if strings.HasPrefix(arg, "--auth-key") || strings.HasPrefix(arg, "--authkey") {
 			return fmt.Errorf("tailscale.extra_args must not contain auth key arguments; use tailscale.auth_key_env")
+		}
+		if strings.HasPrefix(arg, "--login-server") {
+			return fmt.Errorf("tailscale.extra_args must not contain login server arguments; use tailscale.login_server")
+		}
+		if strings.HasPrefix(arg, "--advertise-tags") {
+			return fmt.Errorf("tailscale.extra_args must not contain advertise tag arguments; use tailscale.tags")
 		}
 	}
 	return nil
