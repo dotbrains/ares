@@ -11,9 +11,9 @@ import (
 func TestSelectionExpandsProfileAndCustomPlugins(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.Profile = "strict"
-	cfg.Plugins.Custom = []config.CustomPlugin{{Name: "tailscale-ssh", Apply: "ares-plugin apply"}}
+	cfg.Plugins.Custom = []config.CustomPlugin{{Name: "local-plugin", Apply: "ares-plugin apply"}}
 	selected := Selection{Host: scenario.UbuntuHost(), Config: cfg}.Plugins()
-	if !hasID(selected, "strict-profile") || !hasID(selected, "tailscale-ssh") {
+	if !hasID(selected, "strict-profile") || !hasID(selected, "local-plugin") {
 		t.Fatalf("selected = %+v", selected)
 	}
 }

@@ -118,8 +118,24 @@ Current built-in groups:
 - fail2ban
 - apt, dnf, pacman, zypper, and apk security/update adapters
 - sysctl baseline
+- optional `tailscale-ssh` preparation, which installs/enables `tailscaled`
+  but leaves `tailscale up --ssh` authentication explicit
 - `web` and `strict` profile plugins
 - provider advisory plugins for common VPS vendors
+
+Enable Tailscale support explicitly when you want ares to prepare the host for
+tailnet SSH:
+
+```yaml
+plugins:
+  enabled:
+    - ssh-hardening
+    - firewall-auto
+    - fail2ban
+    - security-updates
+    - sysctl-baseline
+    - tailscale-ssh
+```
 
 Custom plugins are configured explicitly and run local commands only. `ares`
 does not automatically download or execute remote plugin code.
@@ -127,12 +143,12 @@ does not automatically download or execute remote plugin code.
 ```yaml
 plugins:
   custom:
-    - name: tailscale-ssh
-      probe: command -v tailscale
-      plan: ares-plugin-tailscale-ssh plan
-      apply: ares-plugin-tailscale-ssh apply
-      verify: ares-plugin-tailscale-ssh verify
-      rollback: ares-plugin-tailscale-ssh rollback
+    - name: local-hardening
+      probe: command -v local-hardening
+      plan: local-hardening plan
+      apply: local-hardening apply
+      verify: local-hardening verify
+      rollback: local-hardening rollback
       timeout_seconds: 120
 ```
 

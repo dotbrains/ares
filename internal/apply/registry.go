@@ -19,6 +19,7 @@ var builtinBehaviors = map[string]pluginBehavior{
 	"fail2ban":          {Apply: applyFail2banBehavior, Verify: verifyDeclared},
 	"security-updates":  {Apply: applySecurityUpdates, Verify: verifyDeclared},
 	"sysctl":            {Apply: applySysctl, Verify: verifyDeclared},
+	"tailscale-ssh":     {Apply: applyTailscaleSSH, Verify: verifyTailscaleSSH},
 	"web-profile":       {Apply: applyWeb, Verify: verifyDeclared},
 	"strict-profile":    {Apply: applyStrict, Verify: verifyDeclared},
 }
@@ -129,6 +130,10 @@ func applySysctl(ctx *Context, _ plugins.Plugin) error {
 	return ctx.applySysctlBaseline()
 }
 
+func applyTailscaleSSH(ctx *Context, _ plugins.Plugin) error {
+	return ctx.applyTailscaleSSH()
+}
+
 func applyWeb(ctx *Context, _ plugins.Plugin) error {
 	return ctx.applyWebProfile()
 }
@@ -170,6 +175,10 @@ func verifyFirewall(ctx *Context, plugin plugins.Plugin) {
 
 func verifyProvider(ctx *Context, plugin plugins.Plugin) {
 	ctx.Result.Verified = append(ctx.Result.Verified, plugin.ID+": advisory recorded")
+}
+
+func verifyTailscaleSSH(ctx *Context, plugin plugins.Plugin) {
+	ctx.verifyTailscaleSSH(plugin.ID)
 }
 
 func verifyCommand(ctx *Context, plugin plugins.Plugin) {

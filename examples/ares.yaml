@@ -6,9 +6,4 @@ plugins:
     - fail2ban
     - security-updates
     - sysctl-baseline
-  custom:
-    - name: tailscale-ssh
-      probe: command -v tailscale
-      plan: ares-plugin-tailscale-ssh plan
-      apply: ares-plugin-tailscale-ssh apply
-      rollback: ares-plugin-tailscale-ssh rollback
+    - tailscale-ssh

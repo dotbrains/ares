@@ -46,6 +46,7 @@ var actionBuilders = map[string]func(Intent) []Action{
 	"fail2ban":          fail2banActions,
 	"security-updates":  securityUpdateActions,
 	"sysctl":            sysctlActions,
+	"tailscale-ssh":     tailscaleSSHActions,
 	"web-profile":       webProfileActions,
 	"strict-profile":    strictProfileActions,
 	"provider-advisory": providerAdvisoryActions,
@@ -57,6 +58,7 @@ var operationBuilders = map[string]func(Intent) []Operation{
 	"fail2ban":         fail2banOperations,
 	"security-updates": securityUpdateIntentOperations,
 	"sysctl":           sysctlOperations,
+	"tailscale-ssh":    tailscaleSSHOperations,
 	"web-profile":      Intent.webOperations,
 }
 
@@ -154,6 +156,23 @@ func sysctlActions(intent Intent) []Action {
 	}}
 }
 
+func tailscaleSSHActions(intent Intent) []Action {
+	return []Action{
+		{
+			Plugin: intent.Plugin.ID,
+			Title:  "Prepare Tailscale",
+			Detail: "Install Tailscale and enable tailscaled without joining a tailnet automatically",
+			Risky:  true,
+		},
+		{
+			Plugin: intent.Plugin.ID,
+			Title:  "Keep tailnet SSH explicit",
+			Detail: "Record manual tailscale up --ssh guidance so authentication and tailnet policy remain operator-controlled",
+			Risky:  true,
+		},
+	}
+}
+
 func webProfileActions(intent Intent) []Action {
 	return []Action{{
 		Plugin: intent.Plugin.ID,
@@ -216,4 +235,15 @@ func securityUpdateIntentOperations(intent Intent) []Operation {
 
 func sysctlOperations(intent Intent) []Operation {
 	return []Operation{{Kind: RunCommand, Plugin: intent.Plugin.ID, Command: "sysctl", Args: []string{"--system"}}}
+}
+
+func tailscaleSSHOperations(intent Intent) []Operation {
+	ops := []Operation{
+		installOperation(intent.Plugin.ID, intent.Host.PackageManager, "tailscale"),
+		{Kind: RollbackNote, Plugin: intent.Plugin.ID, Note: "disable Tailscale SSH with tailscale up --ssh=false if it was enabled manually"},
+	}
+	if intent.Host.InitSystem == "systemd" {
+		ops = append(ops, Operation{Kind: RunCommand, Plugin: intent.Plugin.ID, Command: "systemctl", Args: []string{"enable", "--now", "tailscaled"}})
+	}
+	return ops
 }

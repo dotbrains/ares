@@ -148,14 +148,14 @@ func validateCatalog(catalog Catalog) error {
 func validateKnownValues(plugin Plugin, ids map[string]string, capabilities map[string]string) error {
 	for _, category := range plugin.Categories {
 		switch category {
-		case "advisory", "distro", "firewall", "hardening", "kernel", "network", "profile", "provider", "ssh", "updates":
+		case "advisory", "distro", "firewall", "hardening", "kernel", "network", "profile", "provider", "ssh", "tailscale", "updates":
 		default:
 			return fmt.Errorf("plugin %s has unknown category %q", plugin.ID, category)
 		}
 	}
 	for _, capability := range plugin.Capabilities {
 		switch capability {
-		case "fail2ban", "firewall", "package-manager", "profile-strict", "profile-web", "provider-advisory", "security-updates", "service-manager", "ssh-hardening", "ssh-service", "sysctl":
+		case "fail2ban", "firewall", "package-manager", "profile-strict", "profile-web", "provider-advisory", "security-updates", "service-manager", "ssh-hardening", "ssh-service", "sysctl", "tailscale-ssh":
 		default:
 			return fmt.Errorf("plugin %s has unknown capability %q", plugin.ID, capability)
 		}

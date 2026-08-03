@@ -226,6 +226,43 @@ func TestRunApplyProviderAdvisoryIsReported(t *testing.T) {
 	}
 }
 
+func TestRunApplyTailscaleSSHIsExplicitOptIn(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "etc", "ssh"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "etc", "ssh", "sshd_config"), []byte("Port 22\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.Plugins.Enabled = append(cfg.Plugins.Enabled, "tailscale-ssh")
+	result, err := Run(plan.Build(testHost(), cfg), Options{
+		Yes:  true,
+		Root: root,
+		Now:  time.Date(2026, 7, 25, 17, 0, 0, 0, time.UTC),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !contains(result.Applied, "would run: apt-get install -y tailscale") {
+		t.Fatalf("missing tailscale install: %+v", result.Applied)
+	}
+	if !contains(result.Applied, "would run: systemctl enable --now tailscaled") {
+		t.Fatalf("missing tailscaled enable: %+v", result.Applied)
+	}
+	if !contains(result.Applied, "prepared tailscaled for explicit Tailscale SSH setup") {
+		t.Fatalf("missing tailscale applied summary: %+v", result.Applied)
+	}
+	if !contains(result.Skipped, "Tailscale SSH is not enabled automatically; run tailscale up --ssh after reviewing tailnet policy and authentication") {
+		t.Fatalf("missing manual tailscale guidance: %+v", result.Skipped)
+	}
+	if !contains(result.Verified, "tailscale-ssh: would verify with tailscale version") {
+		t.Fatalf("missing tailscale verification: %+v", result.Verified)
+	}
+}
+
 func TestInstallCommandUsesPackageManagerSyntax(t *testing.T) {
 	cases := []struct {
 		packageManager string

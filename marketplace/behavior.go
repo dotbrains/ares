@@ -10,6 +10,7 @@ var knownBehaviors = map[string]bool{
 	"fail2ban":          true,
 	"security-updates":  true,
 	"sysctl":            true,
+	"tailscale-ssh":     true,
 	"web-profile":       true,
 	"strict-profile":    true,
 }

@@ -79,6 +79,7 @@ Current built-ins:
 | `zypper-patches` | Apply openSUSE patches. |
 | `apk-upgrade` | Apply Alpine package upgrades. |
 | `sysctl-baseline` | Write conservative network hardening to `/etc/sysctl.d/99-ares.conf`. |
+| `tailscale-ssh` | Install and enable `tailscaled` for explicit tailnet SSH setup without authenticating automatically. |
 | `web-profile` | Allow inbound HTTP and HTTPS through UFW, firewalld, or nftables. |
 | `strict-profile` | Apply stricter fail2ban defaults and record root-lock guidance. |
 | `provider-*` | Record provider recovery reminders without mutating provider APIs. |
@@ -180,6 +181,21 @@ flowchart TD
   updates --> plan
 ```
 
+## Tailscale SSH
+
+`tailscale-ssh` is a built-in, explicit opt-in plugin:
+
+```yaml
+plugins:
+  enabled:
+    - tailscale-ssh
+```
+
+The plugin installs the local `tailscale` package and enables `tailscaled` on
+systemd hosts. It does not run `tailscale up --ssh`, pass auth keys, or change
+tailnet policy automatically. After apply, authenticate and enable Tailscale SSH
+manually with the command and policy appropriate for the tailnet.
+
 ## Custom Plugins
 
 Custom plugins are configured explicitly:
@@ -187,12 +203,12 @@ Custom plugins are configured explicitly:
 ```yaml
 plugins:
   custom:
-    - name: tailscale-ssh
-      probe: command -v tailscale
-      plan: ares-plugin-tailscale-ssh plan
-      apply: ares-plugin-tailscale-ssh apply
-      verify: ares-plugin-tailscale-ssh verify
-      rollback: ares-plugin-tailscale-ssh rollback
+    - name: local-hardening
+      probe: command -v local-hardening
+      plan: local-hardening plan
+      apply: local-hardening apply
+      verify: local-hardening verify
+      rollback: local-hardening rollback
       timeout_seconds: 120
 ```
 

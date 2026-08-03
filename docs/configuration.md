@@ -70,6 +70,27 @@ ares plan --profile strict
 sudo ares --profile strict --yes
 ```
 
+## Tailscale SSH
+
+`tailscale-ssh` is available as a built-in plugin when explicitly enabled:
+
+```yaml
+profile: basic
+plugins:
+  enabled:
+    - ssh-hardening
+    - firewall-auto
+    - fail2ban
+    - security-updates
+    - sysctl-baseline
+    - tailscale-ssh
+```
+
+It installs the local `tailscale` package and enables `tailscaled` on systemd
+hosts. It does not authenticate the node or run `tailscale up --ssh`
+automatically; run that manually after reviewing tailnet policy and recovery
+access.
+
 ## Custom Plugins
 
 Custom plugins are declared explicitly in config. `ares` does not download or
@@ -85,12 +106,12 @@ plugins:
     - security-updates
     - sysctl-baseline
   custom:
-    - name: tailscale-ssh
-      probe: command -v tailscale
-      plan: ares-plugin-tailscale-ssh plan
-      apply: ares-plugin-tailscale-ssh apply
-      verify: ares-plugin-tailscale-ssh verify
-      rollback: ares-plugin-tailscale-ssh rollback
+    - name: local-hardening
+      probe: command -v local-hardening
+      plan: local-hardening plan
+      apply: local-hardening apply
+      verify: local-hardening verify
+      rollback: local-hardening rollback
       timeout_seconds: 120
 ```
 

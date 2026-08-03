@@ -156,15 +156,25 @@ func TestBuildAddsWebProfile(t *testing.T) {
 func TestBuildAddsCustomPlugins(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.Plugins.Custom = []config.CustomPlugin{{
-		Name:  "tailscale-ssh",
+		Name:  "local-plugin",
 		Probe: "command -v tailscale",
 		Plan:  "ares-plugin-tailscale-ssh plan",
 		Apply: "ares-plugin-tailscale-ssh apply",
 	}}
 
 	result := Build(scenario.UbuntuHost(), cfg)
-	if !hasPlugin(result, "tailscale-ssh") {
+	if !hasPlugin(result, "local-plugin") {
 		t.Fatalf("expected custom plugin in %+v", result.Plugins)
+	}
+}
+
+func TestBuildAddsTailscaleWhenExplicitlyEnabled(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Plugins.Enabled = append(cfg.Plugins.Enabled, "tailscale-ssh")
+
+	result := Build(scenario.UbuntuHost(), cfg)
+	if !hasPlugin(result, "tailscale-ssh") {
+		t.Fatalf("expected tailscale plugin in %+v", result.Plugins)
 	}
 }
 

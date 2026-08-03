@@ -68,6 +68,19 @@ func TestFind(t *testing.T) {
 	}
 }
 
+func TestFindTailscaleSSHByAlias(t *testing.T) {
+	plugin, ok := Find("tailscale")
+	if !ok {
+		t.Fatal("expected tailscale alias")
+	}
+	if plugin.ID != "tailscale-ssh" {
+		t.Fatalf("plugin ID = %q, want tailscale-ssh", plugin.ID)
+	}
+	if !contains(plugin.Capabilities, "tailscale-ssh") {
+		t.Fatalf("missing tailscale capability: %+v", plugin.Capabilities)
+	}
+}
+
 func TestCatalogFromMarketplaceReturnsIndependentCatalog(t *testing.T) {
 	catalog, err := CatalogFromMarketplace()
 	if err != nil {

@@ -199,7 +199,7 @@ func TestLoadFrom_RejectsCustomPluginNameCollision(t *testing.T) {
 		},
 		{
 			name: "duplicate custom",
-			yaml: "plugins:\n  custom:\n    - name: tailscale-ssh\n    - name: tailscale-ssh\n",
+			yaml: "plugins:\n  custom:\n    - name: local-plugin\n    - name: local-plugin\n",
 		},
 	}
 
@@ -224,19 +224,19 @@ func TestLoadFrom_RejectsUnsafeCustomPluginCommands(t *testing.T) {
 	}{
 		{
 			name: "blank command",
-			yaml: "plugins:\n  custom:\n    - name: tailscale-ssh\n      apply: '   '\n",
+			yaml: "plugins:\n  custom:\n    - name: local-plugin\n      apply: '   '\n",
 		},
 		{
 			name: "multiline command",
-			yaml: "plugins:\n  custom:\n    - name: tailscale-ssh\n      apply: |\n        echo one\n        echo two\n",
+			yaml: "plugins:\n  custom:\n    - name: local-plugin\n      apply: |\n        echo one\n        echo two\n",
 		},
 		{
 			name: "verify without apply",
-			yaml: "plugins:\n  custom:\n    - name: tailscale-ssh\n      verify: ares-plugin verify\n",
+			yaml: "plugins:\n  custom:\n    - name: local-plugin\n      verify: ares-plugin verify\n",
 		},
 		{
 			name: "rollback without apply",
-			yaml: "plugins:\n  custom:\n    - name: tailscale-ssh\n      rollback: ares-plugin rollback\n",
+			yaml: "plugins:\n  custom:\n    - name: local-plugin\n      rollback: ares-plugin rollback\n",
 		},
 	}
 
