@@ -42,6 +42,15 @@ if ARES_INSTALL_DIR="$install_root/bad" ARES_ARCHIVE="$bad_archive" sh ./install
 fi
 grep -q "archive did not contain ares" "$install_root/bad.txt"
 
+extra_archive="$archive_root/extra.tar.gz"
+printf 'extra\n' >"$archive_root/extra"
+tar -czf "$extra_archive" -C "$(dirname "$bin")" "$(basename "$bin")" -C "$archive_root" extra
+if ARES_INSTALL_DIR="$install_root/extra" ARES_ARCHIVE="$extra_archive" sh ./install.sh >"$install_root/extra.txt" 2>&1; then
+  printf 'release-artifact-smoke: extra archive member unexpectedly succeeded\n' >&2
+  exit 1
+fi
+grep -q "archive contains unexpected files" "$install_root/extra.txt"
+
 mkdir -p "$apply_root/etc/ssh"
 printf 'Port 2222\n' > "$apply_root/etc/ssh/sshd_config"
 ARES_ROOT="$apply_root" ARES_OS_RELEASE=tests/fixtures/os-release/ubuntu-24.04 "$installed" preflight --json >"$apply_root/preflight.json" 2>&1

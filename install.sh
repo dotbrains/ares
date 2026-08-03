@@ -60,11 +60,16 @@ if [ -z "$archive" ]; then
   printf 'ares: release archive was not downloaded\n' >&2
   exit 1
 fi
-tar -xzf "$archive" -C "$tmp"
-if [ ! -f "$tmp/$bin" ]; then
+archive_entries="$(tar -tzf "$archive")"
+if ! printf '%s\n' "$archive_entries" | grep -qx "$bin"; then
   printf 'ares: archive did not contain %s\n' "$bin" >&2
   exit 1
 fi
+if [ "$(printf '%s\n' "$archive_entries" | wc -l | tr -d ' ')" -ne 1 ]; then
+  printf 'ares: archive contains unexpected files\n' >&2
+  exit 1
+fi
+tar -xzf "$archive" -C "$tmp"
 mkdir -p "$install_dir"
 install -m 0755 "$tmp/$bin" "$install_dir/$bin"
 
