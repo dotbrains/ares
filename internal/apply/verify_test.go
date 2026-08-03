@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/dotbrains/ares/internal/plugins"
 )
@@ -22,6 +23,19 @@ func (runner fakeRunner) Run(_ context.Context, name string, args ...string) (st
 }
 
 func (runner fakeRunner) RunWithStdin(ctx context.Context, stdin string, name string, args ...string) (string, error) {
+	return runner.Run(ctx, name, args...)
+}
+
+type deadlineRunner struct {
+	hasDeadline bool
+}
+
+func (runner *deadlineRunner) Run(ctx context.Context, _ string, _ ...string) (string, error) {
+	_, runner.hasDeadline = ctx.Deadline()
+	return "Status: active\n22/tcp ALLOW Anywhere\n", nil
+}
+
+func (runner *deadlineRunner) RunWithStdin(ctx context.Context, _ string, name string, args ...string) (string, error) {
 	return runner.Run(ctx, name, args...)
 }
 
@@ -84,6 +98,20 @@ func TestFirewallVerificationUsesCommandOutput(t *testing.T) {
 
 	if !contains(ctx.Result.Verified, "firewall-ufw: verified ufw status") {
 		t.Fatalf("missing verified command: %+v", ctx.Result)
+	}
+}
+
+func TestFirewallVerificationRunsWithDeadline(t *testing.T) {
+	runner := &deadlineRunner{}
+	ctx := &Context{
+		Options: Options{Runner: runner, CommandTimeout: time.Minute},
+		Plan:    testPlan(),
+	}
+
+	ctx.verifyUFW("firewall-ufw")
+
+	if !runner.hasDeadline {
+		t.Fatal("expected verification runner context to have deadline")
 	}
 }
 

@@ -1,7 +1,6 @@
 package apply
 
 import (
-	"context"
 	"fmt"
 	"strings"
 )
@@ -68,7 +67,9 @@ func (ctx *Context) runRedacted(name string, args []string, redactedArgs []strin
 		ctx.Result.Applied = append(ctx.Result.Applied, "would run: "+name+" "+strings.Join(redactedArgs, " "))
 		return nil
 	}
-	output, err := ctx.Options.Runner.Run(context.Background(), name, args...)
+	commandContext, cancel := ctx.commandContext()
+	defer cancel()
+	output, err := ctx.Options.Runner.Run(commandContext, name, args...)
 	if err != nil {
 		return fmt.Errorf("%s %s: %w: %s", name, strings.Join(redactedArgs, " "), err, strings.TrimSpace(output))
 	}

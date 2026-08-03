@@ -1,7 +1,6 @@
 package apply
 
 import (
-	"context"
 	"fmt"
 	"strings"
 )
@@ -55,7 +54,9 @@ func (ctx *Context) verifyCommandContains(pluginID string, command []string, wan
 		ctx.Result.Verified = append(ctx.Result.Verified, pluginID+": would verify with "+strings.Join(command, " "))
 		return
 	}
-	output, err := ctx.Options.Runner.Run(context.Background(), command[0], command[1:]...)
+	commandContext, cancel := ctx.commandContext()
+	defer cancel()
+	output, err := ctx.Options.Runner.Run(commandContext, command[0], command[1:]...)
 	if err != nil {
 		ctx.Result.Failed = append(ctx.Result.Failed, pluginID+": "+err.Error())
 		return

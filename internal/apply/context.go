@@ -1,6 +1,7 @@
 package apply
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -23,6 +24,7 @@ type Options struct {
 	Root                       string
 	Now                        time.Time
 	Runner                     iexec.CommandExecutor
+	CommandTimeout             time.Duration
 	AllowPasswordLockout       bool
 	AllowPasswordLockoutSource string
 	Tailscale                  TailscaleOptions
@@ -65,7 +67,15 @@ func (ctx *Context) fs() hostfs.FS {
 }
 
 func (ctx *Context) mutation() mutation.Operator {
-	return mutation.Operator{Root: ctx.Options.Root, Now: ctx.Options.Now}
+	return mutation.Operator{Root: ctx.Options.Root, Now: ctx.Options.Now, CommandTimeout: ctx.Options.CommandTimeout}
+}
+
+func (ctx *Context) commandContext() (context.Context, context.CancelFunc) {
+	timeout := ctx.Options.CommandTimeout
+	if timeout == 0 {
+		timeout = mutation.DefaultCommandTimeout
+	}
+	return context.WithTimeout(context.Background(), timeout)
 }
 
 func (ctx *Context) appendMutation(result mutation.Result) {
