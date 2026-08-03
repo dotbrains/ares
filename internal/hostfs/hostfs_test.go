@@ -38,3 +38,35 @@ func TestBackupAndRestoreNewestBackupUseRoot(t *testing.T) {
 		t.Fatalf("restored data = %q", data)
 	}
 }
+
+func TestWriteFileReplacesAtomically(t *testing.T) {
+	root := t.TempDir()
+	fs := FS{Root: root}
+	if err := fs.WriteFile("/etc/example.conf", []byte("old\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := fs.WriteFile("/etc/example.conf", []byte("new\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(root, "etc", "example.conf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "new\n" {
+		t.Fatalf("data = %q", data)
+	}
+	info, err := os.Stat(filepath.Join(root, "etc", "example.conf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := info.Mode().Perm(); got != 0o644 {
+		t.Fatalf("mode = %v, want 0644", got)
+	}
+	matches, err := filepath.Glob(filepath.Join(root, "etc", ".example.conf.tmp-*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(matches) != 0 {
+		t.Fatalf("temporary host files left behind: %v", matches)
+	}
+}
