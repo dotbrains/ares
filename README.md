@@ -141,7 +141,8 @@ tailscale:
 ```
 
 Auth keys stay out of config files. `ares` reads the key from the named
-environment variable at apply time and redacts it from command reporting.
+environment variable at apply time, redacts it from command reporting, and
+fails preflight before host mutation when the variable is missing.
 
 Custom plugins are configured explicitly and run local commands only. `ares`
 does not automatically download or execute remote plugin code.

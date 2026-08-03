@@ -270,7 +270,7 @@ func TestRunApplyTailscaleSSHRefusesMissingAuthKey(t *testing.T) {
 	cfg.Tailscale.SSHEnabled = true
 	cfg.Tailscale.AuthKeyEnv = "TAILSCALE_AUTHKEY"
 
-	_, err := Run(plan.Build(testHost(), cfg), Options{
+	result, err := Run(plan.Build(testHost(), cfg), Options{
 		Yes:  true,
 		Root: t.TempDir(),
 		Tailscale: TailscaleOptions{
@@ -280,6 +280,12 @@ func TestRunApplyTailscaleSSHRefusesMissingAuthKey(t *testing.T) {
 	})
 	if err == nil || !strings.Contains(err.Error(), "tailscale SSH requires auth key environment variable TAILSCALE_AUTHKEY") {
 		t.Fatalf("err = %v, want missing auth key refusal", err)
+	}
+	if contains(result.Applied, "would run: apt-get install -y tailscale") {
+		t.Fatalf("tailscale install ran before auth key refusal: %+v", result.Applied)
+	}
+	if contains(result.Applied, "would run: systemctl enable --now tailscaled") {
+		t.Fatalf("tailscaled enable ran before auth key refusal: %+v", result.Applied)
 	}
 }
 

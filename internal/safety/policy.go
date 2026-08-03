@@ -64,6 +64,7 @@ func Evaluate(facts Facts) []Decision {
 		withEvidence(sshPortDecision(facts.Host), hostEvidence(facts.Host, "ssh_port", facts.Host.SSHPort)),
 		planWarningsDecision(facts.Plan),
 		tailscaleServiceDecision(facts.Host, facts.Plan),
+		tailscaleAuthKeyDecision(facts.Config),
 		reportDirectoryChecker(facts).Check(facts.Root),
 	}
 	decisions = append(decisions, customPluginCommandDecisions(facts.Config)...)
@@ -238,6 +239,33 @@ func tailscaleServiceDecision(host system.Host, hardeningPlan plan.Plan) Decisio
 		return Decision{Name: "tailscale service", Status: "pass", Detail: "tailscaled can be enabled with systemd"}
 	}
 	return Decision{Name: "tailscale service", Status: "warn", Detail: "tailscaled service enablement is not implemented for init system " + host.InitSystem}
+}
+
+func tailscaleAuthKeyDecision(cfg *config.Config) Decision {
+	if cfg == nil || !cfg.Tailscale.SSHEnabled {
+		return Decision{Name: "tailscale auth key", Status: "pass", Detail: "not required"}
+	}
+	envName := strings.TrimSpace(cfg.Tailscale.AuthKeyEnv)
+	if envName == "" {
+		return Decision{Name: "tailscale auth key", Status: "fail", Detail: "tailscale.auth_key_env is required"}
+	}
+	decision := Decision{
+		Name: "tailscale auth key",
+		Evidence: []reports.Evidence{{
+			Name:       "tailscale.auth_key_env",
+			Value:      envName,
+			Source:     "config",
+			Confidence: "high",
+		}},
+	}
+	if strings.TrimSpace(os.Getenv(envName)) == "" {
+		decision.Status = "fail"
+		decision.Detail = envName + " is not set"
+		return decision
+	}
+	decision.Status = "pass"
+	decision.Detail = envName + " is set"
+	return decision
 }
 
 func planIncludes(hardeningPlan plan.Plan, id string) bool {

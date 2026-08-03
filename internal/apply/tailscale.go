@@ -7,6 +7,9 @@ import (
 )
 
 func (ctx *Context) applyTailscaleSSH() error {
+	if ctx.Options.Tailscale.SSHEnabled && strings.TrimSpace(ctx.Options.Tailscale.AuthKey) == "" {
+		return fmt.Errorf("tailscale SSH requires auth key environment variable %s", ctx.Options.Tailscale.AuthKeyEnv)
+	}
 	if err := ctx.installPackages("tailscale"); err != nil {
 		return err
 	}
@@ -21,9 +24,6 @@ func (ctx *Context) applyTailscaleSSH() error {
 		ctx.Result.Skipped = append(ctx.Result.Skipped, "Tailscale SSH is not enabled automatically; set tailscale.ssh_enabled and tailscale.auth_key_env to opt in")
 		ctx.Result.Applied = append(ctx.Result.Applied, "prepared tailscaled for explicit Tailscale SSH setup")
 		return nil
-	}
-	if strings.TrimSpace(ctx.Options.Tailscale.AuthKey) == "" {
-		return fmt.Errorf("tailscale SSH requires auth key environment variable %s", ctx.Options.Tailscale.AuthKeyEnv)
 	}
 	args, redactedArgs := ctx.tailscaleUpArgs()
 	if err := ctx.runRedacted("tailscale", args, redactedArgs); err != nil {

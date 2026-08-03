@@ -99,7 +99,8 @@ environment variable to opt into `tailscale up --ssh`.
 
 Do not put auth keys in config files. `ares` reads the auth key from the named
 environment variable at apply time and redacts it from simulated command output
-and errors.
+and errors. Preflight fails before host mutation when `tailscale.ssh_enabled`
+is true and the configured environment variable is missing.
 
 ## Custom Plugins
 

@@ -145,6 +145,56 @@ func TestEvaluateWarnsForTailscaleOnUnsupportedInit(t *testing.T) {
 	}
 }
 
+func TestEvaluateFailsWhenTailscaleAuthKeyEnvIsMissing(t *testing.T) {
+	host := scenario.UbuntuHost()
+	cfg := config.DefaultConfig()
+	cfg.Plugins.Enabled = append(cfg.Plugins.Enabled, "tailscale-ssh")
+	cfg.Tailscale.SSHEnabled = true
+	cfg.Tailscale.AuthKeyEnv = "TAILSCALE_AUTHKEY"
+	t.Setenv("TAILSCALE_AUTHKEY", "")
+
+	decisions := Evaluate(Facts{
+		Host:   host,
+		Plan:   plan.Build(host, cfg),
+		Config: cfg,
+		Root:   t.TempDir(),
+	})
+
+	if !hasDecision(decisions, "tailscale auth key", "fail") {
+		t.Fatalf("missing tailscale auth key failure: %+v", decisions)
+	}
+	if decision, ok := findDecision(decisions, "tailscale auth key"); !ok || !hasEvidence(decision.Evidence, "tailscale.auth_key_env", "TAILSCALE_AUTHKEY", "config") {
+		t.Fatalf("missing tailscale auth key evidence: %+v", decisions)
+	}
+}
+
+func TestEvaluatePassesWhenTailscaleAuthKeyEnvIsPresent(t *testing.T) {
+	host := scenario.UbuntuHost()
+	cfg := config.DefaultConfig()
+	cfg.Plugins.Enabled = append(cfg.Plugins.Enabled, "tailscale-ssh")
+	cfg.Tailscale.SSHEnabled = true
+	cfg.Tailscale.AuthKeyEnv = "TAILSCALE_AUTHKEY"
+	t.Setenv("TAILSCALE_AUTHKEY", "tskey-secret")
+
+	decisions := Evaluate(Facts{
+		Host:   host,
+		Plan:   plan.Build(host, cfg),
+		Config: cfg,
+		Root:   t.TempDir(),
+	})
+
+	if !hasDecision(decisions, "tailscale auth key", "pass") {
+		t.Fatalf("missing tailscale auth key pass: %+v", decisions)
+	}
+	for _, decision := range decisions {
+		for _, evidence := range decision.Evidence {
+			if evidence.Value == "tskey-secret" {
+				t.Fatalf("tailscale auth key leaked in evidence: %+v", decisions)
+			}
+		}
+	}
+}
+
 func hasDecision(decisions []Decision, name string, status string) bool {
 	for _, decision := range decisions {
 		if decision.Name == name && decision.Status == status {
@@ -152,6 +202,15 @@ func hasDecision(decisions []Decision, name string, status string) bool {
 		}
 	}
 	return false
+}
+
+func findDecision(decisions []Decision, name string) (Decision, bool) {
+	for _, decision := range decisions {
+		if decision.Name == name {
+			return decision, true
+		}
+	}
+	return Decision{}, false
 }
 
 func hasEvidence(evidence []reports.Evidence, name string, value string, source string) bool {
