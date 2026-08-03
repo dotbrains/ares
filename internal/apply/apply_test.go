@@ -1,6 +1,7 @@
 package apply
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -330,6 +331,25 @@ func TestRunApplyTailscaleSSHUsesRedactedAuthKey(t *testing.T) {
 	}
 	if !hasEvidence(result.SafetyEvidence, "tailscale.ssh_enabled", "true", "file") {
 		t.Fatalf("missing tailscale evidence: %+v", result.SafetyEvidence)
+	}
+}
+
+func TestRunRedactedUsesRunnerAndHidesSensitiveArgsOnError(t *testing.T) {
+	ctx := &Context{
+		Options: Options{
+			Runner: fakeRunner{err: errors.New("command failed")},
+		},
+	}
+
+	err := ctx.runRedacted("tailscale", []string{"up", "--auth-key", "tskey-secret"}, []string{"up", "--auth-key", "REDACTED"})
+	if err == nil {
+		t.Fatal("expected runner error")
+	}
+	if strings.Contains(err.Error(), "tskey-secret") {
+		t.Fatalf("auth key leaked in error: %v", err)
+	}
+	if !strings.Contains(err.Error(), "tailscale up --auth-key REDACTED") {
+		t.Fatalf("missing redacted command in error: %v", err)
 	}
 }
 
