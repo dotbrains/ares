@@ -2,6 +2,7 @@ package reports
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/dotbrains/ares/internal/atomicfile"
@@ -105,6 +106,9 @@ func ReadLatestRun(path string) (LatestRunReport, error) {
 	}
 	if err := json.Unmarshal(data, &report); err != nil {
 		return report, err
+	}
+	if report.SchemaVersion != ReportSchemaVersion {
+		return report, fmt.Errorf("unexpected schema_version %q", report.SchemaVersion)
 	}
 	return report, nil
 }

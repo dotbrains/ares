@@ -61,3 +61,13 @@ func TestWriteJSONReplacesExistingReportAtomically(t *testing.T) {
 		t.Fatalf("temporary report files left behind: %v", matches)
 	}
 }
+
+func TestReadLatestRunRejectsWrongSchema(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "latest.json")
+	if err := os.WriteFile(path, []byte(`{"schema_version":"ares.rollback.v1"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ReadLatestRun(path); err == nil {
+		t.Fatal("expected schema error")
+	}
+}

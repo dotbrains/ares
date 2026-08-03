@@ -65,6 +65,7 @@ func TestRollbackLastRunsCustomRollbackFromLatestReport(t *testing.T) {
 		t.Fatal(err)
 	}
 	report := map[string]any{
+		"schema_version": "ares.report.v1",
 		"plugins": []map[string]any{{
 			"ID":             "custom-hardening",
 			"Kind":           "custom",
@@ -109,6 +110,7 @@ func TestRollbackLastUsesTransactionSummary(t *testing.T) {
 		t.Fatal(err)
 	}
 	report := map[string]any{
+		"schema_version": "ares.report.v1",
 		"transaction": map[string]any{
 			"files":   []string{"/etc/ares-custom/managed.conf"},
 			"backups": []string{"/etc/ares-custom/state"},
@@ -155,6 +157,7 @@ func TestRollbackLastDryRunPreviewsTransactionSummary(t *testing.T) {
 		t.Fatal(err)
 	}
 	report := map[string]any{
+		"schema_version": "ares.report.v1",
 		"transaction": map[string]any{
 			"files":   []string{"/managed.conf"},
 			"backups": []string{"/state.conf"},
@@ -180,6 +183,25 @@ func TestRollbackLastDryRunPreviewsTransactionSummary(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, "managed.conf")); err != nil {
 		t.Fatalf("dry-run removed file: %v", err)
+	}
+}
+
+func TestRollbackLastRejectsWrongLatestReportSchema(t *testing.T) {
+	root := t.TempDir()
+	reportDir := filepath.Join(root, "var", "log", "ares")
+	if err := os.MkdirAll(reportDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(reportDir, "latest.json"), []byte(`{"schema_version":"ares.rollback.v1"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := RollbackLast(RollbackOptions{Yes: true, Root: root})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !contains(result.Skipped, "latest report unavailable for transaction rollback: latest report is invalid") {
+		t.Fatalf("missing invalid latest report warning: %+v", result.Skipped)
 	}
 }
 
