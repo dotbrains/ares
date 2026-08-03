@@ -93,6 +93,32 @@ func TestSaveToAndLoadFrom(t *testing.T) {
 	}
 }
 
+func TestSaveToReplacesExistingConfigAtomically(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "config.yaml")
+	if err := os.WriteFile(path, []byte("profile: web\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := SaveTo(DefaultConfig(), path); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := info.Mode().Perm(); got != 0o644 {
+		t.Fatalf("mode = %v, want 0644", got)
+	}
+	matches, err := filepath.Glob(filepath.Join(tmp, ".config.yaml.tmp-*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(matches) != 0 {
+		t.Fatalf("temporary config files left behind: %v", matches)
+	}
+}
+
 func TestLoadFrom_NoFile(t *testing.T) {
 	cfg, err := LoadFrom("/nonexistent/path/config.yaml")
 	if err != nil {
