@@ -23,6 +23,7 @@ fi
 need uname
 need mktemp
 need tar
+need install
 
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
 arch="$(uname -m)"
@@ -36,6 +37,10 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
 if [ -n "$archive_path" ]; then
+  if [ ! -f "$archive_path" ]; then
+    printf 'ares: archive not found: %s\n' "$archive_path" >&2
+    exit 1
+  fi
   cp "$archive_path" "$tmp/${bin}.tar.gz"
 elif [ -n "$release_base_url" ]; then
   need curl
@@ -51,7 +56,15 @@ else
 fi
 
 archive="$(find "$tmp" -name '*.tar.gz' -print | head -n 1)"
+if [ -z "$archive" ]; then
+  printf 'ares: release archive was not downloaded\n' >&2
+  exit 1
+fi
 tar -xzf "$archive" -C "$tmp"
+if [ ! -f "$tmp/$bin" ]; then
+  printf 'ares: archive did not contain %s\n' "$bin" >&2
+  exit 1
+fi
 mkdir -p "$install_dir"
 install -m 0755 "$tmp/$bin" "$install_dir/$bin"
 

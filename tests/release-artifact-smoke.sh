@@ -27,6 +27,21 @@ installed="$install_root/bin/ares"
 test -x "$installed"
 "$installed" --version >/dev/null
 
+if ARES_INSTALL_DIR="$install_root/missing" ARES_ARCHIVE="$archive_root/missing.tar.gz" sh ./install.sh >"$install_root/missing.txt" 2>&1; then
+  printf 'release-artifact-smoke: missing archive unexpectedly succeeded\n' >&2
+  exit 1
+fi
+grep -q "archive not found" "$install_root/missing.txt"
+
+bad_archive="$archive_root/bad.tar.gz"
+printf 'not-ares\n' >"$archive_root/not-ares"
+tar -czf "$bad_archive" -C "$archive_root" not-ares
+if ARES_INSTALL_DIR="$install_root/bad" ARES_ARCHIVE="$bad_archive" sh ./install.sh >"$install_root/bad.txt" 2>&1; then
+  printf 'release-artifact-smoke: malformed archive unexpectedly succeeded\n' >&2
+  exit 1
+fi
+grep -q "archive did not contain ares" "$install_root/bad.txt"
+
 mkdir -p "$apply_root/etc/ssh"
 printf 'Port 2222\n' > "$apply_root/etc/ssh/sshd_config"
 ARES_ROOT="$apply_root" ARES_OS_RELEASE=tests/fixtures/os-release/ubuntu-24.04 "$installed" preflight --json >"$apply_root/preflight.json" 2>&1
