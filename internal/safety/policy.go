@@ -63,6 +63,7 @@ func Evaluate(facts Facts) []Decision {
 		providerAdvisoryDecision(facts.Plan),
 		withEvidence(sshPortDecision(facts.Host), hostEvidence(facts.Host, "ssh_port", facts.Host.SSHPort)),
 		planWarningsDecision(facts.Plan),
+		tailscaleServiceDecision(facts.Host, facts.Plan),
 		reportDirectoryChecker(facts).Check(facts.Root),
 	}
 	decisions = append(decisions, customPluginCommandDecisions(facts.Config)...)
@@ -227,6 +228,25 @@ func planWarningsDecision(hardeningPlan plan.Plan) Decision {
 		return Decision{Name: "plan warnings", Status: "pass", Detail: "none"}
 	}
 	return Decision{Name: "plan warnings", Status: "warn", Detail: fmt.Sprintf("%d warning(s)", len(hardeningPlan.Warnings))}
+}
+
+func tailscaleServiceDecision(host system.Host, hardeningPlan plan.Plan) Decision {
+	if !planIncludes(hardeningPlan, "tailscale-ssh") {
+		return Decision{Name: "tailscale service", Status: "pass", Detail: "not enabled"}
+	}
+	if host.InitSystem == "systemd" {
+		return Decision{Name: "tailscale service", Status: "pass", Detail: "tailscaled can be enabled with systemd"}
+	}
+	return Decision{Name: "tailscale service", Status: "warn", Detail: "tailscaled service enablement is not implemented for init system " + host.InitSystem}
+}
+
+func planIncludes(hardeningPlan plan.Plan, id string) bool {
+	for _, plugin := range hardeningPlan.Plugins {
+		if plugin.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 func (WritableReportDirectory) Check(root string) Decision {

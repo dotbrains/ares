@@ -26,11 +26,13 @@ func EffectiveConfig(cfg *Config, fileLoaded bool, overrides Overrides) (*Effect
 	sources := map[string]Source{
 		"profile":                    SourceDefault,
 		"ssh.allow_password_lockout": SourceDefault,
+		"tailscale.ssh_enabled":      SourceDefault,
 		"plugins.enabled":            SourceDefault,
 	}
 	if fileLoaded {
 		sources["profile"] = SourceFile
 		sources["ssh.allow_password_lockout"] = SourceFile
+		sources["tailscale.ssh_enabled"] = SourceFile
 		sources["plugins.enabled"] = SourceFile
 	}
 	if overrides.Profile != "" {

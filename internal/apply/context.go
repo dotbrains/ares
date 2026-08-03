@@ -25,6 +25,17 @@ type Options struct {
 	Runner                     iexec.CommandExecutor
 	AllowPasswordLockout       bool
 	AllowPasswordLockoutSource string
+	Tailscale                  TailscaleOptions
+}
+
+type TailscaleOptions struct {
+	SSHEnabled       bool
+	AuthKeyEnv       string
+	AuthKey          string
+	Hostname         string
+	AcceptRoutes     bool
+	ExtraArgs        []string
+	SSHEnabledSource string
 }
 
 type Result struct {
@@ -82,6 +93,7 @@ func Run(hardeningPlan plan.Plan, opts Options) (Result, error) {
 	})
 	ctx.Result.SSHLockoutPolicy = readiness.SSHLockoutPolicy
 	ctx.Result.SafetyEvidence = readiness.SafetyEvidence
+	ctx.Result.SafetyEvidence = append(ctx.Result.SafetyEvidence, ctx.tailscaleEvidence()...)
 	ctx.Result.Transaction = BuildTransaction(hardeningPlan)
 
 	if err := ctx.prepareReportPaths(); err != nil {
@@ -104,6 +116,37 @@ func Run(hardeningPlan plan.Plan, opts Options) (Result, error) {
 	}
 
 	return ctx.finish(nil)
+}
+
+func (ctx *Context) tailscaleEvidence() []reports.Evidence {
+	return []reports.Evidence{
+		{
+			Name:       "tailscale.ssh_enabled",
+			Value:      fmt.Sprintf("%t", ctx.Options.Tailscale.SSHEnabled),
+			Source:     sourceOrDefault(ctx.Options.Tailscale.SSHEnabledSource, "default"),
+			Confidence: "high",
+		},
+		{
+			Name:       "tailscale.auth_key_env",
+			Value:      ctx.Options.Tailscale.AuthKeyEnv,
+			Source:     sourceOrDefault(ctx.Options.Tailscale.SSHEnabledSource, "default"),
+			Confidence: confidenceForValue(ctx.Options.Tailscale.AuthKeyEnv),
+		},
+	}
+}
+
+func sourceOrDefault(value string, fallback string) string {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	return value
+}
+
+func confidenceForValue(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return "low"
+	}
+	return "high"
 }
 
 func (ctx *Context) probePlugin(plugin plugins.Plugin) bool {

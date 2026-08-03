@@ -17,4 +17,8 @@ rollback_steps = ["review Tailscale SSH state with tailscale status", "disable T
 config = """
 [plugins]
 enabled = ["tailscale-ssh"]
+
+[tailscale]
+ssh_enabled = true
+auth_key_env = "TAILSCALE_AUTHKEY"
 """

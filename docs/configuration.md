@@ -84,12 +84,22 @@ plugins:
     - security-updates
     - sysctl-baseline
     - tailscale-ssh
+tailscale:
+  ssh_enabled: true
+  auth_key_env: TAILSCALE_AUTHKEY
+  hostname: web-01
+  accept_routes: false
+  extra_args: []
 ```
 
-It installs the local `tailscale` package and enables `tailscaled` on systemd
-hosts. It does not authenticate the node or run `tailscale up --ssh`
-automatically; run that manually after reviewing tailnet policy and recovery
-access.
+By default, the plugin installs the local `tailscale` package and enables
+`tailscaled` on systemd hosts without authenticating the node. Set
+`tailscale.ssh_enabled: true` and point `tailscale.auth_key_env` at an
+environment variable to opt into `tailscale up --ssh`.
+
+Do not put auth keys in config files. `ares` reads the auth key from the named
+environment variable at apply time and redacts it from simulated command output
+and errors.
 
 ## Custom Plugins
 

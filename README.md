@@ -135,7 +135,13 @@ plugins:
     - security-updates
     - sysctl-baseline
     - tailscale-ssh
+tailscale:
+  ssh_enabled: true
+  auth_key_env: TAILSCALE_AUTHKEY
 ```
+
+Auth keys stay out of config files. `ares` reads the key from the named
+environment variable at apply time and redacts it from command reporting.
 
 Custom plugins are configured explicitly and run local commands only. `ares`
 does not automatically download or execute remote plugin code.

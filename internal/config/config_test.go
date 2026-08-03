@@ -253,6 +253,42 @@ func TestLoadFrom_RejectsUnsafeCustomPluginCommands(t *testing.T) {
 	}
 }
 
+func TestLoadFrom_RejectsUnsafeTailscaleConfig(t *testing.T) {
+	cases := []struct {
+		name string
+		yaml string
+	}{
+		{
+			name: "missing auth env",
+			yaml: "plugins:\n  enabled:\n    - tailscale-ssh\ntailscale:\n  ssh_enabled: true\n",
+		},
+		{
+			name: "plugin not enabled",
+			yaml: "tailscale:\n  ssh_enabled: true\n  auth_key_env: TAILSCALE_AUTHKEY\n",
+		},
+		{
+			name: "invalid auth env",
+			yaml: "plugins:\n  enabled:\n    - tailscale-ssh\ntailscale:\n  ssh_enabled: true\n  auth_key_env: 'TAILSCALE AUTHKEY'\n",
+		},
+		{
+			name: "auth key in extra args",
+			yaml: "plugins:\n  enabled:\n    - tailscale-ssh\ntailscale:\n  ssh_enabled: true\n  auth_key_env: TAILSCALE_AUTHKEY\n  extra_args:\n    - --auth-key=secret\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "bad-tailscale.yaml")
+			if err := os.WriteFile(path, []byte(tc.yaml), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := LoadFrom(path); err == nil {
+				t.Fatal("expected unsafe tailscale config error")
+			}
+		})
+	}
+}
+
 func TestEffectiveConfigTracksCLIOverrideSources(t *testing.T) {
 	cfg := DefaultConfig()
 	effective, err := EffectiveConfig(cfg, true, Overrides{

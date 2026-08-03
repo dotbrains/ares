@@ -128,6 +128,23 @@ func TestEvaluateUsesReportDirectoryAdapter(t *testing.T) {
 	}
 }
 
+func TestEvaluateWarnsForTailscaleOnUnsupportedInit(t *testing.T) {
+	host := scenario.DistroHost("alpine", "apk", "nftables")
+	host.InitSystem = "openrc"
+	cfg := config.DefaultConfig()
+	cfg.Plugins.Enabled = append(cfg.Plugins.Enabled, "tailscale-ssh")
+
+	decisions := Evaluate(Facts{
+		Host: host,
+		Plan: plan.Build(host, cfg),
+		Root: t.TempDir(),
+	})
+
+	if !hasDecision(decisions, "tailscale service", "warn") {
+		t.Fatalf("missing tailscale service warning: %+v", decisions)
+	}
+}
+
 func hasDecision(decisions []Decision, name string, status string) bool {
 	for _, decision := range decisions {
 		if decision.Name == name && decision.Status == status {

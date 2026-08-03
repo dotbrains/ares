@@ -9,6 +9,7 @@ import (
 
 	"github.com/dotbrains/ares/internal/config"
 	"github.com/dotbrains/ares/internal/plan"
+	"github.com/dotbrains/ares/internal/reports"
 	"github.com/dotbrains/ares/internal/system"
 )
 
@@ -255,11 +256,70 @@ func TestRunApplyTailscaleSSHIsExplicitOptIn(t *testing.T) {
 	if !contains(result.Applied, "prepared tailscaled for explicit Tailscale SSH setup") {
 		t.Fatalf("missing tailscale applied summary: %+v", result.Applied)
 	}
-	if !contains(result.Skipped, "Tailscale SSH is not enabled automatically; run tailscale up --ssh after reviewing tailnet policy and authentication") {
+	if !contains(result.Skipped, "Tailscale SSH is not enabled automatically; set tailscale.ssh_enabled and tailscale.auth_key_env to opt in") {
 		t.Fatalf("missing manual tailscale guidance: %+v", result.Skipped)
 	}
 	if !contains(result.Verified, "tailscale-ssh: would verify with tailscale version") {
 		t.Fatalf("missing tailscale verification: %+v", result.Verified)
+	}
+}
+
+func TestRunApplyTailscaleSSHRefusesMissingAuthKey(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Plugins.Enabled = append(cfg.Plugins.Enabled, "tailscale-ssh")
+	cfg.Tailscale.SSHEnabled = true
+	cfg.Tailscale.AuthKeyEnv = "TAILSCALE_AUTHKEY"
+
+	_, err := Run(plan.Build(testHost(), cfg), Options{
+		Yes:  true,
+		Root: t.TempDir(),
+		Tailscale: TailscaleOptions{
+			SSHEnabled: true,
+			AuthKeyEnv: "TAILSCALE_AUTHKEY",
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), "tailscale SSH requires auth key environment variable TAILSCALE_AUTHKEY") {
+		t.Fatalf("err = %v, want missing auth key refusal", err)
+	}
+}
+
+func TestRunApplyTailscaleSSHUsesRedactedAuthKey(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Plugins.Enabled = append(cfg.Plugins.Enabled, "tailscale-ssh")
+	cfg.Tailscale.SSHEnabled = true
+	cfg.Tailscale.AuthKeyEnv = "TAILSCALE_AUTHKEY"
+	cfg.Tailscale.Hostname = "ares-test"
+	cfg.Tailscale.AcceptRoutes = true
+	cfg.Tailscale.ExtraArgs = []string{"--operator=admin"}
+
+	result, err := Run(plan.Build(testHost(), cfg), Options{
+		Yes:  true,
+		Root: t.TempDir(),
+		Tailscale: TailscaleOptions{
+			SSHEnabled:       true,
+			AuthKeyEnv:       "TAILSCALE_AUTHKEY",
+			AuthKey:          "tskey-secret",
+			Hostname:         "ares-test",
+			AcceptRoutes:     true,
+			ExtraArgs:        []string{"--operator=admin"},
+			SSHEnabledSource: "file",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	joinedApplied := strings.Join(result.Applied, "\n")
+	if strings.Contains(joinedApplied, "tskey-secret") {
+		t.Fatalf("auth key leaked in applied output: %s", joinedApplied)
+	}
+	if !contains(result.Applied, "would run: tailscale up --ssh --auth-key REDACTED --hostname ares-test --accept-routes --operator=admin") {
+		t.Fatalf("missing redacted tailscale up: %+v", result.Applied)
+	}
+	if !contains(result.Applied, "enabled Tailscale SSH using auth key from TAILSCALE_AUTHKEY") {
+		t.Fatalf("missing tailscale enabled summary: %+v", result.Applied)
+	}
+	if !hasEvidence(result.SafetyEvidence, "tailscale.ssh_enabled", "true", "file") {
+		t.Fatalf("missing tailscale evidence: %+v", result.SafetyEvidence)
 	}
 }
 
@@ -329,6 +389,15 @@ func rhelPlan() plan.Plan {
 func contains(values []string, want string) bool {
 	for _, value := range values {
 		if value == want {
+			return true
+		}
+	}
+	return false
+}
+
+func hasEvidence(evidence []reports.Evidence, name string, value string, source string) bool {
+	for _, item := range evidence {
+		if item.Name == name && item.Value == value && item.Source == source {
 			return true
 		}
 	}

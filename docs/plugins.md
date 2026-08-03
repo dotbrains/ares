@@ -189,12 +189,16 @@ flowchart TD
 plugins:
   enabled:
     - tailscale-ssh
+tailscale:
+  ssh_enabled: true
+  auth_key_env: TAILSCALE_AUTHKEY
 ```
 
 The plugin installs the local `tailscale` package and enables `tailscaled` on
-systemd hosts. It does not run `tailscale up --ssh`, pass auth keys, or change
-tailnet policy automatically. After apply, authenticate and enable Tailscale SSH
-manually with the command and policy appropriate for the tailnet.
+systemd hosts. It runs `tailscale up --ssh` only when
+`tailscale.ssh_enabled` is true and the configured `tailscale.auth_key_env`
+environment variable is present. Auth keys are never read from config files and
+are redacted from simulated command output and errors.
 
 ## Custom Plugins
 

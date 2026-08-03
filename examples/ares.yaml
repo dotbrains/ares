@@ -7,3 +7,9 @@ plugins:
     - security-updates
     - sysctl-baseline
     - tailscale-ssh
+tailscale:
+  ssh_enabled: true
+  auth_key_env: TAILSCALE_AUTHKEY
+  hostname: web-01
+  accept_routes: false
+  extra_args: []

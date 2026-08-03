@@ -14,13 +14,22 @@ import (
 
 // Config is the top-level configuration.
 type Config struct {
-	Profile string        `yaml:"profile"`
-	Plugins PluginsConfig `yaml:"plugins"`
-	SSH     SSHConfig     `yaml:"ssh,omitempty"`
+	Profile   string          `yaml:"profile"`
+	Plugins   PluginsConfig   `yaml:"plugins"`
+	SSH       SSHConfig       `yaml:"ssh,omitempty"`
+	Tailscale TailscaleConfig `yaml:"tailscale,omitempty"`
 }
 
 type SSHConfig struct {
 	AllowPasswordLockout bool `yaml:"allow_password_lockout,omitempty"`
+}
+
+type TailscaleConfig struct {
+	SSHEnabled   bool     `yaml:"ssh_enabled,omitempty"`
+	AuthKeyEnv   string   `yaml:"auth_key_env,omitempty"`
+	Hostname     string   `yaml:"hostname,omitempty"`
+	AcceptRoutes bool     `yaml:"accept_routes,omitempty"`
+	ExtraArgs    []string `yaml:"extra_args,omitempty"`
 }
 
 type PluginsConfig struct {
@@ -142,6 +151,9 @@ func Validate(cfg *Config) error {
 	if !slices.Contains([]string{"basic", "web", "strict"}, cfg.Profile) {
 		return fmt.Errorf("unknown profile %q", cfg.Profile)
 	}
+	if err := validateTailscale(cfg.Tailscale, cfg.Plugins.Enabled); err != nil {
+		return err
+	}
 	for _, id := range cfg.Plugins.Enabled {
 		switch id {
 		case "firewall-auto", "security-updates":
@@ -175,6 +187,33 @@ func Validate(cfg *Config) error {
 			TimeoutSeconds: plugin.TimeoutSeconds,
 		}, reserved); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func validateTailscale(tailscale TailscaleConfig, enabled []string) error {
+	if !tailscale.SSHEnabled {
+		return nil
+	}
+	if !slices.Contains(enabled, "tailscale-ssh") {
+		return fmt.Errorf("tailscale-ssh plugin must be enabled when tailscale.ssh_enabled is true")
+	}
+	if strings.TrimSpace(tailscale.AuthKeyEnv) == "" {
+		return fmt.Errorf("tailscale.auth_key_env is required when tailscale.ssh_enabled is true")
+	}
+	if strings.ContainsAny(tailscale.AuthKeyEnv, " \t\r\n=") {
+		return fmt.Errorf("tailscale.auth_key_env must be an environment variable name")
+	}
+	if strings.ContainsAny(tailscale.Hostname, "\r\n") {
+		return fmt.Errorf("tailscale.hostname must be a single-line value")
+	}
+	for _, arg := range tailscale.ExtraArgs {
+		if strings.TrimSpace(arg) == "" || strings.ContainsAny(arg, "\r\n") {
+			return fmt.Errorf("tailscale.extra_args must contain non-blank single-line values")
+		}
+		if strings.HasPrefix(arg, "--auth-key") || strings.HasPrefix(arg, "--authkey") {
+			return fmt.Errorf("tailscale.extra_args must not contain auth key arguments; use tailscale.auth_key_env")
 		}
 	}
 	return nil

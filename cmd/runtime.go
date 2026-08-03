@@ -37,12 +37,22 @@ func buildCommandRuntime(overrides config.Overrides) (commandRuntime, error) {
 }
 
 func (runtime commandRuntime) ApplyOptions(dryRun bool, yes bool) apply.Options {
+	tailscale := runtime.Config.Tailscale
 	return apply.Options{
 		DryRun:                     dryRun,
 		Yes:                        yes,
 		Root:                       runtime.Root,
 		AllowPasswordLockout:       runtime.Config.SSH.AllowPasswordLockout,
 		AllowPasswordLockoutSource: string(runtime.Effective.Sources["ssh.allow_password_lockout"]),
+		Tailscale: apply.TailscaleOptions{
+			SSHEnabled:       tailscale.SSHEnabled,
+			AuthKeyEnv:       tailscale.AuthKeyEnv,
+			AuthKey:          os.Getenv(tailscale.AuthKeyEnv),
+			Hostname:         tailscale.Hostname,
+			AcceptRoutes:     tailscale.AcceptRoutes,
+			ExtraArgs:        tailscale.ExtraArgs,
+			SSHEnabledSource: string(runtime.Effective.Sources["tailscale.ssh_enabled"]),
+		},
 	}
 }
 
