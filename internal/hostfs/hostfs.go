@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/dotbrains/ares/internal/atomicfile"
 )
 
 type FS struct {
@@ -29,7 +31,7 @@ func (fs FS) WriteFile(path string, data []byte, perm os.FileMode) error {
 	if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
 		return err
 	}
-	return writeFileAtomic(fullPath, data, perm)
+	return atomicfile.Write(fullPath, data, perm)
 }
 
 func (fs FS) Remove(path string) error {
@@ -54,7 +56,7 @@ func (fs FS) Backup(path string) (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
-	if err := writeFileAtomic(backupPath, data, 0o600); err != nil {
+	if err := atomicfile.Write(backupPath, data, 0o600); err != nil {
 		return "", false, err
 	}
 	return fs.DisplayPath(backupPath), true, nil
@@ -75,31 +77,8 @@ func (fs FS) RestoreNewestBackup(path string) (string, bool, error) {
 	if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
 		return "", true, err
 	}
-	if err := writeFileAtomic(fullPath, data, 0o600); err != nil {
+	if err := atomicfile.Write(fullPath, data, 0o600); err != nil {
 		return "", true, err
 	}
 	return fs.DisplayPath(backup), true, nil
-}
-
-func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
-	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".tmp-*")
-	if err != nil {
-		return err
-	}
-	tmpPath := tmp.Name()
-	defer func() {
-		_ = os.Remove(tmpPath)
-	}()
-	if err := tmp.Chmod(perm); err != nil {
-		_ = tmp.Close()
-		return err
-	}
-	if _, err := tmp.Write(data); err != nil {
-		_ = tmp.Close()
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		return err
-	}
-	return os.Rename(tmpPath, path)
 }

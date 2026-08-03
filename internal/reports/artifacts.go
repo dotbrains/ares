@@ -2,6 +2,8 @@ package reports
 
 import (
 	"strings"
+
+	"github.com/dotbrains/ares/internal/atomicfile"
 )
 
 type Artifacts struct {
@@ -78,5 +80,5 @@ func NonNilStrings(values []string) []string {
 }
 
 func writeTextArtifact(path string, lines []string) error {
-	return writeFileAtomic(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644)
+	return atomicfile.Write(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644)
 }

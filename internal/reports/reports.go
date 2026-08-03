@@ -3,8 +3,8 @@ package reports
 import (
 	"encoding/json"
 	"os"
-	"path/filepath"
 
+	"github.com/dotbrains/ares/internal/atomicfile"
 	"github.com/dotbrains/ares/internal/plan"
 	"github.com/dotbrains/ares/internal/plugins"
 )
@@ -94,31 +94,7 @@ func WriteJSON(path string, value any) error {
 	if err != nil {
 		return err
 	}
-	return writeFileAtomic(path, append(data, '\n'), 0o644)
-}
-
-func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
-	dir := filepath.Dir(path)
-	tmp, err := os.CreateTemp(dir, "."+filepath.Base(path)+".tmp-*")
-	if err != nil {
-		return err
-	}
-	tmpPath := tmp.Name()
-	defer func() {
-		_ = os.Remove(tmpPath)
-	}()
-	if err := tmp.Chmod(perm); err != nil {
-		_ = tmp.Close()
-		return err
-	}
-	if _, err := tmp.Write(data); err != nil {
-		_ = tmp.Close()
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		return err
-	}
-	return os.Rename(tmpPath, path)
+	return atomicfile.Write(path, append(data, '\n'), 0o644)
 }
 
 func ReadLatestRun(path string) (LatestRunReport, error) {
