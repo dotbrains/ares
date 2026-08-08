@@ -61,4 +61,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
-        run: gh workflow run release.yml --ref "$RELEASE_TAG" -f tag="$RELEASE_TAG"
+        # Dispatch on main (not the tag ref) so the run counts toward the
+        # default-branch workflow badge; the tag is still what gets built.
+        run: gh workflow run release.yml --ref main -f tag="$RELEASE_TAG"

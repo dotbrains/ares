@@ -104,6 +104,8 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: ${{ env.RELEASE_TAG }}
+          # release-preflight needs full history for the tag ancestry check
+          fetch-depth: 0
 
       - uses: flox/install-flox-action@v2
 
