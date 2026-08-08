@@ -193,6 +193,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # release-preflight needs full history for the tag ancestry check
+          fetch-depth: 0
 
       - uses: flox/install-flox-action@v2
 
