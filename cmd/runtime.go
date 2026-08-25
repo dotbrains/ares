@@ -3,11 +3,11 @@ package cmd
 import (
 	"os"
 
-	"github.com/dotbrains/ares/internal/apply"
-	"github.com/dotbrains/ares/internal/config"
-	"github.com/dotbrains/ares/internal/plan"
-	"github.com/dotbrains/ares/internal/safety"
-	"github.com/dotbrains/ares/internal/system"
+	"github.com/smeltery/ares/internal/apply"
+	"github.com/smeltery/ares/internal/config"
+	"github.com/smeltery/ares/internal/plan"
+	"github.com/smeltery/ares/internal/safety"
+	"github.com/smeltery/ares/internal/system"
 )
 
 type commandRuntime struct {

@@ -1,9 +1,9 @@
 package recovery
 
 import (
-	"github.com/dotbrains/ares/internal/mutation"
-	"github.com/dotbrains/ares/internal/operations"
-	"github.com/dotbrains/ares/internal/reports"
+	"github.com/smeltery/ares/internal/mutation"
+	"github.com/smeltery/ares/internal/operations"
+	"github.com/smeltery/ares/internal/reports"
 )
 
 type Plan struct {

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dotbrains/ares/internal/sshguard"
+	"github.com/smeltery/ares/internal/sshguard"
 )
 
 func TestHasAuthorizedKeysRequiresNonEmptyAuthorizedKeys(t *testing.T) {

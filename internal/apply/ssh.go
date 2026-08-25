@@ -3,7 +3,7 @@ package apply
 import (
 	"fmt"
 
-	"github.com/dotbrains/ares/internal/sshguard"
+	"github.com/smeltery/ares/internal/sshguard"
 )
 
 func (ctx *Context) applySSHHardening() error {

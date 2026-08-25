@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dotbrains/ares/internal/config"
+	"github.com/smeltery/ares/internal/config"
 	"github.com/spf13/cobra"
 )
 

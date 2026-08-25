@@ -4,8 +4,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/dotbrains/ares/internal/plan"
-	"github.com/dotbrains/ares/internal/scenario"
+	"github.com/smeltery/ares/internal/plan"
+	"github.com/smeltery/ares/internal/scenario"
 )
 
 func TestSummaryForScenario(t *testing.T) {

@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/dotbrains/ares/internal/system"
+	"github.com/smeltery/ares/internal/system"
 	"github.com/spf13/cobra"
 )
 

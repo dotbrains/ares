@@ -3,9 +3,9 @@ package plan
 import (
 	"testing"
 
-	"github.com/dotbrains/ares/internal/config"
-	"github.com/dotbrains/ares/internal/scenario"
-	"github.com/dotbrains/ares/internal/system"
+	"github.com/smeltery/ares/internal/config"
+	"github.com/smeltery/ares/internal/scenario"
+	"github.com/smeltery/ares/internal/system"
 )
 
 func TestBuildAddsDistroPlugin(t *testing.T) {

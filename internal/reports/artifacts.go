@@ -3,7 +3,7 @@ package reports
 import (
 	"strings"
 
-	"github.com/dotbrains/ares/internal/atomicfile"
+	"github.com/smeltery/ares/internal/atomicfile"
 )
 
 type Artifacts struct {

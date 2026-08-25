@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/dotbrains/ares/cmd"
+	"github.com/smeltery/ares/cmd"
 )
 
 var version = "dev"

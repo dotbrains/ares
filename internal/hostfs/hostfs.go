@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dotbrains/ares/internal/atomicfile"
+	"github.com/smeltery/ares/internal/atomicfile"
 )
 
 type FS struct {

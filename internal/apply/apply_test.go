@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dotbrains/ares/internal/config"
-	"github.com/dotbrains/ares/internal/plan"
-	"github.com/dotbrains/ares/internal/reports"
-	"github.com/dotbrains/ares/internal/system"
+	"github.com/smeltery/ares/internal/config"
+	"github.com/smeltery/ares/internal/plan"
+	"github.com/smeltery/ares/internal/reports"
+	"github.com/smeltery/ares/internal/system"
 )
 
 func TestRunDryRunWritesReportAndDoesNotApply(t *testing.T) {

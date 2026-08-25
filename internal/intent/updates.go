@@ -1,6 +1,6 @@
 package intent
 
-import "github.com/dotbrains/ares/internal/plugins"
+import "github.com/smeltery/ares/internal/plugins"
 
 var securityUpdateOperationBuilders = map[string]func(plugins.Plugin, string) []Operation{
 	"apt":           aptSecurityUpdateOperations,

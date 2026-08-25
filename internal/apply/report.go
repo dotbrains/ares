@@ -3,7 +3,7 @@ package apply
 import (
 	"fmt"
 
-	"github.com/dotbrains/ares/internal/reports"
+	"github.com/smeltery/ares/internal/reports"
 )
 
 func (ctx *Context) finish(runErr error) (Result, error) {

@@ -26,19 +26,19 @@ flowchart TD
 Bootstrap from the latest GitHub release:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/dotbrains/ares/main/install.sh | sudo sh
+curl -fsSL https://raw.githubusercontent.com/smeltery/ares/main/install.sh | sudo sh
 ```
 
 Install from source with Go:
 
 ```sh
-go install github.com/dotbrains/ares@latest
+go install github.com/smeltery/ares@latest
 ```
 
 Build from a local checkout:
 
 ```sh
-git clone https://github.com/dotbrains/ares.git
+git clone https://github.com/smeltery/ares.git
 cd ares
 make build
 ```

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-repo="dotbrains/ares"
+repo="smeltery/ares"
 bin="ares"
 install_dir_was_set="${ARES_INSTALL_DIR+x}"
 install_dir="${ARES_INSTALL_DIR:-/usr/local/bin}"

@@ -7,15 +7,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dotbrains/ares/internal/customcommand"
-	iexec "github.com/dotbrains/ares/internal/exec"
-	"github.com/dotbrains/ares/internal/hostfs"
-	"github.com/dotbrains/ares/internal/intent"
-	"github.com/dotbrains/ares/internal/mutation"
-	"github.com/dotbrains/ares/internal/plan"
-	"github.com/dotbrains/ares/internal/plugins"
-	"github.com/dotbrains/ares/internal/reports"
-	"github.com/dotbrains/ares/internal/safety"
+	"github.com/smeltery/ares/internal/customcommand"
+	iexec "github.com/smeltery/ares/internal/exec"
+	"github.com/smeltery/ares/internal/hostfs"
+	"github.com/smeltery/ares/internal/intent"
+	"github.com/smeltery/ares/internal/mutation"
+	"github.com/smeltery/ares/internal/plan"
+	"github.com/smeltery/ares/internal/plugins"
+	"github.com/smeltery/ares/internal/reports"
+	"github.com/smeltery/ares/internal/safety"
 )
 
 type Options struct {

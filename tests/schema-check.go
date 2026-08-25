@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dotbrains/ares/internal/reports"
+	"github.com/smeltery/ares/internal/reports"
 )
 
 func main() {

@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dotbrains/ares/internal/mutation"
-	"github.com/dotbrains/ares/internal/reports"
+	"github.com/smeltery/ares/internal/mutation"
+	"github.com/smeltery/ares/internal/reports"
 )
 
 func TestPreviewIncludesTransactionAndCustomRollback(t *testing.T) {

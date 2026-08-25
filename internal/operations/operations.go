@@ -3,9 +3,9 @@ package operations
 import (
 	"strings"
 
-	"github.com/dotbrains/ares/internal/intent"
-	"github.com/dotbrains/ares/internal/plan"
-	"github.com/dotbrains/ares/internal/reports"
+	"github.com/smeltery/ares/internal/intent"
+	"github.com/smeltery/ares/internal/plan"
+	"github.com/smeltery/ares/internal/reports"
 )
 
 type Kind string

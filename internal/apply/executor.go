@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dotbrains/ares/internal/customcommand"
-	"github.com/dotbrains/ares/internal/plugins"
+	"github.com/smeltery/ares/internal/customcommand"
+	"github.com/smeltery/ares/internal/plugins"
 )
 
 type PluginExecutor struct {

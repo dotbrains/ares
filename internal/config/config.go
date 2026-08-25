@@ -7,9 +7,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/dotbrains/ares/internal/atomicfile"
-	"github.com/dotbrains/ares/internal/customcommand"
-	"github.com/dotbrains/ares/internal/plugins"
+	"github.com/smeltery/ares/internal/atomicfile"
+	"github.com/smeltery/ares/internal/customcommand"
+	"github.com/smeltery/ares/internal/plugins"
 	"gopkg.in/yaml.v3"
 )
 

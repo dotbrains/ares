@@ -1,9 +1,9 @@
 package apply
 
 import (
-	"github.com/dotbrains/ares/internal/operations"
-	"github.com/dotbrains/ares/internal/plan"
-	"github.com/dotbrains/ares/internal/reports"
+	"github.com/smeltery/ares/internal/operations"
+	"github.com/smeltery/ares/internal/plan"
+	"github.com/smeltery/ares/internal/reports"
 )
 
 type TransactionSummary = reports.TransactionSummary

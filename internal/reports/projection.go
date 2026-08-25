@@ -3,7 +3,7 @@ package reports
 import (
 	"encoding/json"
 
-	"github.com/dotbrains/ares/internal/plan"
+	"github.com/smeltery/ares/internal/plan"
 )
 
 func NewRunOutput(hardeningPlan plan.Plan, result any, runErr error) RunOutput {

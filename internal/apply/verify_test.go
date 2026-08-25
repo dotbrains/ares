@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dotbrains/ares/internal/plugins"
+	"github.com/smeltery/ares/internal/plugins"
 )
 
 type fakeRunner struct {

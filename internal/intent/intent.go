@@ -3,8 +3,8 @@ package intent
 import (
 	"fmt"
 
-	"github.com/dotbrains/ares/internal/plugins"
-	"github.com/dotbrains/ares/internal/system"
+	"github.com/smeltery/ares/internal/plugins"
+	"github.com/smeltery/ares/internal/system"
 )
 
 type Action struct {

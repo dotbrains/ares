@@ -1,6 +1,6 @@
 package plugins
 
-import "github.com/dotbrains/ares/marketplace"
+import "github.com/smeltery/ares/marketplace"
 
 type BehaviorSpec struct {
 	Name     string

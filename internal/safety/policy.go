@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dotbrains/ares/internal/config"
-	"github.com/dotbrains/ares/internal/customcommand"
-	"github.com/dotbrains/ares/internal/plan"
-	"github.com/dotbrains/ares/internal/readiness"
-	"github.com/dotbrains/ares/internal/reports"
-	"github.com/dotbrains/ares/internal/sshguard"
-	"github.com/dotbrains/ares/internal/system"
+	"github.com/smeltery/ares/internal/config"
+	"github.com/smeltery/ares/internal/customcommand"
+	"github.com/smeltery/ares/internal/plan"
+	"github.com/smeltery/ares/internal/readiness"
+	"github.com/smeltery/ares/internal/reports"
+	"github.com/smeltery/ares/internal/sshguard"
+	"github.com/smeltery/ares/internal/system"
 )
 
 type Decision = reports.Decision

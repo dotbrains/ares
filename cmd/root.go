@@ -3,10 +3,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/dotbrains/ares/internal/apply"
-	"github.com/dotbrains/ares/internal/config"
-	"github.com/dotbrains/ares/internal/plan"
-	"github.com/dotbrains/ares/internal/reports"
+	"github.com/smeltery/ares/internal/apply"
+	"github.com/smeltery/ares/internal/config"
+	"github.com/smeltery/ares/internal/plan"
+	"github.com/smeltery/ares/internal/reports"
 	"github.com/spf13/cobra"
 )
 

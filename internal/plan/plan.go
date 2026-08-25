@@ -1,10 +1,10 @@
 package plan
 
 import (
-	"github.com/dotbrains/ares/internal/config"
-	"github.com/dotbrains/ares/internal/intent"
-	"github.com/dotbrains/ares/internal/plugins"
-	"github.com/dotbrains/ares/internal/system"
+	"github.com/smeltery/ares/internal/config"
+	"github.com/smeltery/ares/internal/intent"
+	"github.com/smeltery/ares/internal/plugins"
+	"github.com/smeltery/ares/internal/system"
 )
 
 type Action = intent.Action

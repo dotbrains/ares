@@ -4,10 +4,10 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/dotbrains/ares/internal/config"
-	"github.com/dotbrains/ares/internal/intent"
-	"github.com/dotbrains/ares/internal/plan"
-	"github.com/dotbrains/ares/internal/scenario"
+	"github.com/smeltery/ares/internal/config"
+	"github.com/smeltery/ares/internal/intent"
+	"github.com/smeltery/ares/internal/plan"
+	"github.com/smeltery/ares/internal/scenario"
 )
 
 func TestIntentProjectsActionsAndOperations(t *testing.T) {

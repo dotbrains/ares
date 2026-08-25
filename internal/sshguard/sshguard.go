@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dotbrains/ares/internal/reports"
+	"github.com/smeltery/ares/internal/reports"
 )
 
 type Facts struct {

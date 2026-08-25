@@ -3,7 +3,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/dotbrains/ares/internal/apply"
+	"github.com/smeltery/ares/internal/apply"
 	"github.com/spf13/cobra"
 )
 

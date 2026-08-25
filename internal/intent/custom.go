@@ -1,6 +1,6 @@
 package intent
 
-import "github.com/dotbrains/ares/internal/plugins"
+import "github.com/smeltery/ares/internal/plugins"
 
 func customOperations(plugin plugins.Plugin) []Operation {
 	var ops []Operation

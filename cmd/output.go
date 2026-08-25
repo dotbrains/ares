@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"github.com/dotbrains/ares/internal/apply"
-	"github.com/dotbrains/ares/internal/plan"
-	"github.com/dotbrains/ares/internal/system"
+	"github.com/smeltery/ares/internal/apply"
+	"github.com/smeltery/ares/internal/plan"
+	"github.com/smeltery/ares/internal/system"
 	"github.com/spf13/cobra"
 )
 

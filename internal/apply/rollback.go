@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dotbrains/ares/internal/hostfs"
-	"github.com/dotbrains/ares/internal/mutation"
-	"github.com/dotbrains/ares/internal/plugins"
-	"github.com/dotbrains/ares/internal/readiness"
-	"github.com/dotbrains/ares/internal/recovery"
-	"github.com/dotbrains/ares/internal/reports"
+	"github.com/smeltery/ares/internal/hostfs"
+	"github.com/smeltery/ares/internal/mutation"
+	"github.com/smeltery/ares/internal/plugins"
+	"github.com/smeltery/ares/internal/readiness"
+	"github.com/smeltery/ares/internal/recovery"
+	"github.com/smeltery/ares/internal/reports"
 )
 
 type RollbackOptions struct {

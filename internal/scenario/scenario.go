@@ -1,8 +1,8 @@
 package scenario
 
 import (
-	"github.com/dotbrains/ares/internal/config"
-	"github.com/dotbrains/ares/internal/system"
+	"github.com/smeltery/ares/internal/config"
+	"github.com/smeltery/ares/internal/system"
 )
 
 type Scenario struct {

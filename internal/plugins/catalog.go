@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dotbrains/ares/marketplace"
+	"github.com/smeltery/ares/marketplace"
 )
 
 type Plugin = marketplace.Plugin

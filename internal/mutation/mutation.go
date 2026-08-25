@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dotbrains/ares/internal/hostfs"
+	"github.com/smeltery/ares/internal/hostfs"
 )
 
 const DefaultCommandTimeout = 5 * time.Minute

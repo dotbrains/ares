@@ -1,7 +1,7 @@
 # ares
 
-[![CI](https://github.com/dotbrains/ares/actions/workflows/ci.yml/badge.svg)](https://github.com/dotbrains/ares/actions/workflows/ci.yml)
-[![Release](https://github.com/dotbrains/ares/actions/workflows/release.yml/badge.svg)](https://github.com/dotbrains/ares/actions/workflows/release.yml)
+[![CI](https://github.com/smeltery/ares/actions/workflows/ci.yml/badge.svg)](https://github.com/smeltery/ares/actions/workflows/ci.yml)
+[![Release](https://github.com/smeltery/ares/actions/workflows/release.yml/badge.svg)](https://github.com/smeltery/ares/actions/workflows/release.yml)
 [![License: PolyForm Shield 1.0.0](https://img.shields.io/badge/license-PolyForm%20Shield%201.0.0-blue.svg)](LICENSE)
 [![Platform: Linux VPS](https://img.shields.io/badge/platform-Linux%20VPS-lightgrey.svg)](docs/supported-distros.md)
 [![Go: 1.24+](https://img.shields.io/badge/go-1.24%2B-00ADD8.svg)](go.mod)
@@ -19,7 +19,7 @@ default profile covers SSH hardening, a distro-appropriate firewall, fail2ban,
 automatic security updates, and a conservative sysctl baseline.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/dotbrains/ares/main/install.sh | sudo sh
+curl -fsSL https://raw.githubusercontent.com/smeltery/ares/main/install.sh | sudo sh
 sudo ares --dry-run
 sudo ares --yes
 ```
@@ -33,19 +33,19 @@ Use `--dry-run` or `ares plan` first to inspect the exact changes.
 GitHub release for the current platform:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/dotbrains/ares/main/install.sh | sudo sh
+curl -fsSL https://raw.githubusercontent.com/smeltery/ares/main/install.sh | sudo sh
 ```
 
 From Go:
 
 ```sh
-go install github.com/dotbrains/ares@latest
+go install github.com/smeltery/ares@latest
 ```
 
 From source:
 
 ```sh
-git clone https://github.com/dotbrains/ares.git
+git clone https://github.com/smeltery/ares.git
 cd ares
 make build
 sudo ./ares --dry-run

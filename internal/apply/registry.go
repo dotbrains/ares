@@ -3,7 +3,7 @@ package apply
 import (
 	"strings"
 
-	"github.com/dotbrains/ares/internal/plugins"
+	"github.com/smeltery/ares/internal/plugins"
 )
 
 type pluginBehavior struct {

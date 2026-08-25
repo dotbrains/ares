@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dotbrains/ares/internal/customoutput"
-	"github.com/dotbrains/ares/internal/plugins"
+	"github.com/smeltery/ares/internal/customoutput"
+	"github.com/smeltery/ares/internal/plugins"
 )
 
 const DefaultTimeout = 2 * time.Minute

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dotbrains/ares/internal/atomicfile"
-	"github.com/dotbrains/ares/internal/plan"
-	"github.com/dotbrains/ares/internal/plugins"
+	"github.com/smeltery/ares/internal/atomicfile"
+	"github.com/smeltery/ares/internal/plan"
+	"github.com/smeltery/ares/internal/plugins"
 )
 
 const (
